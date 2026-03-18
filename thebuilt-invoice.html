@@ -1269,9 +1269,10 @@ textarea { resize: vertical; min-height: 72px; }
 // DATA STORE
 // ═══════════════════════════════════════════
 let PUR_CATS = [
-  { id:'วัสดุ', label:'วัสดุก่อสร้าง' },
-  { id:'อุปกรณ์', label:'อุปกรณ์' },
-  { id:'บริการ', label:'บริการ/จ้างช่าง' },
+  { id:'ไม้', label:'ไม้' },
+  { id:'ฟิตติ้ง', label:'ฟิตติ้ง' },
+  { id:'บรรจุภัณฑ์', label:'บรรจุภัณฑ์' },
+  { id:'สี', label:'สี' },
   { id:'อื่นๆ', label:'อื่นๆ' },
 ];
 function populatePurCats(savedVal) {
@@ -4032,6 +4033,7 @@ async function deleteBranch() {
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('purCatModal')">ปิด</button>
+      <button class="btn btn-primary" onclick="savePurCatsExport()">💾 บันทึก & Export</button>
     </div>
   </div>
 </div>
@@ -4118,6 +4120,38 @@ function toggleApiKeyVisibility() {
   if(input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
   else { input.type = 'password'; btn.textContent = '👁'; }
 }
+function savePurCatsExport() {
+  // บันทึก PUR_CATS ลงไฟล์
+  let html = document.documentElement.outerHTML;
+  // replace PUR_CATS array ด้วย bracket counting
+  function replaceArr(src, varName, newVal) {
+    const re = new RegExp('let ' + varName + '\\s*=\\s*\\[');
+    const m = src.match(re);
+    if (!m) return src;
+    const start = src.indexOf(m[0]);
+    let depth = 0, i = start + m[0].length - 1;
+    while (i < src.length) {
+      if (src[i] === '[') depth++;
+      else if (src[i] === ']') { depth--; if (depth === 0) break; }
+      i++;
+    }
+    const endIdx = src.indexOf(';', i) + 1;
+    return src.slice(0, start) + 'let ' + varName + ' = ' + JSON.stringify(newVal) + ';' + src.slice(endIdx);
+  }
+  html = replaceArr(html, 'PUR_CATS', PUR_CATS);
+  // reset modal-overlay show
+  html = html.replace(/class="modal-overlay show"/g, 'class="modal-overlay"');
+  html = '<!DOCTYPE html>\n' + html;
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'TheBuiltIn_Invoice_System_Staff.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  showToast('✅ บันทึกหมวดหมู่แล้ว!');
+  closeModal('purCatModal');
+}
+
 function exportFileWithKey() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if(!val || !val.startsWith('sk-ant-')) {
@@ -4125,7 +4159,18 @@ function exportFileWithKey() {
     return;
   }
   let html = document.documentElement.outerHTML;
-  // ใช้ indexOf + substring แทน regex เพราะ outerHTML อาจ escape quote ได้
+
+  // ── reset lockscreen ให้แสดงตอนเปิดไฟล์ใหม่ ──
+  html = html.replace(
+    /id="lockscreen"[^>]*style="[^"]*display[^"]*none[^"]*"/,
+    'id="lockscreen"'
+  );
+  // reset role-based buttons → hidden
+  html = html.replace(/id="btnApiKey"[^>]*style="[^"]*"/, 'id="btnApiKey" style=""');
+  // ปิด modal ทั้งหมดที่ค้าง show อยู่
+  html = html.replace(/class="modal-overlay show"/g, 'class="modal-overlay"');
+
+  // ใส่ API Key ลงในไฟล์
   const marker = 'id="hardcoded-key-script">';
   const keyPrefix = 'const HARDCODED_API_KEY = ';
   const markerIdx = html.indexOf(marker);
