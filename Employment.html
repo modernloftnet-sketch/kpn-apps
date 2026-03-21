@@ -1,0 +1,3103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPN — ระบบเข้างาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0f2744;
+  --navy2: #1a3a5c;
+  --gold: #c9a84c;
+  --gold2: #e8c96a;
+  --green: #10b981;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  --blue: #3b82f6;
+  --bg: #f4f1ec;
+  --white: #ffffff;
+  --border: #e2ddd6;
+  --gray: #8a8a9a;
+  --text: #1a1a2e;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow2: 0 8px 32px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ─── LOCKSCREEN ─── */
+#lockscreen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.lock-wrap { text-align: center; width: 340px; }
+.lock-logo { font-size: 13px; font-weight: 700; color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; }
+.lock-title { font-size: 28px; font-weight: 800; color: white; margin-bottom: 4px; }
+.lock-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 40px; }
+.lock-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.role-btn {
+  padding: 16px 12px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.2s;
+  color: rgba(255,255,255,0.6); font-family: 'Sarabun', sans-serif;
+}
+.role-btn:hover, .role-btn.selected {
+  border-color: var(--gold); background: rgba(201,168,76,0.15); color: white;
+}
+.role-btn .role-icon { font-size: 24px; margin-bottom: 6px; }
+.role-btn .role-name { font-size: 13px; font-weight: 700; }
+.role-btn .role-desc { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+.lock-input-wrap { position: relative; margin-bottom: 14px; }
+.lock-input {
+  width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.15); border-radius: 12px;
+  color: white; font-size: 18px; font-family: 'Sarabun', sans-serif;
+  letter-spacing: 4px; text-align: center; outline: none; transition: all 0.2s;
+}
+.lock-input::placeholder { letter-spacing: 2px; font-size: 14px; color: rgba(255,255,255,0.3); }
+.lock-input:focus { border-color: var(--gold); }
+.lock-input.error { border-color: var(--red); animation: shake 0.3s; }
+.lock-btn-submit {
+  width: 100%; padding: 14px; background: var(--gold); color: var(--navy);
+  border: none; border-radius: 12px; font-size: 15px; font-weight: 800;
+  font-family: 'Sarabun', sans-serif; cursor: pointer; transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.lock-btn-submit:hover { background: var(--gold2); transform: translateY(-1px); }
+.lock-error { color: #ff6b6b; font-size: 13px; margin-top: 10px; min-height: 20px; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+/* ─── LAYOUT ─── */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+  background: var(--navy); display: flex; flex-direction: column; z-index: 100;
+}
+.sidebar-logo { padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-logo .brand { font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+.sidebar-logo .sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.sidebar-nav { padding: 16px 0; flex: 1; overflow-y: auto; }
+.nav-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; margin: 2px 8px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s; color: rgba(255,255,255,0.6); font-size: 14px;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
+.nav-item.active { background: var(--gold); color: var(--navy); font-weight: 700; }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+.role-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px;
+}
+.main { margin-left: 240px; min-height: 100vh; }
+.topbar {
+  background: white; padding: 0 32px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+  box-shadow: var(--shadow);
+}
+.topbar-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.content { padding: 28px 32px; }
+
+/* ─── CARDS ─── */
+.card { background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.card-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: white; border-radius: 16px; padding: 20px; box-shadow: var(--shadow);
+  border-top: 4px solid transparent; transition: transform 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card.green { border-top-color: var(--green); }
+.stat-card.red { border-top-color: var(--red); }
+.stat-card.orange { border-top-color: var(--orange); }
+.stat-card.blue { border-top-color: var(--blue); }
+.stat-icon { font-size: 28px; margin-bottom: 8px; }
+.stat-label { font-size: 12px; color: var(--gray); font-weight: 600; letter-spacing: 0.5px; }
+.stat-value { font-size: 28px; font-weight: 800; color: var(--navy); margin: 4px 0; }
+.stat-sub { font-size: 12px; color: var(--gray); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--navy); color: white; }
+.btn-primary:hover { background: var(--navy2); }
+.btn-gold { background: var(--gold); color: var(--navy); }
+.btn-gold:hover { background: var(--gold2); }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--navy); }
+.btn-outline:hover { border-color: var(--navy); }
+.btn-green { background: var(--green); color: white; }
+.btn-red { background: var(--red); color: white; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-lg { padding: 14px 28px; font-size: 15px; border-radius: 14px; }
+
+/* ─── CHECKIN CARD (พนักงาน) ─── */
+.checkin-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+  border-radius: 20px; padding: 32px; color: white; margin-bottom: 20px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.checkin-hero::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(201,168,76,0.1);
+}
+.checkin-time { font-size: 52px; font-weight: 800; letter-spacing: 2px; margin: 12px 0 4px; }
+.checkin-date { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+.checkin-status {
+  display: inline-block; padding: 6px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; margin-bottom: 24px;
+}
+.status-in { background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.status-out { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.checkin-btn {
+  padding: 16px 48px; border-radius: 50px; border: none; cursor: pointer;
+  font-family: 'Sarabun', sans-serif; font-size: 18px; font-weight: 800;
+  transition: all 0.3s; letter-spacing: 1px;
+}
+.checkin-btn.check-in { background: var(--green); color: white; box-shadow: 0 8px 24px rgba(16,185,129,0.4); }
+.checkin-btn.check-in:hover { transform: scale(1.05); box-shadow: 0 12px 32px rgba(16,185,129,0.5); }
+.checkin-btn.check-out { background: var(--red); color: white; box-shadow: 0 8px 24px rgba(239,68,68,0.4); }
+.checkin-btn.check-out:hover { transform: scale(1.05); box-shadow: 0 12px 32px rgba(239,68,68,0.5); }
+
+/* ─── QR ─── */
+.qr-wrap { text-align: center; padding: 24px; }
+.qr-box {
+  width: 220px; height: 220px; margin: 0 auto 16px;
+  border: 3px solid var(--border); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 120px; background: #fafafa;
+}
+.qr-hint { font-size: 13px; color: var(--gray); }
+
+/* ─── TABLE ─── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f8f7f4; padding: 10px 14px; text-align: left; font-weight: 700; color: var(--gray); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+td { padding: 12px 14px; border-bottom: 1px solid #f0ede8; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #faf9f7; }
+.table-wrap { overflow-x: auto; }
+.table-wrap::-webkit-scrollbar { height: 10px; }
+.table-wrap::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 5px; }
+.table-wrap::-webkit-scrollbar-thumb { background: #bbb; border-radius: 5px; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: #888; }
+
+/* ─── BADGES ─── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-orange { background: #fef3c7; color: #92400e; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-gray { background: #f3f4f6; color: #6b7280; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 1000; display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: 20px; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow2); }
+.modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+.close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray); padding: 4px; border-radius: 6px; }
+.close-btn:hover { background: var(--bg); }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; display: block; }
+.form-control {
+  width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
+  font-size: 14px; font-family: 'Sarabun', sans-serif; outline: none; transition: border 0.2s;
+}
+.form-control:focus { border-color: var(--navy); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ─── PAGE ─── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white;
+  padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  transform: translateY(80px); opacity: 0; transition: all 0.3s; z-index: 9000;
+  box-shadow: var(--shadow2);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ─── SCANNER ─── */
+.scanner-box {
+  background: var(--navy); border-radius: 20px; padding: 32px;
+  text-align: center; color: white;
+}
+.scanner-frame {
+  width: 200px; height: 200px; margin: 0 auto 20px;
+  border: 3px solid var(--gold); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 80px; position: relative; overflow: hidden;
+}
+.scan-line {
+  position: absolute; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: scanMove 2s linear infinite;
+}
+@keyframes scanMove {
+  0% { top: 0; } 100% { top: 100%; }
+}
+
+/* ─── PROGRESS ─── */
+.progress-bar { height: 6px; background: var(--bg); border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s; background: var(--green); }
+
+/* ─── LEAVE FORM ─── */
+.leave-type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.leave-type-btn {
+  padding: 12px 8px; border-radius: 12px; border: 2px solid var(--border);
+  background: white; cursor: pointer; text-align: center; font-family: 'Sarabun', sans-serif;
+  font-size: 12px; font-weight: 700; color: var(--navy); transition: all 0.2s;
+}
+.leave-type-btn:hover, .leave-type-btn.selected { border-color: var(--navy); background: var(--navy); color: white; }
+.leave-type-btn .lt-icon { font-size: 20px; margin-bottom: 4px; }
+
+/* ─── MOBILE ─── */
+@media (max-width: 768px) {
+  .sidebar { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .topbar { padding: 0 16px !important; height: 56px !important; }
+  .topbar-title { font-size: 15px !important; }
+  .content { padding: 12px !important; padding-bottom: 80px !important; }
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .card { padding: 16px !important; }
+  .form-row { grid-template-columns: 1fr !important; }
+  .checkin-time { font-size: 40px !important; }
+  #mobile-nav { display: flex !important; }
+}
+@media (min-width: 769px) {
+  #mobile-nav { display: none !important; }
+}
+#mobile-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: var(--navy); border-top: 1px solid rgba(255,255,255,0.1);
+  height: 62px; align-items: stretch;
+}
+.mn-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; cursor: pointer; color: rgba(255,255,255,0.5); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.5px; border: none; background: none;
+}
+.mn-item.active { color: var(--gold); }
+.mn-item .mn-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+
+<!-- LOCKSCREEN -->
+<div id="lockscreen">
+  <div class="lock-wrap">
+    <div class="lock-logo">KPN HOUSE & CO</div>
+    <div class="lock-title">ระบบเข้างาน</div>
+    <div class="lock-sub">Employee Attendance System</div>
+    <div class="lock-roles">
+      <div class="role-btn" onclick="selectRole('employee')" id="role-employee">
+        <div class="role-icon">👤</div>
+        <div class="role-name">พนักงาน</div>
+        <div class="role-desc">เข้า-ออกงาน</div>
+      </div>
+      <div class="role-btn" onclick="selectRole('hr')" id="role-hr">
+        <div class="role-icon">📋</div>
+        <div class="role-name">HR / ผู้จัดการ</div>
+        <div class="role-desc">ดูรายงาน</div>
+      </div>
+    </div>
+    <div class="lock-input-wrap">
+      <input type="password" class="lock-input" id="lockInput" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="lock-btn-submit" onclick="doLogin()">🔓 เข้าสู่ระบบ</button>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">KPN ATTENDANCE</div>
+    <div class="sub">ระบบบันทึกเวลาทำงาน</div>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer">
+    <div id="sidebarRoleBadge"></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;" id="sidebarBranch"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">ระบบเข้างาน</div>
+    <div class="topbar-right" id="topbarRight"></div>
+  </div>
+  <div class="content" id="mainContent"></div>
+</div>
+
+<!-- MOBILE NAV -->
+<div id="mobile-nav"></div>
+
+<!-- MODAL: เพิ่มพนักงาน -->
+<div class="modal-overlay" id="empModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="empModalTitle">เพิ่มพนักงาน</div>
+      <button class="close-btn" onclick="closeModal('empModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="empId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ชื่อ-นามสกุล *</label>
+          <input type="text" class="form-control" id="empName" placeholder="ชื่อพนักงาน">
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสพนักงาน</label>
+          <input type="text" class="form-control" id="empCode" placeholder="EMP001">
+        </div>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="form-group">
+          <label class="form-label">สาขาหลัก</label>
+          <select class="form-control" id="empBranch">
+            <option value="">-- เลือกสาขา --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ตำแหน่ง</label>
+          <input type="text" class="form-control" id="empPosition" placeholder="พนักงานขาย">
+        </div>
+        <div class="form-group">
+          <label class="form-label">สถานะพนักงาน</label>
+          <select class="form-control" id="empType" onchange="updateWageLabel()">
+            <option value="fulltime">🟢 ประจำ</option>
+            <option value="daily">🔵 รายวัน</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🏪 สาขาเพิ่มเติมที่สแกนเข้างานได้</label>
+        <div id="empExtraBranchesWrap" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+        <div style="font-size:11px;color:var(--gray);">เลือกสาขาที่พนักงานสามารถสแกนเข้างานได้นอกเหนือจากสาขาหลัก (เช่น ผู้จัดการดูแลหลายสาขา)</div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="empGpsBypass" style="width:18px;height:18px;accent-color:var(--navy);">
+          <span class="form-label" style="margin:0;">📍 ข้าม GPS — สแกนเข้างานได้ทุกที่ (ไม่เช็คระยะ)</span>
+        </label>
+        <div style="font-size:11px;color:var(--gray);margin-top:2px;">สำหรับช่างติดตั้งหรือพนักงานที่ต้องไปทำงานนอกสถานที่</div>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="form-group">
+          <label class="form-label" id="empWageLabel">เงินเดือน / ค่าแรงต่อวัน (บาท)</label>
+          <input type="number" class="form-control" id="empWage" placeholder="12000">
+          <div style="font-size:10px;color:var(--gray);margin-top:2px;" id="empWageHint">ประจำ = เงินเดือน/เดือน | รายวัน = ค่าแรง/วัน</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ค่า OT ต่อชั่วโมง (บาท)</label>
+          <input type="number" class="form-control" id="empOtRate" placeholder="เช่น 75">
+          <div style="font-size:10px;color:var(--gray);margin-top:2px;">ถ้าไม่กรอก = ค่าแรง÷8×1.5</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📅 วันที่เริ่มงาน</label>
+          <input type="date" class="form-control" id="empStartDate">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน (ใช้เข้าระบบ)</label>
+          <input type="text" class="form-control" id="empPin" placeholder="4-6 หลัก">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📝 โควตาวันลา (ต่อปี)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">🤒 ลาป่วย</label>
+            <input type="number" class="form-control" id="empQuotaSick" placeholder="30" min="0" style="text-align:center;">
+          </div>
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">🏠 ลากิจ</label>
+            <input type="number" class="form-control" id="empQuotaPersonal" placeholder="3" min="0" style="text-align:center;">
+          </div>
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">✈️ ลาพักร้อน</label>
+            <input type="number" class="form-control" id="empQuotaVacation" placeholder="6" min="0" style="text-align:center;">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">ถ้าไม่กรอกจะใช้ค่าเริ่มต้น: ป่วย 30 / กิจ 3 / พักร้อน 6 วัน</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">💰 รายรับประจำ (ต่อเดือน)</label>
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">เบี้ยเลี้ยง</label>
+            <input type="number" class="form-control" id="empAllowance" placeholder="0" min="0">
+          </div>
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">ค่าตำแหน่ง</label>
+            <input type="number" class="form-control" id="empPositionPay" placeholder="0" min="0">
+          </div>
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);font-size:11px;">ค่าเดินทางเหมา</label>
+            <input type="number" class="form-control" id="empTravelPay" placeholder="0" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">⏰ หักสาย (บาท/นาที)</label>
+        <input type="number" class="form-control" id="empLateDeductRate" placeholder="เช่น 5 (บาทต่อนาทีที่สาย)" min="0" step="0.5" style="max-width:280px;">
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">ถ้าไม่กรอก = ไม่หักค่าสาย | สายคิดจากเวลาเข้างานหลังเวลาเริ่ม shift แรก</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📅 วันหยุดประจำสัปดาห์</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="empWeeklyOffWrap">
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="0" style="accent-color:var(--navy);"> อา.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="1" style="accent-color:var(--navy);"> จ.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="2" style="accent-color:var(--navy);"> อ.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="3" style="accent-color:var(--navy);"> พ.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="4" style="accent-color:var(--navy);"> พฤ.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="5" style="accent-color:var(--navy);"> ศ.
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">
+            <input type="checkbox" class="emp-weekday-off" value="6" style="accent-color:var(--navy);"> ส.
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">เลือกวันที่หยุดประจำ — ระบบจะไม่นับเป็นวันขาดงาน (0=อาทิตย์, 6=เสาร์)</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">⏰ ช่วงเวลาทำงาน</label>
+        <div id="shiftsContainer" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addShiftRow()" style="width:100%;">+ เพิ่มช่วงเวลา</button>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">เช่น 08:00–12:00 และ 13:00–17:00</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('empModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ขอลา -->
+<div class="modal-overlay" id="leaveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ยื่นใบลา</div>
+      <button class="close-btn" onclick="closeModal('leaveModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">ประเภทการลา</label>
+        <div class="leave-type-grid">
+          <div class="leave-type-btn" onclick="selectLeaveType('sick', this)"><div class="lt-icon">🤒</div>ลาป่วย</div>
+          <div class="leave-type-btn" onclick="selectLeaveType('personal', this)"><div class="lt-icon">🏠</div>ลากิจ</div>
+          <div class="leave-type-btn" onclick="selectLeaveType('vacation', this)"><div class="lt-icon">✈️</div>ลาพักร้อน</div>
+        </div>
+        <input type="hidden" id="leaveType">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">วันที่เริ่ม</label>
+          <input type="date" class="form-control" id="leaveStart">
+        </div>
+        <div class="form-group">
+          <label class="form-label">วันที่สิ้นสุด</label>
+          <input type="date" class="form-control" id="leaveEnd">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เหตุผล</label>
+        <textarea class="form-control" id="leaveReason" rows="3" placeholder="ระบุเหตุผล..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('leaveModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitLeave()">📝 ยื่นใบลา</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: จัดการสาขา -->
+<div class="modal-overlay" id="branchModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="branchModalTitle">เพิ่มสาขา</div>
+      <button class="close-btn" onclick="closeModal('branchModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="branchId">
+      <div class="form-group">
+        <label class="form-label">ชื่อสาขา *</label>
+        <input type="text" class="form-control" id="branchName" placeholder="เช่น สาขาเชียงใหม่">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">รหัสสาขา</label>
+          <input type="text" class="form-control" id="branchCode" placeholder="เช่น CNX01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">โทรศัพท์</label>
+          <input type="text" class="form-control" id="branchPhone" placeholder="053-xxxxxx">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ที่อยู่</label>
+        <textarea class="form-control" id="branchAddress" rows="2" placeholder="ที่อยู่สาขา"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สถานะ</label>
+        <select class="form-control" id="branchStatus">
+          <option value="active">🟢 เปิดให้บริการ</option>
+          <option value="inactive">🔴 ปิด/ยกเลิก</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📍 พิกัด GPS (สำหรับตรวจสอบตำแหน่ง)</label>
+        <div class="form-row">
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);">Latitude</label>
+            <input type="number" class="form-control" id="branchLat" placeholder="เช่น 18.7883" step="any">
+          </div>
+          <div>
+            <label class="form-label" style="font-weight:400;color:var(--gray);">Longitude</label>
+            <input type="number" class="form-control" id="branchLng" placeholder="เช่น 98.9853" step="any">
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px;width:100%;" onclick="getMyLocation()">📍 ใช้ตำแหน่งปัจจุบัน</button>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">* เปิดแผนที่ Google Maps → คลิกขวาที่สาขา → copy พิกัด</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🔑 รหัส PIN สาขา (สำหรับแอปสแกนหน้า)</label>
+        <input type="text" class="form-control" id="branchPin" placeholder="เช่น 0001" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:18px;">
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">* ตัวเลข 4 หลัก ใช้เป็นรหัสเข้าแอปสแกนหน้าหน้าสาขา แต่ละสาขาต้องไม่ซ้ำกัน</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('branchModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveBranch()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const SUPABASE_URL = 'https://qybntzlfnrcownntzmir.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5Ym50emxmbnJjb3dubnR6bWlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjMwMDMsImV4cCI6MjA4ODgzOTAwM30.DT-FILxOm99vJ8aK5ghMBgLXsEI9BIkgOZJsqqx8yWA';
+
+const ROLES = {
+  'hr1234':   { role: 'hr',      label: '📋 HR', color: '#d1ecf1;color:#0c5460' },
+  'mgr1234':  { role: 'manager', label: '🏢 ผู้จัดการ', color: '#fff3cd;color:#856404' },
+};
+// พนักงานแต่ละคนจะมี pin ของตัวเอง ดึงจาก DB
+
+let currentUser = null; // { role, name, employeeId, branch }
+let selectedRoleType = 'employee';
+let clockInterval = null;
+let todayRecord = null;
+let selectedLeaveType = '';
+
+// ─── SESSION RESTORE ───
+(function restoreSession() {
+  try {
+    const saved = sessionStorage.getItem('emp_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      // รอ DOM พร้อมก่อน
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('lockscreen').style.display = 'none';
+        buildNav();
+        goPage(currentUser.role === 'employee' ? 'checkin' : 'dashboard');
+      });
+    }
+  } catch(e) {}
+})();
+
+// ─── SUPABASE ───
+async function sb(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Prefer': method==='POST'?'return=representation':'' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Error'); }
+  return r.status === 204 ? null : r.json();
+}
+
+// ═══════════════════════════════════════════
+// LOCKSCREEN
+// ═══════════════════════════════════════════
+function selectRole(type) {
+  selectedRoleType = type;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('role-' + type).classList.add('selected');
+  document.getElementById('lockInput').focus();
+}
+
+async function doLogin() {
+  const pin = document.getElementById('lockInput').value.trim();
+  if (!pin) { showLockError('กรุณาใส่รหัสผ่าน'); return; }
+
+  if (selectedRoleType === 'hr') {
+    const found = ROLES[pin];
+    if (found) {
+      currentUser = { role: found.role, name: found.label, employeeId: null, branch: 'ทุกสาขา' };
+      enterSystem();
+    } else {
+      showLockError('รหัสผ่านไม่ถูกต้อง');
+    }
+  } else {
+    // ค้นหาพนักงานจาก pin
+    try {
+      const emps = await sb(`att_employees?emp_pin=eq.${pin}&select=*`);
+      if (emps && emps.length > 0) {
+        const emp = emps[0];
+        currentUser = { role: 'employee', name: emp.name, employeeId: emp.id, branch: emp.branch, wage: emp.daily_wage };
+        enterSystem();
+      } else {
+        showLockError('ไม่พบรหัสพนักงาน');
+      }
+    } catch(e) {
+      showLockError('เกิดข้อผิดพลาด: ' + e.message);
+    }
+  }
+}
+
+function showLockError(msg) {
+  document.getElementById('lockError').textContent = '❌ ' + msg;
+  const inp = document.getElementById('lockInput');
+  inp.classList.add('error');
+  inp.value = '';
+  setTimeout(() => inp.classList.remove('error'), 400);
+}
+
+function enterSystem() {
+  // บันทึก session (ไม่ต้อง login ใหม่ถ้า refresh)
+  try { sessionStorage.setItem('emp_user', JSON.stringify(currentUser)); } catch(e) {}
+  document.getElementById('lockscreen').style.display = 'none';
+  buildNav();
+  if (currentUser.role === 'employee') {
+    goPage('checkin');
+  } else {
+    goPage('dashboard');
+  }
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const NAV_EMPLOYEE = [
+  { id: 'checkin', icon: '⏰', label: 'เข้า-ออกงาน' },
+  { id: 'my-records', icon: '📅', label: 'ประวัติของฉัน' },
+  { id: 'leave', icon: '📝', label: 'ใบลา' },
+];
+const NAV_HR = [
+  { section: 'ภาพรวม' },
+  { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+  { id: 'today', icon: '📍', label: 'สถานะวันนี้' },
+  { section: 'จัดการ' },
+  { id: 'records', icon: '📋', label: 'บันทึกเวลา' },
+  { id: 'leaves', icon: '📝', label: 'ใบลา' },
+  { id: 'leave-summary', icon: '📊', label: 'สรุปวันลา' },
+  { id: 'employees', icon: '👥', label: 'พนักงาน' },
+  { id: 'branches', icon: '🏪', label: 'สาขา' },
+  { id: 'holidays', icon: '🎌', label: 'วันหยุดนักขัตฤกษ์' },
+  { section: 'รายงาน' },
+  { id: 'report', icon: '📈', label: 'สรุปรายเดือน' },
+  { id: 'wage', icon: '💰', label: 'คำนวณค่าแรง' },
+  { id: 'export', icon: '📥', label: 'Export Excel' },
+  { id: 'alerts', icon: '🔔', label: 'แจ้งเตือน' },
+];
+
+function buildNav() {
+  const nav = currentUser.role === 'employee' ? NAV_EMPLOYEE : NAV_HR;
+  const sidebarNav = document.getElementById('sidebarNav');
+  const mobileNav = document.getElementById('mobile-nav');
+
+  sidebarNav.innerHTML = nav.map(n => {
+    if (n.section) return `<div class="nav-section">${n.section}</div>`;
+    return `<div class="nav-item" id="nav-${n.id}" onclick="goPage('${n.id}')"><span class="icon">${n.icon}</span>${n.label}</div>`;
+  }).join('');
+
+  // Mobile nav — HR: แสดง 4 เมนูหลักที่ใช้บ่อย | พนักงาน: แสดงทั้งหมด
+  const MOBILE_HR_MENUS = ['today', 'records', 'leaves', 'leave-summary'];
+  const mobileItems = currentUser.role === 'employee'
+    ? nav.filter(n => !n.section)
+    : nav.filter(n => !n.section && MOBILE_HR_MENUS.includes(n.id));
+  mobileNav.innerHTML = mobileItems.map(n =>
+    `<button class="mn-item" id="mn-${n.id}" onclick="goPage('${n.id}')"><span class="mn-icon">${n.icon}</span>${n.label}</button>`
+  ).join('');
+
+  // Badge role
+  const badgeColors = { employee: 'background:#d4edda;color:#155724', hr: 'background:#d1ecf1;color:#0c5460', manager: 'background:#fff3cd;color:#856404' };
+  document.getElementById('sidebarRoleBadge').innerHTML = `<span class="role-badge" style="${badgeColors[currentUser.role]}">${currentUser.name}</span>`;
+  document.getElementById('sidebarBranch').textContent = currentUser.branch || '';
+
+  // Topbar
+  document.getElementById('topbarRight').innerHTML = `
+    <span style="font-size:12px;color:var(--gray);">${currentUser.name}</span>
+    <button class="btn btn-outline btn-sm" onclick="logout()">🚪 ออก</button>
+  `;
+}
+
+function goPage(name) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mn-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  const mnEl = document.getElementById('mn-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (mnEl) mnEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = getPageTitle(name);
+  renderPage(name);
+}
+
+function getPageTitle(name) {
+  const titles = { checkin: 'เข้า-ออกงาน', 'my-records': 'ประวัติของฉัน', leave: 'ใบลา', dashboard: 'Dashboard', today: 'สถานะวันนี้', records: 'บันทึกเวลา', leaves: 'ใบลา', 'leave-summary': 'สรุปวันลาพนักงาน', employees: 'จัดการพนักงาน', branches: 'จัดการสาขา', holidays: 'วันหยุดนักขัตฤกษ์', report: 'สรุปรายเดือน', wage: 'สลิปเงินเดือน', export: 'Export Excel', alerts: 'แจ้งเตือนขาดงาน' };
+  return titles[name] || name;
+}
+
+function logout() {
+  currentUser = null;
+  try { sessionStorage.removeItem('emp_user'); } catch(e) {}
+  if (clockInterval) clearInterval(clockInterval);
+  location.reload();
+}
+
+// ═══════════════════════════════════════════
+// RENDER PAGES
+// ═══════════════════════════════════════════
+async function renderPage(name) {
+  const c = document.getElementById('mainContent');
+  c.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray);">⏳ กำลังโหลด...</div>';
+  try {
+    if (name === 'checkin') await renderCheckin();
+    else if (name === 'my-records') await renderMyRecords();
+    else if (name === 'leave') await renderLeave();
+    else if (name === 'dashboard') await renderDashboard();
+    else if (name === 'today') await renderToday();
+    else if (name === 'records') await renderRecords();
+    else if (name === 'leaves') await renderLeaves();
+    else if (name === 'leave-summary') await renderLeaveSummary();
+    else if (name === 'employees') await renderEmployees();
+    else if (name === 'branches') await renderBranches();
+    else if (name === 'holidays') await renderHolidays();
+    else if (name === 'report') await renderReport();
+    else if (name === 'wage') await renderWage();
+    else if (name === 'export') await renderExport();
+    else if (name === 'alerts') await renderAlerts();
+  } catch(e) {
+    c.innerHTML = `<div class="card"><div style="color:var(--red);">❌ เกิดข้อผิดพลาด: ${e.message}</div></div>`;
+  }
+}
+
+// ─── CHECKIN PAGE ───
+async function renderCheckin() {
+  const today = todayStr();
+  const [records, empData] = await Promise.all([
+    sb(`att_records?employee_id=eq.${currentUser.employeeId}&date=eq.${today}&order=shift_index.asc&select=*`),
+    sb(`att_employees?id=eq.${currentUser.employeeId}&select=work_shifts`),
+  ]);
+
+  const shifts = empData && empData[0]?.work_shifts || [];
+  const activeRecord = records.find(r => r.check_in && !r.check_out) || null;
+  const totalHrs = records.reduce((s,r) => s+(r.work_hours||0), 0);
+  const totalOT  = records.reduce((s,r) => s+(r.ot_hours||0), 0);
+  todayRecord = activeRecord;
+
+  // หารอบถัดไปที่ยังไม่ได้เข้า
+  const nextShiftIdx = records.length; // รอบถัดไป = จำนวน record ที่มีแล้ว
+  const nextShift = shifts[nextShiftIdx] || null;
+  const allShiftsDone = shifts.length > 0 && records.length >= shifts.length && !activeRecord;
+  const canCheckIn = !activeRecord && !allShiftsDone;
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="checkin-hero">
+      <div style="font-size:13px;opacity:0.6;letter-spacing:1px;">สวัสดี, ${currentUser.name}</div>
+      <div style="font-size:13px;opacity:0.5;">${currentUser.branch || ''}</div>
+      <div class="checkin-time" id="clockDisplay">00:00:00</div>
+      <div class="checkin-date" id="dateDisplay"></div>
+
+      ${activeRecord
+        ? `<div class="checkin-status status-in">🟢 กำลังทำงาน — เข้างาน ${fmtTime(activeRecord.check_in)}</div>`
+        : allShiftsDone
+          ? `<div class="checkin-status status-out">✅ ครบทุกช่วงเวลาแล้ววันนี้</div>`
+          : `<div class="checkin-status" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);">⏳ ${nextShift ? 'ช่วงถัดไป '+nextShift.start+'–'+nextShift.end : 'ยังไม่ได้เข้างาน'}</div>`
+      }
+      <br>
+      ${activeRecord
+        ? `<button class="checkin-btn check-out" onclick="doCheckOut()">🔴 บันทึกออกงาน</button>`
+        : canCheckIn
+          ? `<button class="checkin-btn check-in" onclick="doCheckIn()">🟢 บันทึกเข้างาน${nextShift?' รอบ '+(nextShiftIdx+1):''}</button>`
+          : allShiftsDone
+            ? `<div style="font-size:13px;opacity:0.6;margin-top:8px;">ทำงานรวม ${totalHrs.toFixed(1)} ชม. วันนี้</div>`
+            : ''
+      }
+    </div>
+
+    ${records.length > 0 ? `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:14px;">📋 บันทึกวันนี้</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${records.map((r,i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:10px;">
+            <span style="font-size:13px;font-weight:700;color:var(--navy);">รอบที่ ${i+1}${shifts[i]?' ('+shifts[i].start+'–'+shifts[i].end+')':''}</span>
+            <span style="font-size:13px;">
+              <span style="color:var(--green);font-weight:700;">${fmtTime(r.check_in)}</span>
+              ${r.check_out ? ` → <span style="color:var(--red);font-weight:700;">${fmtTime(r.check_out)}</span>` : ' → <span style="color:var(--orange);">กำลังทำงาน</span>'}
+              ${r.work_hours ? `<span style="color:var(--gray);font-size:11px;"> (${r.work_hours.toFixed(1)} ชม.)</span>` : ''}
+            </span>
+          </div>`).join('')}
+        <div style="padding:8px 14px;text-align:right;font-size:13px;color:var(--gray);">
+          รวม <strong style="color:var(--navy);">${totalHrs.toFixed(1)} ชม.</strong>
+          ${totalOT > 0 ? ` | OT <strong style="color:var(--orange);">${totalOT.toFixed(1)} ชม.</strong>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px;">📊 สรุปเดือนนี้</div>
+        <div id="monthSummary" style="color:var(--gray);font-size:13px;">กำลังโหลด...</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="card-title">📝 ใบลา</div>
+          <button class="btn btn-outline btn-sm" onclick="openLeaveModal()">+ ขอลา</button>
+        </div>
+        <div id="leaveBalance" style="color:var(--gray);font-size:13px;">กำลังโหลด...</div>
+      </div>
+    </div>
+  `;
+  startClock();
+  loadMonthSummary();
+  loadLeaveBalance();
+}
+
+function startClock() {
+  if (clockInterval) clearInterval(clockInterval);
+  function tick() {
+    const now = new Date();
+    const el = document.getElementById('clockDisplay');
+    const de = document.getElementById('dateDisplay');
+    if (el) el.textContent = now.toLocaleTimeString('th-TH');
+    if (de) de.textContent = now.toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  }
+  tick();
+  clockInterval = setInterval(tick, 1000);
+}
+
+let _checkingIn = false;
+async function doCheckIn() {
+  if (_checkingIn) return;
+  _checkingIn = true;
+  try {
+    const serverNow = await getServerTime();
+    const today = serverTodayStr(serverNow);
+    const records = await sb(`att_records?employee_id=eq.${currentUser.employeeId}&date=eq.${today}&select=shift_index`);
+    const shiftIdx = records.length;
+    const now = serverNow.toISOString();
+    await sb('att_records', 'POST', {
+      id: 'att_' + Date.now(),
+      employee_id: currentUser.employeeId,
+      employee_name: currentUser.name,
+      branch: currentUser.branch,
+      check_in: now,
+      date: today,
+      status: 'present',
+      shift_index: shiftIdx,
+    });
+    showToast('✅ บันทึกเข้างานรอบที่ '+(shiftIdx+1)+' เวลา ' + serverNow.toLocaleTimeString('th-TH'));
+    renderCheckin();
+  } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message); }
+  finally { _checkingIn = false; }
+}
+
+let _checkingOut = false;
+async function doCheckOut() {
+  if (!todayRecord || _checkingOut) return;
+  _checkingOut = true;
+  try {
+    const now = await getServerTime();
+    const checkIn = new Date(todayRecord.check_in);
+    const thisShiftHrs = (now - checkIn) / 3600000;
+
+    // Bug #1 fix: คิด OT จากชั่วโมงรวมทั้งวัน ไม่ใช่ต่อรอบ
+    const today = serverTodayStr(now);
+    const allRecs = await sb(`att_records?employee_id=eq.${currentUser.employeeId}&date=eq.${today}&select=work_hours`);
+    const prevHrs = allRecs.reduce((s,r) => s + (r.work_hours||0), 0);
+    const totalDayHrs = prevHrs + thisShiftHrs;
+
+    let regularHrs, otHrs;
+    if (totalDayHrs <= 8) {
+      regularHrs = thisShiftHrs;
+      otHrs = 0;
+    } else if (prevHrs >= 8) {
+      regularHrs = 0;
+      otHrs = thisShiftHrs;
+    } else {
+      regularHrs = 8 - prevHrs;
+      otHrs = thisShiftHrs - regularHrs;
+    }
+
+    await sb(`att_records?id=eq.${todayRecord.id}`, 'PATCH', {
+      check_out: now.toISOString(),
+      work_hours: +regularHrs.toFixed(2),
+      ot_hours: +otHrs.toFixed(2),
+    });
+    showToast('✅ บันทึกออกงานแล้ว ' + now.toLocaleTimeString('th-TH'));
+    renderCheckin();
+  } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message); }
+  finally { _checkingOut = false; }
+}
+
+async function loadMonthSummary() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const records = await sb(`att_records?employee_id=eq.${currentUser.employeeId}&date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=*`);
+  const present = new Set(records.filter(r => r.check_in).map(r => r.date)).size;
+  const totalHrs = records.reduce((s,r) => s + (r.work_hours||0), 0);
+  const otHrs = records.reduce((s,r) => s + (r.ot_hours||0), 0);
+  const el = document.getElementById('monthSummary');
+  if (el) el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:800;color:var(--navy);">${present}</div>
+        <div style="font-size:11px;color:var(--gray);">วันเข้างาน</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:800;color:var(--green);">${totalHrs.toFixed(0)}</div>
+        <div style="font-size:11px;color:var(--gray);">ชั่วโมงทำงาน</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:800;color:var(--orange);">${otHrs.toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--gray);">ชั่วโมง OT</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:800;color:var(--blue);">${(totalHrs/8).toFixed(0)}</div>
+        <div style="font-size:11px;color:var(--gray);">วันทำงาน (คิด)</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadLeaveBalance() {
+  const now = new Date();
+  const [leaves, empData] = await Promise.all([
+    sb(`att_leaves?employee_id=eq.${currentUser.employeeId}&select=*`),
+    sb(`att_employees?id=eq.${currentUser.employeeId}&select=leave_quota`),
+  ]);
+  const approved = leaves.filter(l => l.status === 'approved');
+
+  function countDays(list) {
+    return list.reduce((sum, l) => {
+      const s = new Date(l.date_start);
+      const e = new Date(l.date_end || l.date_start);
+      return sum + Math.max(1, Math.round((e - s) / 86400000) + 1);
+    }, 0);
+  }
+
+  const sickDays = countDays(approved.filter(l => l.leave_type === 'sick'));
+  const personalDays = countDays(approved.filter(l => l.leave_type === 'personal'));
+  const vacationDays = countDays(approved.filter(l => l.leave_type === 'vacation'));
+
+  const q = empData && empData[0]?.leave_quota || {};
+  const QUOTA = { sick: q.sick ?? 30, personal: q.personal ?? 3, vacation: q.vacation ?? 6 };
+
+  const el = document.getElementById('leaveBalance');
+  if (el) el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🤒 ลาป่วย</span>
+        <span style="font-weight:700;${sickDays>=QUOTA.sick?'color:var(--red);':''}">${sickDays}/${QUOTA.sick} วัน</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🏠 ลากิจ</span>
+        <span style="font-weight:700;${personalDays>=QUOTA.personal?'color:var(--red);':''}">${personalDays}/${QUOTA.personal} วัน</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span>✈️ ลาพักร้อน</span>
+        <span style="font-weight:700;${vacationDays>=QUOTA.vacation?'color:var(--red);':''}">${vacationDays}/${QUOTA.vacation} วัน</span>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+        <span>⏳ รออนุมัติ</span>
+        <span style="font-weight:700;color:var(--orange);">${leaves.filter(l=>l.status==='pending').length} รายการ</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─── MY RECORDS ───
+async function renderMyRecords() {
+  const records = await sb(`att_records?employee_id=eq.${currentUser.employeeId}&order=date.desc&limit=30&select=*`);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 ประวัติการเข้างาน (30 วันล่าสุด)</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>วันที่</th><th>เข้างาน</th><th>ออกงาน</th><th>ชั่วโมง</th><th>OT</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            ${records.length ? records.map(r => `
+              <tr>
+                <td style="font-weight:600;">${fmtDate(r.date)}</td>
+                <td style="color:var(--green);font-weight:600;">${r.check_in ? fmtTime(r.check_in) : '—'}</td>
+                <td style="color:var(--red);font-weight:600;">${r.check_out ? fmtTime(r.check_out) : '—'}</td>
+                <td>${r.work_hours ? r.work_hours.toFixed(1)+' ชม.' : '—'}</td>
+                <td>${r.ot_hours > 0 ? '<span style="color:var(--orange);font-weight:700;">+'+r.ot_hours.toFixed(1)+'</span>' : '—'}</td>
+                <td>${statusBadge(r.status)}</td>
+              </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:24px;">ยังไม่มีข้อมูล</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── LEAVE ───
+async function renderLeave() {
+  const leaves = await sb(`att_leaves?employee_id=eq.${currentUser.employeeId}&order=created_at.desc&select=*`);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📝 ประวัติใบลา</div>
+        <button class="btn btn-primary" onclick="openLeaveModal()">+ ยื่นใบลา</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ประเภท</th><th>วันที่</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+          <tbody>
+            ${leaves.length ? leaves.map(l => {
+              const s = new Date(l.date_start);
+              const e = new Date(l.date_end || l.date_start);
+              const days = l.leave_days || Math.max(1, Math.round((e - s) / 86400000) + 1);
+              return `
+              <tr>
+                <td>${leaveTypeLabel(l.leave_type)}</td>
+                <td>${fmtDate(l.date_start)}${l.date_end !== l.date_start ? ' — '+fmtDate(l.date_end) : ''}</td>
+                <td style="text-align:center;font-weight:700;">${days} วัน</td>
+                <td style="color:var(--gray);">${l.reason||'—'}</td>
+                <td>${leaveStatusBadge(l.status)}</td>
+                <td>${l.status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="cancelLeave('${l.id}')" style="color:var(--red);border-color:var(--red);">↩️ ยกเลิก</button>` : '—'}</td>
+              </tr>`;
+            }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:24px;">ยังไม่มีประวัติใบลา</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── DASHBOARD (HR) ───
+async function renderDashboard() {
+  const today = todayStr();
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+
+  const [todayRecs, monthRecs, pendingLeaves, employees, branches] = await Promise.all([
+    sb(`att_records?date=eq.${today}&select=*`),
+    sb(`att_records?date=gte.${y}-${m}-01&select=*`),
+    sb(`att_leaves?status=eq.pending&select=*`),
+    sb(`att_employees?select=*`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]),
+  ]);
+
+  const selBranch = document.getElementById('dashBranchFilter')?.value || '';
+
+  const filterRecs = r => !selBranch || r.branch === selBranch;
+  const filterEmp  = e => !selBranch || e.branch === selBranch;
+
+  const filteredToday = todayRecs.filter(filterRecs);
+  const filteredEmps  = employees.filter(filterEmp);
+  const totalEmp   = filteredEmps.length;
+  // Bug #4/#5 fix: นับจากจำนวน "คน" ไม่ใช่จำนวน "record" เพื่อรองรับ multi-shift
+  const uniqueEmpIds = new Set(filteredToday.map(r => r.employee_id));
+  const activeEmpIds = new Set(filteredToday.filter(r => r.check_in && !r.check_out).map(r => r.employee_id));
+  const doneEmpIds = new Set(filteredToday.filter(r => r.check_out).map(r => r.employee_id));
+  const checkedIn  = activeEmpIds.size;
+  const checkedOut = doneEmpIds.size - activeEmpIds.size; // คนที่ออกงานหมดแล้ว
+  const absent     = Math.max(totalEmp - uniqueEmpIds.size, 0);
+  const monthOT    = monthRecs.filter(filterRecs).reduce((s,r) => s + (r.ot_hours||0), 0);
+
+  const branchOpts = `<option value="">ทุกสาขา</option>` +
+    branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  const branchSummary = {};
+  employees.forEach(e => { if (e.branch) branchSummary[e.branch] = (branchSummary[e.branch]||{total:0,checked:0}), branchSummary[e.branch].total++; });
+  todayRecs.forEach(r => { if (r.branch && branchSummary[r.branch]) branchSummary[r.branch].checked++; });
+
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--gray);font-weight:600;">🏪 กรองตามสาขา:</div>
+      <select id="dashBranchFilter" onchange="renderDashboard()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;min-width:180px;">
+        ${branchOpts}
+      </select>
+      ${selBranch ? `<span class="badge badge-blue">${selBranch}</span>` : ''}
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">เข้างานแล้ว</div>
+        <div class="stat-value">${checkedIn + checkedOut}</div>
+        <div class="stat-sub">จาก ${totalEmp} คน วันนี้</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">❌</div>
+        <div class="stat-label">ขาดงาน/ยังไม่เข้า</div>
+        <div class="stat-value">${absent}</div>
+        <div class="stat-sub">คน วันนี้</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">📝</div>
+        <div class="stat-label">ใบลารออนุมัติ</div>
+        <div class="stat-value">${pendingLeaves.length}</div>
+        <div class="stat-sub">รายการ</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-label">OT เดือนนี้</div>
+        <div class="stat-value">${monthOT.toFixed(0)}</div>
+        <div class="stat-sub">ชั่วโมง${selBranch?' ('+selBranch+')':''}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;" class="dash-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📍 สถานะวันนี้ (${filteredToday.length} คน)</div>
+          <button class="btn btn-outline btn-sm" onclick="goPage('today')">ดูทั้งหมด</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ชื่อ</th><th>สาขา</th><th>เข้า</th><th>ออก</th><th>สถานะ</th></tr></thead>
+            <tbody>
+              ${filteredToday.slice(0,8).map(r => `
+                <tr>
+                  <td style="font-weight:600;">${r.employee_name}</td>
+                  <td><span class="badge badge-blue">${r.branch||'—'}</span></td>
+                  <td style="color:var(--green);font-weight:600;">${fmtTime(r.check_in)}</td>
+                  <td style="color:var(--red);">${r.check_out ? fmtTime(r.check_out) : '—'}</td>
+                  <td>${r.check_out ? '<span class="badge badge-gray">เลิกงาน</span>' : '<span class="badge badge-green">กำลังทำงาน</span>'}</td>
+                </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px;">ยังไม่มีใครเข้างาน</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏪 พนักงานตามสาขา</div></div>
+        ${Object.entries(branchSummary).map(([branch, data]) => {
+          const pct = data.total > 0 ? Math.round(data.checked/data.total*100) : 0;
+          return `
+            <div style="margin-bottom:14px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:13px;font-weight:600;">${branch}</span>
+                <span style="font-size:12px;color:var(--gray);">${data.checked}/${data.total} คน</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct>80?'var(--green)':pct>50?'var(--orange)':'var(--red)'};"></div></div>
+            </div>`;
+        }).join('') || '<div style="color:var(--gray);font-size:13px;">ยังไม่มีข้อมูลสาขา</div>'}
+      </div>
+    </div>
+
+    ${pendingLeaves.length > 0 ? `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📝 ใบลารออนุมัติ (${pendingLeaves.length})</div>
+        <button class="btn btn-outline btn-sm" onclick="goPage('leaves')">ดูทั้งหมด</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>ประเภท</th><th>วันที่</th><th>เหตุผล</th><th>จัดการ</th></tr></thead>
+          <tbody>
+            ${pendingLeaves.slice(0,5).map(l => `
+              <tr>
+                <td style="font-weight:600;">${l.employee_name}</td>
+                <td>${leaveTypeLabel(l.leave_type)}</td>
+                <td>${fmtDate(l.date_start)}</td>
+                <td style="color:var(--gray);">${l.reason||'—'}</td>
+                <td>
+                  <button class="btn btn-green btn-sm" onclick="approveLeave('${l.id}')">✅ อนุมัติ</button>
+                  <button class="btn btn-red btn-sm" onclick="rejectLeave('${l.id}')">❌ ไม่อนุมัติ</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ─── TODAY (HR) ───
+async function renderToday() {
+  const today = todayStr();
+  const [recs, employees, branches] = await Promise.all([
+    sb(`att_records?date=eq.${today}&order=check_in.asc&select=*`),
+    sb(`att_employees?select=*`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]),
+  ]);
+  const empMap = {};
+  employees.forEach(e => empMap[e.id] = e);
+  const selBranch = document.getElementById('todayBranchFilter')?.value || '';
+  const filteredRecs = selBranch ? recs.filter(r => r.branch === selBranch) : recs;
+  const filteredEmps = selBranch ? employees.filter(e => e.branch === selBranch) : employees;
+  const checkedIds = new Set(filteredRecs.map(r => r.employee_id));
+  const absent = filteredEmps.filter(e => !checkedIds.has(e.id));
+  const branchOpts = `<option value="">ทุกสาขา</option>` + branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--gray);font-weight:600;">🏪 กรองตามสาขา:</div>
+      <select id="todayBranchFilter" onchange="renderToday()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;min-width:180px;">${branchOpts}</select>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-title">✅ เข้างานแล้ว (${filteredRecs.length} คน)</div>
+        <input type="text" placeholder="🔍 ค้นหา..." oninput="filterTable(this,'rec-tbody')" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>ตำแหน่ง</th><th>เข้างาน</th><th>ออกงาน</th><th>ชั่วโมง</th><th>OT</th></tr></thead>
+          <tbody id="rec-tbody">
+            ${filteredRecs.map(r => `
+              <tr>
+                <td style="font-weight:700;">${r.employee_name}</td>
+                <td><span class="badge badge-blue">${r.branch||'—'}</span></td>
+                <td style="color:var(--gray);">${empMap[r.employee_id]?.position||'—'}</td>
+                <td style="color:var(--green);font-weight:700;">${fmtTime(r.check_in)}</td>
+                <td style="color:var(--red);">${r.check_out ? fmtTime(r.check_out) : '<span style="color:var(--orange);">ยังไม่ออก</span>'}</td>
+                <td>${r.work_hours ? r.work_hours.toFixed(1)+' ชม.' : '—'}</td>
+                <td>${r.ot_hours > 0 ? '<span style="color:var(--orange);font-weight:700;">+'+r.ot_hours.toFixed(1)+'</span>' : '—'}</td>
+              </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px;">ยังไม่มีใครเข้างาน</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${absent.length > 0 ? `
+    <div class="card">
+      <div class="card-header"><div class="card-title">❌ ยังไม่เข้างาน (${absent.length} คน)</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>ตำแหน่ง</th></tr></thead>
+          <tbody>
+            ${absent.map(e => `
+              <tr>
+                <td style="font-weight:700;color:var(--red);">${e.name}</td>
+                <td><span class="badge badge-gray">${e.branch||'—'}</span></td>
+                <td style="color:var(--gray);">${e.position||'—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ─── RECORDS (HR) ───
+async function renderRecords() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const records = await sb(`att_records?date=gte.${y}-${m}-01&order=date.desc,check_in.desc&select=*`);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 บันทึกเวลา — ${monthName(now.getMonth())} ${y}</div>
+        <input type="text" placeholder="🔍 ค้นหาชื่อ..." oninput="filterTable(this,'records-tbody')" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>วันที่</th><th>ชื่อ</th><th>สาขา</th><th>เข้างาน</th><th>ออกงาน</th><th>ชั่วโมง</th><th>OT</th><th>สถานะ</th></tr></thead>
+          <tbody id="records-tbody">
+            ${records.map(r => `
+              <tr>
+                <td style="font-weight:600;">${fmtDate(r.date)}</td>
+                <td style="font-weight:700;">${r.employee_name}</td>
+                <td><span class="badge badge-blue">${r.branch||'—'}</span></td>
+                <td style="color:var(--green);font-weight:600;">${fmtTime(r.check_in)}</td>
+                <td style="color:var(--red);">${r.check_out ? fmtTime(r.check_out) : '—'}</td>
+                <td>${r.work_hours ? r.work_hours.toFixed(1)+' ชม.' : '—'}</td>
+                <td>${r.ot_hours > 0 ? '<span style="color:var(--orange);font-weight:700;">+'+r.ot_hours.toFixed(1)+'</span>' : '—'}</td>
+                <td>${statusBadge(r.status)}</td>
+              </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:24px;">ไม่มีข้อมูล</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── LEAVES (HR) ───
+async function renderLeaves() {
+  const leaves = await sb(`att_leaves?order=created_at.desc&select=*`);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">📝 ใบลาทั้งหมด (${leaves.length} รายการ)</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>ประเภท</th><th>วันที่</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+          <tbody>
+            ${leaves.map(l => {
+              const s = new Date(l.date_start);
+              const e = new Date(l.date_end || l.date_start);
+              const days = l.leave_days || Math.max(1, Math.round((e - s) / 86400000) + 1);
+              return `
+              <tr>
+                <td style="font-weight:700;">${l.employee_name}</td>
+                <td><span class="badge badge-blue">${l.branch||'—'}</span></td>
+                <td>${leaveTypeLabel(l.leave_type)}</td>
+                <td>${fmtDate(l.date_start)}${l.date_end !== l.date_start ? ' — '+fmtDate(l.date_end) : ''}</td>
+                <td style="text-align:center;font-weight:700;">${days} วัน</td>
+                <td style="color:var(--gray);">${l.reason||'—'}</td>
+                <td>${leaveStatusBadge(l.status)}</td>
+                <td>
+                  ${l.status === 'pending' ? `
+                    <button class="btn btn-green btn-sm" onclick="approveLeave('${l.id}')">✅</button>
+                    <button class="btn btn-red btn-sm" onclick="rejectLeave('${l.id}')">❌</button>
+                  ` : '—'}
+                </td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:24px;">ไม่มีข้อมูล</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function approveLeave(id) {
+  if (!confirm('อนุมัติใบลานี้?')) return;
+  await sb(`att_leaves?id=eq.${id}`, 'PATCH', { status: 'approved', approved_at: new Date().toISOString() });
+  showToast('✅ อนุมัติใบลาแล้ว');
+  const activeNav = document.querySelector('.nav-item.active');
+  const page = activeNav ? activeNav.id.replace('nav-','') : 'leaves';
+  goPage(page);
+}
+async function rejectLeave(id) {
+  const reason = prompt('เหตุผลที่ไม่อนุมัติ (ถ้ามี):') || '';
+  await sb(`att_leaves?id=eq.${id}`, 'PATCH', { status: 'rejected', reject_reason: reason });
+  showToast('❌ ไม่อนุมัติใบลา');
+  const activeNav = document.querySelector('.nav-item.active');
+  const page = activeNav ? activeNav.id.replace('nav-','') : 'leaves';
+  goPage(page);
+}
+async function cancelLeave(id) {
+  if (!confirm('ยกเลิกใบลานี้?')) return;
+  await sb(`att_leaves?id=eq.${id}`, 'DELETE');
+  showToast('↩️ ยกเลิกใบลาแล้ว');
+  renderLeave();
+}
+
+// ─── LEAVE SUMMARY (HR) — สรุปวันลาพนักงานทุกคน ───
+let _leaveSummaryDetail = null; // เก็บ emp id ที่กำลังดูประวัติ
+
+async function renderLeaveSummary() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+
+  const [employees, allLeaves, monthRecs, branches, holidays] = await Promise.all([
+    sb(`att_employees?order=branch.asc,name.asc&select=id,name,branch,position,leave_quota,work_shifts,start_date,weekly_off,leave_manual_adj`),
+    sb(`att_leaves?status=eq.approved&select=employee_id,leave_type,date_start,date_end`),
+    sb(`att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=employee_id,date,check_in,status`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=name`).catch(()=>[]),
+    sb(`att_holidays?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=date`).catch(()=>[]),
+  ]);
+  const holidayDatesSet = new Set((holidays||[]).map(h => h.date));
+
+  const selBranch = document.getElementById('leaveSumBranchFilter')?.value || '';
+  const filteredEmps = selBranch ? employees.filter(e => e.branch === selBranch) : employees;
+  const branchOpts = `<option value="">ทุกสาขา</option>` + branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  // รายชื่อวันทำการในเดือนนี้ (จากวันที่มีคนเข้างาน)
+  const allWorkDates = [...new Set(monthRecs.map(r => r.date))].sort();
+  const workdays = allWorkDates.length;
+
+  function countDays(list) {
+    return list.reduce((sum, l) => {
+      const s = new Date(l.date_start);
+      const e = new Date(l.date_end || l.date_start);
+      return sum + Math.max(1, Math.round((e - s) / 86400000) + 1);
+    }, 0);
+  }
+
+  // สร้างข้อมูลสรุปแต่ละคน
+  const rows = filteredEmps.map(emp => {
+    const q = emp.leave_quota || {};
+    const quota = { sick: q.sick ?? 30, personal: q.personal ?? 3, vacation: q.vacation ?? 6 };
+    const empLeaves = allLeaves.filter(l => l.employee_id === emp.id);
+    const used = {
+      sick: countDays(empLeaves.filter(l => l.leave_type === 'sick')),
+      personal: countDays(empLeaves.filter(l => l.leave_type === 'personal')),
+      vacation: countDays(empLeaves.filter(l => l.leave_type === 'vacation')),
+    };
+    const remain = {
+      sick: quota.sick - used.sick,
+      personal: quota.personal - used.personal,
+      vacation: quota.vacation - used.vacation,
+    };
+    const totalUsed = used.sick + used.personal + used.vacation;
+
+    // นับวันเข้างาน (unique วัน) และมาสาย จาก att_records เดือนนี้
+    const empRecs = monthRecs.filter(r => r.employee_id === emp.id);
+    const daysWorked = new Set(empRecs.map(r => r.date)).size;
+
+    // นับขาดเฉพาะวันทำการหลังจากวันเริ่มงาน — ไม่นับวันหยุดประจำสัปดาห์และนักขัตฤกษ์
+    const startDate = emp.start_date || null;
+    const weeklyOff = emp.weekly_off || [];
+    const relevantWorkDates = allWorkDates
+      .filter(d => !startDate || d >= startDate)
+      .filter(d => {
+        const dow = new Date(d + 'T00:00:00').getDay(); // 0=อาทิตย์, 6=เสาร์
+        return !weeklyOff.includes(dow); // ไม่ใช่วันหยุดประจำสัปดาห์
+      })
+      .filter(d => !holidayDatesSet.has(d)); // ไม่ใช่วันหยุดนักขัตฤกษ์
+    const empWorkedDates = new Set(empRecs.map(r => r.date));
+    const absentDays = relevantWorkDates.filter(d => !empWorkedDates.has(d)).length;
+
+    // คิดว่า "สาย" = เช็คอินหลังเวลาเริ่มงานของ shift แรก + 15 นาที
+    const shifts = emp.work_shifts || [];
+    const shiftStart = shifts.length > 0 ? shifts[0].start : '08:00';
+    const [sh, sm] = shiftStart.split(':').map(Number);
+    let lateDays = 0;
+    const datesSeen = new Set();
+    empRecs.forEach(r => {
+      if (datesSeen.has(r.date)) return; // นับแค่ record แรกของวัน
+      datesSeen.add(r.date);
+      if (r.check_in) {
+        const ci = new Date(r.check_in);
+        const ciMin = ci.getHours() * 60 + ci.getMinutes();
+        const limitMin = sh * 60 + sm + 15; // +15 นาทีถือว่าสาย
+        if (ciMin > limitMin) lateDays++;
+      }
+    });
+
+    return { emp, quota, used, remain, totalUsed, daysWorked, absentDays, lateDays };
+  });
+
+  // สรุปรวม
+  const totalEmps = rows.length;
+  const overQuota = rows.filter(r => r.remain.sick < 0 || r.remain.personal < 0 || r.remain.vacation < 0).length;
+  const totalLate = rows.filter(r => r.lateDays > 0).length;
+  const totalAbsent = rows.filter(r => r.absentDays >= 3).length;
+
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--gray);font-weight:600;">🏪 กรองตามสาขา:</div>
+      <select id="leaveSumBranchFilter" onchange="renderLeaveSummary()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;min-width:180px;">${branchOpts}</select>
+      <span class="badge badge-gray">📅 ข้อมูลเดือน ${monthName(now.getMonth())} ${y} (${workdays} วันทำการ)</span>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">พนักงาน</div>
+        <div class="stat-value">${totalEmps}</div>
+        <div class="stat-sub">คน${selBranch?' ('+selBranch+')':''}</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">❌</div>
+        <div class="stat-label">ขาดงาน ≥3 วัน</div>
+        <div class="stat-value">${totalAbsent}</div>
+        <div class="stat-sub">คน เดือนนี้</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-label">มีสายเดือนนี้</div>
+        <div class="stat-value">${totalLate}</div>
+        <div class="stat-sub">คน</div>
+      </div>
+      <div class="stat-card" style="border-top-color:var(--navy);">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-label">เกินโควตาลา</div>
+        <div class="stat-value">${overQuota}</div>
+        <div class="stat-sub">คน</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 สรุปวันลา ขาด สาย (${totalEmps} คน)</div>
+        <input type="text" placeholder="🔍 ค้นหาชื่อ..." oninput="filterTable(this,'leave-sum-tbody')" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ชื่อ</th><th>สาขา</th>
+              <th style="text-align:center;">🤒 ป่วย</th>
+              <th style="text-align:center;">🏠 กิจ</th>
+              <th style="text-align:center;">✈️ พักร้อน</th>
+              <th style="text-align:center;">รวมลา</th>
+              <th style="text-align:center;">❌ ขาด</th>
+              <th style="text-align:center;">⏰ สาย</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="leave-sum-tbody">
+            ${rows.map(r => {
+              const adj = r.emp.leave_manual_adj || {};
+              const sickTotal = r.used.sick + (adj.sick||0);
+              const persTotal = r.used.personal + (adj.personal||0);
+              const vacTotal = r.used.vacation + (adj.vacation||0);
+              const absentTotal = r.absentDays + (adj.absent||0);
+              const lateTotal = r.lateDays + (adj.late||0);
+              const totalUsedAdj = sickTotal + persTotal + vacTotal;
+              const remainSick = r.quota.sick - sickTotal;
+              const remainPers = r.quota.personal - persTotal;
+              const remainVac = r.quota.vacation - vacTotal;
+              const warnSick = remainSick <= 3 && remainSick > 0 ? 'color:var(--orange);' : remainSick <= 0 ? 'color:var(--red);' : '';
+              const warnPers = remainPers <= 1 && remainPers > 0 ? 'color:var(--orange);' : remainPers <= 0 ? 'color:var(--red);' : '';
+              const warnVac = remainVac <= 1 && remainVac > 0 ? 'color:var(--orange);' : remainVac <= 0 ? 'color:var(--red);' : '';
+              const hasAdj = (adj.sick||0)+(adj.personal||0)+(adj.vacation||0)+(adj.absent||0)+(adj.late||0) > 0;
+              return `
+              <tr>
+                <td style="font-weight:700;">${r.emp.name}${hasAdj?'<span style="font-size:9px;color:var(--orange);margin-left:4px;">📝</span>':''}</td>
+                <td><span class="badge badge-blue">${r.emp.branch||'—'}</span></td>
+                <td style="text-align:center;"><span style="font-weight:700;${warnSick}">${sickTotal}</span><span style="color:var(--gray);font-size:11px;">/${r.quota.sick}</span></td>
+                <td style="text-align:center;"><span style="font-weight:700;${warnPers}">${persTotal}</span><span style="color:var(--gray);font-size:11px;">/${r.quota.personal}</span></td>
+                <td style="text-align:center;"><span style="font-weight:700;${warnVac}">${vacTotal}</span><span style="color:var(--gray);font-size:11px;">/${r.quota.vacation}</span></td>
+                <td style="text-align:center;font-weight:800;color:var(--navy);">${totalUsedAdj}</td>
+                <td style="text-align:center;font-weight:700;${absentTotal>=3?'color:var(--red);':'color:var(--gray);'}">${absentTotal}</td>
+                <td style="text-align:center;font-weight:700;${lateTotal>=3?'color:var(--red);':lateTotal>0?'color:var(--orange);':'color:var(--gray);'}">${lateTotal}</td>
+                <td style="white-space:nowrap;">
+                  <button class="btn btn-outline btn-sm" onclick="showLeaveDetail('${r.emp.id}','${r.emp.name.replace(/'/g,"\\'")}')">📋 ดู</button>
+                  <button class="btn btn-outline btn-sm" onclick="editLeaveAdj('${r.emp.id}','${r.emp.name.replace(/'/g,"\\'")}')">✏️</button>
+                </td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px;">ไม่มีข้อมูล</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--gray);">
+        ลา: ใช้ไปแล้ว/โควตา &nbsp; | &nbsp; ขาด: วันที่ไม่มา (เดือนนี้) &nbsp; | &nbsp; สาย: เข้างานหลังเวลา 15 นาที (เดือนนี้) &nbsp; | &nbsp;
+        <span style="color:var(--orange);">สีส้ม</span> = ใกล้หมด/มีสาย &nbsp;
+        <span style="color:var(--red);">สีแดง</span> = หมดโควตา/ขาดมาก/สายมาก &nbsp; | &nbsp;
+        📝 = มีการปรับข้อมูลย้อนหลัง (กดปุ่ม ✏️ แก้ไขได้)
+      </div>
+    </div>
+
+    <div id="leaveDetailPanel"></div>
+  `;
+}
+
+async function showLeaveDetail(empId, empName) {
+  const leaves = await sb(`att_leaves?employee_id=eq.${empId}&order=created_at.desc&select=*`);
+  const panel = document.getElementById('leaveDetailPanel');
+
+  function ld(l) {
+    const s = new Date(l.date_start);
+    const e = new Date(l.date_end || l.date_start);
+    const days = l.leave_days || Math.max(1, Math.round((e - s) / 86400000) + 1);
+    const typeLabel = { sick: '🤒 ลาป่วย', personal: '🏠 ลากิจ', vacation: '✈️ ลาพักร้อน' }[l.leave_type] || l.leave_type;
+    const statusMap = { pending: ['badge-orange','รออนุมัติ'], approved: ['badge-green','อนุมัติ'], rejected: ['badge-red','ไม่อนุมัติ'] };
+    const [cls, label] = statusMap[l.status] || ['badge-gray', l.status];
+    return `<tr>
+      <td>${typeLabel}</td>
+      <td>${fmtDate(l.date_start)}${l.date_end !== l.date_start ? ' — '+fmtDate(l.date_end) : ''}</td>
+      <td style="text-align:center;font-weight:700;">${days} วัน</td>
+      <td style="color:var(--gray);font-size:12px;">${l.reason||'—'}</td>
+      <td><span class="badge ${cls}">${label}</span></td>
+      <td style="font-size:11px;color:var(--gray);">${l.reject_reason||''}</td>
+    </tr>`;
+  }
+
+  panel.innerHTML = `
+    <div class="card" style="margin-top:20px;border-top:4px solid var(--navy);">
+      <div class="card-header">
+        <div class="card-title">📋 ประวัติใบลา — ${empName} (${leaves.length} รายการ)</div>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('leaveDetailPanel').innerHTML=''">✕ ปิด</button>
+      </div>
+      ${leaves.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ประเภท</th><th>วันที่</th><th>จำนวน</th><th>เหตุผล</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>${leaves.map(ld).join('')}</tbody>
+        </table>
+      </div>` : '<div style="text-align:center;color:var(--gray);padding:24px;">ยังไม่มีประวัติใบลา</div>'}
+    </div>
+  `;
+
+  // เลื่อนลงไปดู
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const HR_EDIT_PIN = 'hr1234'; // รหัส HR สำหรับแก้ไขข้อมูลย้อนหลัง
+
+async function editLeaveAdj(empId, empName) {
+  const pin = prompt('🔐 ใส่รหัส HR เพื่อแก้ไขข้อมูลย้อนหลัง:');
+  if (pin !== HR_EDIT_PIN) { if (pin !== null) showToast('❌ รหัสไม่ถูกต้อง'); return; }
+
+  const empData = await sb(`att_employees?id=eq.${empId}&select=leave_manual_adj`);
+  const adj = empData && empData[0]?.leave_manual_adj || {};
+
+  const panel = document.getElementById('leaveDetailPanel');
+  panel.innerHTML = `
+    <div class="card" style="margin-top:20px;border-top:4px solid var(--orange);">
+      <div class="card-header">
+        <div class="card-title">✏️ ปรับข้อมูลย้อนหลัง — ${empName}</div>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('leaveDetailPanel').innerHTML=''">✕ ปิด</button>
+      </div>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:16px;">
+        ใส่จำนวนวันที่ต้องการ <strong>เพิ่มเติม</strong> จากที่ระบบนับได้ (ข้อมูลก่อนเริ่มใช้แอป)
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">🤒 ลาป่วย (วัน)</label>
+          <input type="number" id="adjSick" value="${adj.sick||0}" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">🏠 ลากิจ (วัน)</label>
+          <input type="number" id="adjPersonal" value="${adj.personal||0}" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">✈️ ลาพักร้อน (วัน)</label>
+          <input type="number" id="adjVacation" value="${adj.vacation||0}" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">❌ ขาดงาน (วัน)</label>
+          <input type="number" id="adjAbsent" value="${adj.absent||0}" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px;">⏰ มาสาย (วัน)</label>
+          <input type="number" id="adjLate" value="${adj.late||0}" min="0" class="form-control" style="text-align:center;">
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="saveLeaveAdj('${empId}')">💾 บันทึก</button>
+        <button class="btn btn-outline" onclick="document.getElementById('leaveDetailPanel').innerHTML=''">ยกเลิก</button>
+      </div>
+    </div>
+  `;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function saveLeaveAdj(empId) {
+  const adj = {
+    sick: +document.getElementById('adjSick').value || 0,
+    personal: +document.getElementById('adjPersonal').value || 0,
+    vacation: +document.getElementById('adjVacation').value || 0,
+    absent: +document.getElementById('adjAbsent').value || 0,
+    late: +document.getElementById('adjLate').value || 0,
+  };
+  await sb(`att_employees?id=eq.${empId}`, 'PATCH', { leave_manual_adj: adj });
+  showToast('✅ บันทึกข้อมูลย้อนหลังแล้ว');
+  document.getElementById('leaveDetailPanel').innerHTML = '';
+  renderLeaveSummary();
+}
+
+// ─── EMPLOYEES (HR) ───
+async function renderEmployees() {
+  const emps = await sb(`att_employees?order=branch.asc,name.asc&select=*`);
+  // โหลด branches จาก tb_branches
+  const branches = await sb(`tb_branches?select=*`).catch(() => []);
+
+  // อัปเดต dropdown
+  const sel = document.getElementById('empBranch');
+  if (sel) {
+    sel.innerHTML = '<option value="">-- เลือกสาขา --</option>' +
+      branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+  }
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 พนักงานทั้งหมด (${emps.length} คน)</div>
+        <button class="btn btn-primary" onclick="openEmpModal()">+ เพิ่มพนักงาน</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>รหัส</th><th>สาขา</th><th>ตำแหน่ง</th><th>สถานะ</th><th>ช่วงเวลางาน</th><th>เงินเดือน/ค่าแรง</th><th>OT/ชม.</th><th>จัดการ</th></tr></thead>
+          <tbody>
+            ${emps.map(e => {
+              const shifts = e.work_shifts || [];
+              const shiftText = shifts.length ? shifts.map(s=>`${s.start}–${s.end}`).join(', ') : '—';
+              const otDisplay = e.ot_rate_hourly !== null && e.ot_rate_hourly !== undefined ? (e.ot_rate_hourly === 0 ? '<span style="color:var(--red);font-size:11px;">ไม่มี OT</span>' : `฿${e.ot_rate_hourly.toLocaleString()}`) : `<span style="color:var(--gray);font-size:11px;">฿${((e.daily_wage||0)/8*1.5).toFixed(0)}</span>`;
+              return `
+              <tr>
+                <td style="font-weight:700;">${e.name}</td>
+                <td style="color:var(--gray);font-size:12px;">${e.emp_code||'—'}</td>
+                <td><span class="badge badge-blue">${e.branch||'—'}</span></td>
+                <td>${e.position||'—'}</td>
+                <td>${e.emp_type === 'daily' ? '<span class="badge badge-blue">รายวัน</span>' : '<span class="badge badge-green">ประจำ</span>'}${(() => {
+                  const wo = e.weekly_off || [];
+                  const dayNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+                  return wo.length ? '<div style="font-size:10px;color:var(--gray);margin-top:2px;">หยุด: '+wo.map(d=>dayNames[d]).join(', ')+'</div>' : '';
+                })()}</td>
+                <td style="font-size:12px;color:var(--navy);">${shiftText}</td>
+                <td style="font-weight:600;color:var(--green);">฿${(e.daily_wage||0).toLocaleString()}${e.emp_type === 'fulltime' ? '<div style="font-size:10px;color:var(--gray);">/เดือน ('+Math.round((e.daily_wage||0)/26)+'/วัน)</div>' : '<div style="font-size:10px;color:var(--gray);">/วัน</div>'}</td>
+                <td style="font-weight:600;color:var(--orange);">${otDisplay}</td>
+                <td>
+                  <button class="btn btn-outline btn-sm" onclick="openEmpModal('${e.id}')">✏️</button>
+                  <button class="btn btn-red btn-sm" onclick="deleteEmp('${e.id}')">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px;">ยังไม่มีพนักงาน</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── SHIFT ROWS ───
+function updateWageLabel() {
+  const type = document.getElementById('empType').value;
+  const label = document.getElementById('empWageLabel');
+  const hint = document.getElementById('empWageHint');
+  if (type === 'fulltime') {
+    label.textContent = '💰 เงินเดือน (บาท/เดือน)';
+    hint.textContent = 'เช่น 12000 — ค่าแรง/วัน = เงินเดือน ÷ 26';
+    document.getElementById('empWage').placeholder = '12000';
+  } else {
+    label.textContent = '💰 ค่าแรงต่อวัน (บาท)';
+    hint.textContent = 'เช่น 400 — ได้ตามวันที่มาทำงานจริง';
+    document.getElementById('empWage').placeholder = '400';
+  }
+}
+
+function addShiftRow(start='', end='') {
+  const container = document.getElementById('shiftsContainer');
+  const idx = container.children.length;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  div.innerHTML = `
+    <span style="font-size:12px;color:var(--gray);min-width:40px;">รอบ ${idx+1}</span>
+    <input type="time" class="form-control shift-start" value="${start}" style="flex:1;padding:8px 10px;">
+    <span style="color:var(--gray);">–</span>
+    <input type="time" class="form-control shift-end" value="${end}" style="flex:1;padding:8px 10px;">
+    <button type="button" onclick="this.parentElement.remove();renumberShifts()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:4px;">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function renumberShifts() {
+  const rows = document.querySelectorAll('#shiftsContainer > div');
+  rows.forEach((row, i) => { row.querySelector('span').textContent = `รอบ ${i+1}`; });
+}
+
+function getShifts() {
+  const rows = document.querySelectorAll('#shiftsContainer > div');
+  const shifts = [];
+  rows.forEach(row => {
+    const start = row.querySelector('.shift-start').value;
+    const end = row.querySelector('.shift-end').value;
+    if (start && end) shifts.push({ start, end });
+  });
+  return shifts;
+}
+
+async function openEmpModal(id=null) {
+  const branches = await sb(`tb_branches?select=*`).catch(() => []);
+  const sel = document.getElementById('empBranch');
+  sel.innerHTML = '<option value="">-- เลือกสาขา --</option>' +
+    branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+
+  // สร้าง checkbox สาขาเพิ่มเติม
+  document.getElementById('empExtraBranchesWrap').innerHTML = branches.map(b =>
+    `<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;">
+      <input type="checkbox" class="emp-extra-branch" value="${b.name}" style="accent-color:var(--navy);"> ${b.name}
+    </label>`
+  ).join('');
+
+  // ล้าง shifts
+  document.getElementById('shiftsContainer').innerHTML = '';
+
+  document.getElementById('empId').value = id || '';
+  document.getElementById('empModalTitle').textContent = id ? 'แก้ไขพนักงาน' : 'เพิ่มพนักงาน';
+  if (id) {
+    const emp = await sb(`att_employees?id=eq.${id}&select=*`);
+    if (emp && emp[0]) {
+      const e = emp[0];
+      document.getElementById('empName').value = e.name || '';
+      document.getElementById('empCode').value = e.emp_code || '';
+      document.getElementById('empBranch').value = e.branch || '';
+      document.getElementById('empPosition').value = e.position || '';
+      document.getElementById('empType').value = e.emp_type || 'fulltime';
+      updateWageLabel();
+      document.getElementById('empWage').value = e.daily_wage || '';
+      document.getElementById('empOtRate').value = e.ot_rate_hourly !== null && e.ot_rate_hourly !== undefined ? e.ot_rate_hourly : '';
+      document.getElementById('empStartDate').value = e.start_date || '';
+      document.getElementById('empPin').value = e.emp_pin || '';
+      // โหลดรายรับ/หัก
+      document.getElementById('empAllowance').value = e.allowance || '';
+      document.getElementById('empPositionPay').value = e.position_pay || '';
+      document.getElementById('empTravelPay').value = e.travel_pay || '';
+      document.getElementById('empLateDeductRate').value = e.late_deduct_rate || '';
+      // โหลดสาขาเพิ่มเติม + GPS bypass
+      const extraBranches = e.extra_branches || [];
+      document.querySelectorAll('.emp-extra-branch').forEach(cb => { cb.checked = extraBranches.includes(cb.value); });
+      document.getElementById('empGpsBypass').checked = e.gps_bypass || false;
+      // โหลดวันหยุดประจำสัปดาห์
+      const weeklyOff = e.weekly_off || [];
+      document.querySelectorAll('.emp-weekday-off').forEach(cb => {
+        cb.checked = weeklyOff.includes(+cb.value);
+      });
+      // โหลดโควตาวันลา
+      const q = e.leave_quota || {};
+      document.getElementById('empQuotaSick').value = q.sick ?? '';
+      document.getElementById('empQuotaPersonal').value = q.personal ?? '';
+      document.getElementById('empQuotaVacation').value = q.vacation ?? '';
+      // โหลด shifts
+      const shifts = e.work_shifts || [];
+      shifts.forEach(s => addShiftRow(s.start, s.end));
+    }
+  } else {
+    ['empName','empCode','empPosition','empWage','empOtRate','empStartDate','empPin','empQuotaSick','empQuotaPersonal','empQuotaVacation','empAllowance','empPositionPay','empTravelPay','empLateDeductRate'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('empType').value = 'fulltime';
+    updateWageLabel();
+    // วันหยุดเริ่มต้น: เสาร์(6) อาทิตย์(0)
+    document.querySelectorAll('.emp-weekday-off').forEach(cb => {
+      cb.checked = (cb.value === '0' || cb.value === '6');
+    });
+    document.querySelectorAll('.emp-extra-branch').forEach(cb => { cb.checked = false; });
+    document.getElementById('empGpsBypass').checked = false;
+    sel.value = '';
+    // เพิ่ม shift เริ่มต้น 2 รอบ
+    addShiftRow('08:00','12:00');
+    addShiftRow('13:00','17:00');
+  }
+  document.getElementById('empModal').classList.add('show');
+}
+
+async function saveEmployee() {
+  const name = document.getElementById('empName').value.trim();
+  if (!name) return showToast('❌ กรุณาใส่ชื่อ');
+  const id = document.getElementById('empId').value;
+  const shifts = getShifts();
+  const data = {
+    name,
+    emp_code: document.getElementById('empCode').value,
+    branch: document.getElementById('empBranch').value,
+    position: document.getElementById('empPosition').value,
+    emp_type: document.getElementById('empType').value || 'fulltime',
+    daily_wage: +document.getElementById('empWage').value || 0,
+    ot_rate_hourly: document.getElementById('empOtRate').value !== '' ? +document.getElementById('empOtRate').value : null,
+    start_date: document.getElementById('empStartDate').value || null,
+    emp_pin: document.getElementById('empPin').value,
+    allowance: +document.getElementById('empAllowance').value || 0,
+    position_pay: +document.getElementById('empPositionPay').value || 0,
+    travel_pay: +document.getElementById('empTravelPay').value || 0,
+    late_deduct_rate: +document.getElementById('empLateDeductRate').value || 0,
+    weekly_off: [...document.querySelectorAll('.emp-weekday-off:checked')].map(cb => +cb.value),
+    extra_branches: [...document.querySelectorAll('.emp-extra-branch:checked')].map(cb => cb.value),
+    gps_bypass: document.getElementById('empGpsBypass').checked,
+    work_shifts: shifts,
+    leave_quota: {
+      sick: document.getElementById('empQuotaSick').value !== '' ? +document.getElementById('empQuotaSick').value : 30,
+      personal: document.getElementById('empQuotaPersonal').value !== '' ? +document.getElementById('empQuotaPersonal').value : 3,
+      vacation: document.getElementById('empQuotaVacation').value !== '' ? +document.getElementById('empQuotaVacation').value : 6,
+    },
+  };
+  if (id) {
+    await sb(`att_employees?id=eq.${id}`, 'PATCH', data);
+    showToast('✅ แก้ไขข้อมูลแล้ว');
+  } else {
+    data.id = 'emp_' + Date.now();
+    data.created_at = new Date().toISOString();
+    await sb('att_employees', 'POST', data);
+    showToast('✅ เพิ่มพนักงานแล้ว');
+  }
+  closeModal('empModal');
+  renderEmployees();
+}
+
+async function deleteEmp(id) {
+  if (!confirm('ลบพนักงานคนนี้?')) return;
+  await sb(`att_employees?id=eq.${id}`, 'DELETE');
+  showToast('🗑️ ลบแล้ว');
+  renderEmployees();
+}
+
+// ─── REPORT ───
+let _reportMonth = null; // เก็บเดือนที่เลือก
+function loadReportMonth(ym) {
+  _reportMonth = ym;
+  renderReport();
+}
+
+async function renderReport() {
+  const now = new Date();
+  const months = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth()+1, label: `${monthName(d.getMonth())} ${d.getFullYear()}`, val: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` });
+  }
+  const selVal = _reportMonth || months[0].val;
+  const selMonth = months.find(mo => mo.val === selVal) || months[0];
+  const y = selMonth.y, m = String(selMonth.m).padStart(2,'0');
+  const [records, branches] = await Promise.all([
+    sb(`att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=*`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]),
+  ]);
+  const selBranch = document.getElementById('reportBranchFilter')?.value || '';
+  const filtered = selBranch ? records.filter(r => r.branch === selBranch) : records;
+  const branchOpts = `<option value="">ทุกสาขา</option>` + branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  const empSummary = {};
+  filtered.forEach(r => {
+    if (!empSummary[r.employee_id]) empSummary[r.employee_id] = { name: r.employee_name, branch: r.branch, _dates: new Set(), hours: 0, ot: 0 };
+    empSummary[r.employee_id]._dates.add(r.date);
+    empSummary[r.employee_id].hours += r.work_hours || 0;
+    empSummary[r.employee_id].ot += r.ot_hours || 0;
+  });
+  // แปลง Set เป็นจำนวนวัน
+  Object.values(empSummary).forEach(e => { e.days = e._dates.size; delete e._dates; });
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📈 สรุปรายเดือน — ${selMonth.label}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select onchange="loadReportMonth(this.value)" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+            ${months.map(mo => `<option value="${mo.val}" ${mo.val===selVal?'selected':''}>${mo.label}</option>`).join('')}
+          </select>
+          <select id="reportBranchFilter" onchange="renderReport()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">${branchOpts}</select>
+          <button class="btn btn-gold btn-sm" onclick="exportReportExcel('${y}-${m}','${selBranch}')">📥 Export</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="report-table">
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>วันทำงาน</th><th>ชั่วโมงรวม</th><th>OT (ชม.)</th></tr></thead>
+          <tbody>
+            ${Object.values(empSummary).sort((a,b)=>(a.branch||'').localeCompare(b.branch||'')).map(e => `
+              <tr>
+                <td style="font-weight:700;">${e.name}</td>
+                <td><span class="badge badge-blue">${e.branch||'—'}</span></td>
+                <td style="font-weight:700;text-align:center;">${e.days}</td>
+                <td style="color:var(--green);font-weight:700;text-align:center;">${e.hours.toFixed(1)}</td>
+                <td style="color:var(--orange);font-weight:700;text-align:center;">${e.ot.toFixed(1)}</td>
+              </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:24px;">ไม่มีข้อมูล</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── WAGE (PAYROLL) ───
+let _wageOverrides = {}; // { empId: { bonus, otherIncome, tax, otherDeduct } }
+
+async function renderWage() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const [records, employees, branches, holidays] = await Promise.all([
+    sb(`att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=*`),
+    sb(`att_employees?select=*`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]),
+    sb(`att_holidays?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=date`).catch(()=>[]),
+  ]);
+  const empMap = {};
+  employees.forEach(e => empMap[e.id] = e);
+  const holidayDates = new Set(holidays.map(h => h.date));
+  const holidayCountThisMonth = holidayDates.size;
+
+  const selBranch = document.getElementById('wageBranchFilter')?.value || '';
+  const filtered = selBranch ? records.filter(r => r.branch === selBranch) : records;
+  const branchOpts = `<option value="">ทุกสาขา</option>` + branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  // รวมข้อมูลต่อคน
+  const empWage = {};
+  filtered.forEach(r => {
+    const emp = empMap[r.employee_id];
+    if (!emp) return;
+    if (!empWage[r.employee_id]) {
+      empWage[r.employee_id] = {
+        id: r.employee_id, name: r.employee_name, branch: r.branch,
+        _dates: new Set(), hours: 0, ot: 0,
+        wage: emp.daily_wage||0,
+        otRateHourly: emp.ot_rate_hourly !== null && emp.ot_rate_hourly !== undefined ? emp.ot_rate_hourly : null,
+        allowance: emp.allowance||0,
+        positionPay: emp.position_pay||0,
+        travelPay: emp.travel_pay||0,
+        lateDeductRate: emp.late_deduct_rate||0,
+        shifts: emp.work_shifts||[],
+        lateMinutes: 0,
+        empType: emp.emp_type || 'fulltime',
+        weeklyOff: emp.weekly_off || [],
+        startDate: emp.start_date || null,
+      };
+    }
+    empWage[r.employee_id]._dates.add(r.date);
+    empWage[r.employee_id].hours += r.work_hours || 0;
+    empWage[r.employee_id].ot += r.ot_hours || 0;
+  });
+
+  // คำนวณนาทีสาย
+  filtered.forEach(r => {
+    const ew = empWage[r.employee_id];
+    if (!ew) return;
+    if (!ew._datesSeen) ew._datesSeen = new Set();
+    if (ew._datesSeen.has(r.date)) return;
+    ew._datesSeen.add(r.date);
+    if (r.check_in) {
+      const shifts = ew.shifts;
+      const shiftStart = shifts.length > 0 ? shifts[0].start : '08:00';
+      const [sh, sm] = shiftStart.split(':').map(Number);
+      const ci = new Date(r.check_in);
+      const ciMin = ci.getHours() * 60 + ci.getMinutes();
+      const startMin = sh * 60 + sm;
+      if (ciMin > startMin) ew.lateMinutes += (ciMin - startMin);
+    }
+  });
+
+  // นับวันขาดงานของพนักงานประจำ (ไม่นับวันหยุดประจำสัปดาห์ + นักขัตฤกษ์ + ก่อนวันเริ่มงาน)
+  const allWorkDates = [...new Set(filtered.map(r => r.date))].sort();
+  Object.values(empWage).forEach(e => {
+    e.days = e._dates.size;
+    // คำนวณวันขาดสำหรับพนักงานประจำ
+    if (e.empType === 'fulltime') {
+      const workedDates = e._dates;
+      const absentCount = allWorkDates
+        .filter(d => !e.startDate || d >= e.startDate)
+        .filter(d => { const dow = new Date(d+'T00:00:00').getDay(); return !e.weeklyOff.includes(dow); })
+        .filter(d => !holidayDates.has(d))
+        .filter(d => !workedDates.has(d))
+        .length;
+      e.absentDays = absentCount;
+    } else {
+      e.absentDays = 0;
+    }
+    delete e._dates; delete e._datesSeen;
+  });
+
+  // เลือกงวด (period)
+  const selPeriod = document.getElementById('wagePeriodFilter')?.value || 'full';
+
+  // คำนวณ payroll
+  let grandTotal = 0;
+  const rows = Object.values(empWage).map(e => {
+    const ov = _wageOverrides[e.id] || {};
+
+    let regularWage, absentDeduct;
+    if (e.empType === 'fulltime') {
+      // ประจำ: เงินเดือน ÷ 2 (ต่องวด) หรือเต็มเดือน แล้วหักขาด
+      const monthlyWage = e.wage;
+      const dailyRate = monthlyWage / 26;
+      if (selPeriod === 'full') {
+        regularWage = monthlyWage;
+      } else {
+        regularWage = monthlyWage / 2; // ครึ่งเดือน
+      }
+      absentDeduct = e.absentDays * dailyRate;
+    } else {
+      // รายวัน: วัน × ค่าแรง/วัน
+      regularWage = e.days * e.wage;
+      absentDeduct = 0;
+    }
+
+    const dailyRateForOt = e.empType === 'fulltime' ? (e.wage / 26) : e.wage;
+    const otRatePerHr = e.otRateHourly !== null && e.otRateHourly !== undefined ? e.otRateHourly : (dailyRateForOt / 8 * 1.5);
+    const otWage = e.ot * otRatePerHr;
+
+    // รายรับ
+    const allowance = ov.allowance ?? e.allowance;
+    const positionPay = ov.positionPay ?? e.positionPay;
+    const travelPay = ov.travelPay ?? e.travelPay;
+    const bonus = ov.bonus ?? 0;
+    const otherIncome = ov.otherIncome ?? 0;
+    const totalIncome = regularWage + otWage + allowance + positionPay + travelPay + bonus + otherIncome;
+
+    // รายหัก
+    const lateDeduct = e.lateDeductRate > 0 ? e.lateMinutes * e.lateDeductRate : 0;
+    const sso = ov.sso ?? 0;
+    const tax = ov.tax ?? 0;
+    const otherDeduct = ov.otherDeduct ?? 0;
+    const totalDeduct = absentDeduct + lateDeduct + sso + tax + otherDeduct;
+
+    const netPay = totalIncome - totalDeduct;
+    grandTotal += netPay;
+
+    return { ...e, regularWage, absentDeduct, otRatePerHr, otWage, allowance, positionPay, travelPay, bonus, otherIncome, totalIncome, lateDeduct, sso, tax, otherDeduct, totalDeduct, netPay };
+  });
+
+  // เก็บไว้สำหรับปริ้นสลิป
+  window._wageRows = rows;
+  window._wagePeriod = selPeriod;
+  window._wageMonth = monthName(now.getMonth()) + ' ' + y;
+
+  const fmtB = (v) => `฿${Math.round(v).toLocaleString()}`;
+  const inp = (empId, field, val, w='50px') => `<input type="number" value="${val}" onchange="_wageOverrides['${empId}']={..._wageOverrides['${empId}']||{},${field}:+this.value};recalcWage()" style="width:${w};padding:2px 3px;border:1px solid var(--border);border-radius:5px;font-size:11px;text-align:right;font-family:'Sarabun',sans-serif;">`;
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💰 สลิปเงินเดือน — ${monthName(now.getMonth())} ${y}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="wagePeriodFilter" onchange="renderWage()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+            <option value="full" ${selPeriod==='full'?'selected':''}>เต็มเดือน</option>
+            <option value="first" ${selPeriod==='first'?'selected':''}>งวด 1 (1-15)</option>
+            <option value="second" ${selPeriod==='second'?'selected':''}>งวด 2 (16-สิ้นเดือน)</option>
+          </select>
+          <select id="wageBranchFilter" onchange="renderWage()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">${branchOpts}</select>
+          <button class="btn btn-gold btn-sm" onclick="exportWageExcel('${y}-${m}','${selBranch}')">📥 Export</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--orange);margin-bottom:6px;">👉 เลื่อนตารางไปทางขวาเพื่อดูรายหักและสุทธิ →</div>
+      <div class="table-wrap" style="max-height:70vh;">
+        <table id="wage-table" style="font-size:11px;min-width:1200px;">
+          <thead>
+            <tr style="background:#f0f7ff;">
+              <th rowspan="2" style="vertical-align:middle;position:sticky;left:0;z-index:2;background:#f0f7ff;">ชื่อ</th>
+              <th rowspan="2" style="vertical-align:middle;">สาขา</th>
+              <th rowspan="2" style="text-align:center;vertical-align:middle;">สถานะ</th>
+              <th rowspan="2" style="text-align:center;vertical-align:middle;">วัน</th>
+              <th colspan="7" style="text-align:center;background:#d4edda;color:#155724;">รายรับ</th>
+              <th colspan="5" style="text-align:center;background:#f8d7da;color:#721c24;">รายหัก</th>
+              <th rowspan="2" style="text-align:center;vertical-align:middle;background:#e8f0fe;">สุทธิ</th>
+              <th rowspan="2" style="text-align:center;vertical-align:middle;">สลิป</th>
+            </tr>
+            <tr>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">ค่าแรง</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">OT</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">เบี้ยเลี้ยง</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">ตำแหน่ง</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">เดินทาง</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">ค่าเช่ารถ</th>
+              <th style="text-align:right;background:#d4edda;font-size:10px;">อื่นๆ</th>
+              <th style="text-align:right;background:#f8d7da;font-size:10px;">ขาด</th>
+              <th style="text-align:right;background:#f8d7da;font-size:10px;">สาย</th>
+              <th style="text-align:right;background:#f8d7da;font-size:10px;">ประกันสังคม</th>
+              <th style="text-align:right;background:#f8d7da;font-size:10px;">ภาษี</th>
+              <th style="text-align:right;background:#f8d7da;font-size:10px;">อื่นๆ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(e => {
+              const typeLabel = e.empType==='fulltime' ? '<span class="badge badge-green" style="font-size:9px;">ประจำ</span>' : '<span class="badge badge-blue" style="font-size:9px;">รายวัน</span>';
+              const wageTitle = e.empType==='fulltime'
+                ? 'เงินเดือน ฿'+e.wage.toLocaleString()+(selPeriod!=='full'?' ÷ 2 = ฿'+(e.wage/2).toLocaleString():'')
+                : e.days+' วัน × ฿'+e.wage.toLocaleString();
+              const absentTitle = e.empType==='fulltime' ? 'ขาด '+e.absentDays+' วัน × ฿'+Math.round(e.wage/26)+'/วัน' : '';
+              return `
+              <tr>
+                <td style="font-weight:700;white-space:nowrap;position:sticky;left:0;background:white;z-index:1;">${e.name}</td>
+                <td><span class="badge badge-blue" style="font-size:10px;">${e.branch||'—'}</span></td>
+                <td style="text-align:center;">${typeLabel}</td>
+                <td style="text-align:center;font-weight:700;">${e.days}</td>
+                <td style="text-align:right;" title="${wageTitle}">${fmtB(e.regularWage)}</td>
+                <td style="text-align:right;color:var(--orange);" title="OT ${e.ot.toFixed(1)} ชม. × ฿${Math.round(e.otRatePerHr)}/ชม.">${e.otWage>0?fmtB(e.otWage):'—'}</td>
+                <td style="text-align:right;">${inp(e.id,'allowance',e.allowance)}</td>
+                <td style="text-align:right;">${inp(e.id,'positionPay',e.positionPay)}</td>
+                <td style="text-align:right;">${inp(e.id,'travelPay',e.travelPay)}</td>
+                <td style="text-align:right;">${inp(e.id,'bonus',e.bonus)}</td>
+                <td style="text-align:right;">${inp(e.id,'otherIncome',e.otherIncome)}</td>
+                <td style="text-align:right;color:var(--red);" title="${absentTitle}">${e.absentDeduct>0?'-'+fmtB(e.absentDeduct):'—'}</td>
+                <td style="text-align:right;color:var(--red);" title="สาย ${e.lateMinutes} นาที × ฿${e.lateDeductRate}/นาที">${e.lateDeduct>0?'-'+fmtB(e.lateDeduct):'—'}</td>
+                <td style="text-align:right;">${inp(e.id,'sso',e.sso)}</td>
+                <td style="text-align:right;">${inp(e.id,'tax',e.tax)}</td>
+                <td style="text-align:right;">${inp(e.id,'otherDeduct',e.otherDeduct)}</td>
+                <td style="text-align:right;font-weight:800;color:var(--navy);font-size:13px;background:#f8f9ff;">${fmtB(e.netPay)}</td>
+                <td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="generateSlip('${e.id}')" style="font-size:10px;padding:3px 6px;">🖨️</button></td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="18" style="text-align:center;color:var(--gray);padding:24px;">ไม่มีข้อมูล</td></tr>'}
+          </tbody>
+          <tfoot>
+            <tr style="background:var(--navy);color:white;">
+              <td colspan="17" style="padding:12px 14px;font-weight:700;text-align:right;font-size:15px;">รวมเงินเดือนสุทธิ${selBranch?' ('+selBranch+')':''}${selPeriod!=='full'?' ('+({first:'งวด 1',second:'งวด 2'}[selPeriod])+')':''}</td>
+              <td style="padding:12px 14px;font-weight:800;font-size:18px;text-align:right;color:var(--gold);">${fmtB(grandTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--gray);display:flex;flex-wrap:wrap;gap:16px;">
+        <span>💡 ประจำ: เงินเดือน ÷ 2 ต่องวด หักขาด (เงินเดือน÷26 ต่อวัน) | รายวัน: วันทำงาน × ค่าแรง/วัน</span>
+        <span>💡 เบี้ยเลี้ยง/ค่าเช่ารถ/รายรับอื่นๆ/ประกันสังคม/ภาษี/หักอื่นๆ = ใส่เองแต่ละเดือน</span>
+        <span>💡 หักสาย = นาทีสาย × อัตราที่ตั้งในข้อมูลพนักงาน</span>
+      </div>
+    </div>
+  `;
+}
+
+function recalcWage() { renderWage(); }
+
+function generateSlip(empId) {
+  const e = (window._wageRows || []).find(r => r.id === empId);
+  if (!e) return showToast('❌ ไม่พบข้อมูล');
+
+  const period = window._wagePeriod || 'full';
+  const monthLabel = window._wageMonth || '';
+  const periodLabel = period === 'full' ? 'เต็มเดือน' : period === 'first' ? 'งวด 1 (1-15)' : 'งวด 2 (16-สิ้นเดือน)';
+  const fmtB = (v) => `฿${Math.round(v).toLocaleString()}`;
+  const typeLabel = e.empType === 'fulltime' ? 'ประจำ' : 'รายวัน';
+
+  const incomeItems = [
+    ['เงินเดือน/ค่าแรง', e.regularWage],
+    ['ค่าล่วงเวลา (OT)', e.otWage],
+    ['เบี้ยเลี้ยง', e.allowance],
+    ['ค่าตำแหน่ง', e.positionPay],
+    ['ค่าเดินทางเหมา', e.travelPay],
+    ['ค่าเช่ารถ', e.bonus],
+    ['รายรับอื่นๆ', e.otherIncome],
+  ].filter(([,v]) => v > 0);
+
+  const deductItems = [
+    ['หักขาดงาน (' + (e.absentDays||0) + ' วัน)', e.absentDeduct],
+    ['หักสาย (' + (e.lateMinutes||0) + ' นาที)', e.lateDeduct],
+    ['ประกันสังคม', e.sso],
+    ['ภาษีหัก ณ ที่จ่าย', e.tax],
+    ['หักอื่นๆ', e.otherDeduct],
+  ].filter(([,v]) => v > 0);
+
+  const totalIncome = e.totalIncome || 0;
+  const totalDeduct = e.totalDeduct || 0;
+  const netPay = e.netPay || 0;
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>สลิปเงินเดือน - ${e.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Sarabun',sans-serif; background:#f5f5f5; padding:20px; }
+  .slip { background:white; max-width:500px; margin:0 auto; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.1); }
+  .slip-header { background:linear-gradient(135deg,#0f2744,#1a3a5c); color:white; padding:24px; text-align:center; }
+  .slip-header h1 { font-size:18px; font-weight:800; margin-bottom:4px; }
+  .slip-header .sub { font-size:12px; opacity:0.7; }
+  .slip-body { padding:20px; }
+  .slip-info { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; font-size:13px; }
+  .slip-info .label { color:#888; font-size:11px; }
+  .slip-info .value { font-weight:700; color:#0f2744; }
+  .slip-section { margin-bottom:16px; }
+  .slip-section-title { font-size:12px; font-weight:800; color:white; padding:6px 12px; border-radius:8px; margin-bottom:8px; }
+  .income-title { background:#28a745; }
+  .deduct-title { background:#dc3545; }
+  .slip-row { display:flex; justify-content:space-between; padding:4px 12px; font-size:13px; border-bottom:1px dashed #eee; }
+  .slip-row .amt { font-weight:600; }
+  .slip-row.income .amt { color:#28a745; }
+  .slip-row.deduct .amt { color:#dc3545; }
+  .slip-total { background:#0f2744; color:white; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-radius:12px; }
+  .slip-total .label { font-size:14px; font-weight:700; }
+  .slip-total .amount { font-size:24px; font-weight:800; color:#f5c842; }
+  .slip-footer { text-align:center; padding:12px; font-size:10px; color:#aaa; border-top:1px solid #eee; }
+  .no-print { text-align:center; margin:16px; }
+  .no-print button { padding:10px 24px; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Sarabun',sans-serif; margin:0 4px; }
+  .btn-print { background:#0f2744; color:white; }
+  .btn-close { background:#eee; color:#333; }
+  @media print { .no-print { display:none; } body { padding:0; background:white; } .slip { box-shadow:none; } }
+</style>
+</head><body>
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+  <button class="btn-close" onclick="window.close()">✕ ปิด</button>
+</div>
+<div class="slip">
+  <div class="slip-header">
+    <h1>สลิปเงินเดือน</h1>
+    <div class="sub">บริษัท เดอะบิวท์อิน จำกัด</div>
+    <div class="sub">${monthLabel} — ${periodLabel}</div>
+  </div>
+  <div class="slip-body">
+    <div class="slip-info">
+      <div><div class="label">ชื่อพนักงาน</div><div class="value">${e.name}</div></div>
+      <div><div class="label">สาขา</div><div class="value">${e.branch||'—'}</div></div>
+      <div><div class="label">สถานะ</div><div class="value">${typeLabel}</div></div>
+      <div><div class="label">วันทำงาน</div><div class="value">${e.days} วัน</div></div>
+    </div>
+
+    <div class="slip-section">
+      <div class="slip-section-title income-title">รายรับ</div>
+      ${incomeItems.map(([label,amt]) => `<div class="slip-row income"><span>${label}</span><span class="amt">${fmtB(amt)}</span></div>`).join('')}
+      <div class="slip-row" style="font-weight:800;border-top:2px solid #28a745;margin-top:4px;padding-top:6px;">
+        <span>รวมรายรับ</span><span style="color:#28a745;font-weight:800;">${fmtB(totalIncome)}</span>
+      </div>
+    </div>
+
+    ${deductItems.length > 0 ? `
+    <div class="slip-section">
+      <div class="slip-section-title deduct-title">รายหัก</div>
+      ${deductItems.map(([label,amt]) => `<div class="slip-row deduct"><span>${label}</span><span class="amt">-${fmtB(amt)}</span></div>`).join('')}
+      <div class="slip-row" style="font-weight:800;border-top:2px solid #dc3545;margin-top:4px;padding-top:6px;">
+        <span>รวมรายหัก</span><span style="color:#dc3545;font-weight:800;">-${fmtB(totalDeduct)}</span>
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="slip-total">
+      <div class="label">เงินสุทธิ</div>
+      <div class="amount">${fmtB(netPay)}</div>
+    </div>
+  </div>
+  <div class="slip-footer">
+    เอกสารนี้ออกโดยระบบ KPN Attendance — พิมพ์เมื่อ ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}
+  </div>
+</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ─── BRANCHES (HR) ───
+async function renderBranches() {
+  const branches = await sb(`tb_branches?order=name.asc&select=*`).catch(() => []);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🏪 สาขาทั้งหมด (${branches.length} สาขา)</div>
+        <button class="btn btn-primary" onclick="openBranchModal()">+ เพิ่มสาขา</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อสาขา</th><th>รหัส</th><th>PIN สแกนหน้า</th><th>โทรศัพท์</th><th>พนักงาน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+          <tbody id="branch-tbody">
+            ${branches.length ? branches.map(b => `
+              <tr>
+                <td style="font-weight:700;">${b.name}</td>
+                <td style="color:var(--gray);font-size:12px;">${b.code||'—'}</td>
+                <td style="text-align:center;font-family:monospace;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--navy);">${b.branch_pin||'<span style="color:var(--red);font-size:11px;font-family:Sarabun;">ยังไม่ตั้ง</span>'}</td>
+                <td style="font-size:13px;">${b.phone||'—'}</td>
+                <td style="text-align:center;" id="emp-count-${b.id}"><span style="color:var(--gray);font-size:12px;">...</span></td>
+                <td>${b.status === 'inactive'
+                  ? '<span class="badge badge-red">ปิด/ยกเลิก</span>'
+                  : '<span class="badge badge-green">เปิดบริการ</span>'}</td>
+                <td style="white-space:nowrap;">
+                  <button class="btn btn-outline btn-sm" onclick="openBranchModal('${b.id}')">✏️ แก้ไข</button>
+                  ${b.status === 'active'
+                    ? `<button class="btn btn-sm" style="background:#fef3c7;color:#92400e;" onclick="toggleBranchStatus('${b.id}','inactive')">🔴 ปิดสาขา</button>`
+                    : `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="toggleBranchStatus('${b.id}','active')">🟢 เปิดสาขา</button>`}
+                  <button class="btn btn-red btn-sm" onclick="deleteBranch('${b.id}','${b.name}')">🗑️</button>
+                </td>
+              </tr>`).join('')
+            : '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px;">ยังไม่มีข้อมูลสาขา</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:0;">
+      <div style="font-size:12px;color:var(--gray);display:flex;gap:24px;flex-wrap:wrap;">
+        <span>🟢 เปิดบริการ: <strong style="color:var(--green);">${branches.filter(b=>b.status!=='inactive').length}</strong> สาขา</span>
+        <span>🔴 ปิด/ยกเลิก: <strong style="color:var(--red);">${branches.filter(b=>b.status==='inactive').length}</strong> สาขา</span>
+        <span>🏪 ทั้งหมด: <strong>${branches.length}</strong> สาขา</span>
+      </div>
+    </div>
+  `;
+  loadBranchEmpCounts(branches);
+}
+
+async function loadBranchEmpCounts(branches) {
+  const emps = await sb(`att_employees?select=branch`).catch(() => []);
+  const counts = {};
+  emps.forEach(e => { if (e.branch) counts[e.branch] = (counts[e.branch]||0)+1; });
+  branches.forEach(b => {
+    const el = document.getElementById(`emp-count-${b.id}`);
+    if (el) el.innerHTML = `<span style="font-weight:700;color:var(--navy);">${counts[b.name]||0}</span> <span style="font-size:11px;color:var(--gray);">คน</span>`;
+  });
+}
+
+async function openBranchModal(id=null) {
+  document.getElementById('branchId').value = id || '';
+  document.getElementById('branchModalTitle').textContent = id ? 'แก้ไขสาขา' : 'เพิ่มสาขา';
+  if (id) {
+    const rows = await sb(`tb_branches?id=eq.${id}&select=*`);
+    if (rows && rows[0]) {
+      const b = rows[0];
+      document.getElementById('branchName').value = b.name || '';
+      document.getElementById('branchCode').value = b.code || '';
+      document.getElementById('branchPhone').value = b.phone || '';
+      document.getElementById('branchAddress').value = b.address || '';
+      document.getElementById('branchStatus').value = b.status || 'active';
+      document.getElementById('branchLat').value = b.lat || '';
+      document.getElementById('branchLng').value = b.lng || '';
+      document.getElementById('branchPin').value = b.branch_pin || '';
+    }
+  } else {
+    ['branchName','branchCode','branchPhone','branchAddress','branchLat','branchLng','branchPin'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('branchStatus').value = 'active';
+  }
+  document.getElementById('branchModal').classList.add('show');
+}
+
+async function saveBranch() {
+  const name = document.getElementById('branchName').value.trim();
+  if (!name) return showToast('❌ กรุณาใส่ชื่อสาขา');
+  const id = document.getElementById('branchId').value;
+  const lat = parseFloat(document.getElementById('branchLat').value) || null;
+  const lng = parseFloat(document.getElementById('branchLng').value) || null;
+  const branchPin = document.getElementById('branchPin').value.trim();
+
+  // ตรวจสอบรหัส PIN ไม่ซ้ำ
+  if (branchPin) {
+    const existing = await sb(`tb_branches?branch_pin=eq.${branchPin}&select=id,name`).catch(() => []);
+    const dup = existing.find(b => b.id !== id);
+    if (dup) return showToast(`❌ รหัส PIN "${branchPin}" ซ้ำกับสาขา "${dup.name}" แล้ว`);
+  }
+
+  const data = {
+    name,
+    code: document.getElementById('branchCode').value.trim(),
+    phone: document.getElementById('branchPhone').value.trim(),
+    address: document.getElementById('branchAddress').value.trim(),
+    status: document.getElementById('branchStatus').value,
+    lat, lng, radius: 100,
+    branch_pin: branchPin || null,
+  };
+  if (id) {
+    await sb(`tb_branches?id=eq.${id}`, 'PATCH', data);
+    showToast('✅ แก้ไขสาขาแล้ว');
+  } else {
+    data.id = 'br_' + Date.now();
+    data.created_at = new Date().toISOString();
+    await sb('tb_branches', 'POST', data);
+    showToast('✅ เพิ่มสาขาแล้ว');
+  }
+  closeModal('branchModal');
+  renderBranches();
+}
+
+function getMyLocation() {
+  if (!navigator.geolocation) { showToast('❌ เบราว์เซอร์ไม่รองรับ GPS'); return; }
+  showToast('📍 กำลังหาตำแหน่ง...');
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('branchLat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('branchLng').value = pos.coords.longitude.toFixed(6);
+    showToast('✅ ได้ตำแหน่งแล้ว');
+  }, () => showToast('❌ หาตำแหน่งไม่ได้'));
+}
+
+async function toggleBranchStatus(id, newStatus) {
+  const label = newStatus === 'inactive' ? 'ปิดสาขานี้' : 'เปิดสาขานี้';
+  if (!confirm(`${label}?`)) return;
+  await sb(`tb_branches?id=eq.${id}`, 'PATCH', { status: newStatus });
+  showToast(newStatus === 'inactive' ? '🔴 ปิดสาขาแล้ว' : '🟢 เปิดสาขาแล้ว');
+  renderBranches();
+}
+
+async function deleteBranch(id, name) {
+  if (!confirm(`ลบสาขา "${name}" ออกจากระบบ?\n(ข้อมูลพนักงานจะไม่ถูกลบ)`)) return;
+  await sb(`tb_branches?id=eq.${id}`, 'DELETE');
+  showToast('🗑️ ลบสาขาแล้ว');
+  renderBranches();
+}
+
+// ─── HOLIDAYS (วันหยุดนักขัตฤกษ์) ───
+async function renderHolidays() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const holidays = await sb(`att_holidays?year=eq.${year}&order=date.asc&select=*`).catch(() => []);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🎌 วันหยุดนักขัตฤกษ์ ปี ${year} (${holidays.length} วัน)</div>
+        <button class="btn btn-primary" onclick="openHolidayForm()">+ เพิ่มวันหยุด</button>
+      </div>
+
+      <div id="holidayForm" style="display:none;background:var(--bg);border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div class="form-row" style="grid-template-columns:1fr 2fr auto;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">วันที่</label>
+            <input type="date" class="form-control" id="holidayDate">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">ชื่อวันหยุด</label>
+            <input type="text" class="form-control" id="holidayName" placeholder="เช่น วันสงกรานต์">
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;">
+            <button class="btn btn-primary" onclick="saveHoliday()">💾 บันทึก</button>
+            <button class="btn btn-outline" onclick="document.getElementById('holidayForm').style.display='none'">ยกเลิก</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        ${holidays.length ? holidays.map(h => {
+          const d = new Date(h.date + 'T00:00:00');
+          const dayName = d.toLocaleDateString('th-TH', { weekday: 'long' });
+          const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'long' });
+          const isPast = d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          return `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;background:${isPast?'#f9f9f9':'white'};border-radius:12px;border:1px solid var(--border);${isPast?'opacity:0.6;':''}">
+            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:800;">
+              ${d.getDate()}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;color:var(--navy);font-size:14px;">${h.name}</div>
+              <div style="font-size:12px;color:var(--gray);">${dateStr} (${dayName})</div>
+            </div>
+            <button onclick="deleteHoliday('${h.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px;">🗑️</button>
+          </div>`;
+        }).join('') : '<div style="text-align:center;color:var(--gray);padding:32px;grid-column:1/-1;">ยังไม่ได้เพิ่มวันหยุดนักขัตฤกษ์ปีนี้</div>'}
+      </div>
+
+      <div style="margin-top:16px;font-size:12px;color:var(--gray);">
+        💡 พนักงาน<strong style="color:var(--green);">ประจำ</strong> จะได้ค่าแรงวันหยุดนักขัตฤกษ์โดยไม่ต้องมาทำงาน |
+        พนักงาน<strong style="color:var(--blue);">รายวัน</strong> จะไม่นับวันหยุดนักขัตฤกษ์ในการคำนวณค่าแรง
+      </div>
+    </div>
+  `;
+}
+
+function openHolidayForm() {
+  document.getElementById('holidayForm').style.display = 'block';
+  document.getElementById('holidayDate').value = '';
+  document.getElementById('holidayName').value = '';
+}
+
+async function saveHoliday() {
+  const date = document.getElementById('holidayDate').value;
+  const name = document.getElementById('holidayName').value.trim();
+  if (!date || !name) return showToast('❌ กรุณาใส่วันที่และชื่อวันหยุด');
+  const year = new Date(date).getFullYear();
+
+  // เช็คซ้ำ
+  const existing = await sb(`att_holidays?date=eq.${date}&select=id`).catch(() => []);
+  if (existing.length > 0) return showToast('❌ วันนี้มีในระบบแล้ว');
+
+  await sb('att_holidays', 'POST', {
+    id: 'hol_' + Date.now(),
+    date, name, year,
+    created_at: new Date().toISOString()
+  });
+  showToast('✅ เพิ่มวันหยุดแล้ว');
+  renderHolidays();
+}
+
+async function deleteHoliday(id) {
+  if (!confirm('ลบวันหยุดนี้?')) return;
+  await sb(`att_holidays?id=eq.${id}`, 'DELETE');
+  showToast('🗑️ ลบวันหยุดแล้ว');
+  renderHolidays();
+}
+
+// ─── EXPORT EXCEL ───
+async function renderExport() {
+  const now = new Date();
+  const months = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth()+1, label: `${monthName(d.getMonth())} ${d.getFullYear()}`, val: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` });
+  }
+  const branches = await sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:20px;">📥 Export ข้อมูลเป็น Excel</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">เดือน</label>
+          <select id="exportMonth" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;outline:none;">
+            ${months.map(mo => `<option value="${mo.val}">${mo.label}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">สาขา</label>
+          <select id="exportBranch" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;outline:none;">
+            <option value="">ทุกสาขา</option>
+            ${branches.map(b => `<option value="${b.name}">${b.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div onclick="doExport('attendance')" style="background:var(--bg);border-radius:14px;padding:20px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='transparent'">
+          <div style="font-size:32px;margin-bottom:8px;">📋</div>
+          <div style="font-weight:700;color:var(--navy);font-size:14px;">บันทึกเวลา</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;">เข้า-ออก รายวัน</div>
+        </div>
+        <div onclick="doExport('summary')" style="background:var(--bg);border-radius:14px;padding:20px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='transparent'">
+          <div style="font-size:32px;margin-bottom:8px;">📈</div>
+          <div style="font-weight:700;color:var(--navy);font-size:14px;">สรุปรายเดือน</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;">วันทำงาน ชั่วโมง OT</div>
+        </div>
+        <div onclick="doExport('wage')" style="background:var(--bg);border-radius:14px;padding:20px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='transparent'">
+          <div style="font-size:32px;margin-bottom:8px;">💰</div>
+          <div style="font-weight:700;color:var(--navy);font-size:14px;">ค่าแรง</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;">ค่าแรง + OT รายคน</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function doExport(type) {
+  const ym = document.getElementById('exportMonth').value;
+  const branch = document.getElementById('exportBranch').value;
+  const [y, m] = ym.split('-');
+
+  showToast('⏳ กำลัง export...');
+
+  if (type === 'attendance') await exportAttendanceExcel(ym, branch);
+  else if (type === 'summary') await exportReportExcel(ym, branch);
+  else if (type === 'wage') await exportWageExcel(ym, branch);
+}
+
+function csvEscape(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+function downloadCSV(rows, filename) {
+  const bom = '\uFEFF'; // UTF-8 BOM for Excel Thai
+  const csv = bom + rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('✅ Download แล้ว: ' + filename);
+}
+
+async function exportAttendanceExcel(ym, branch) {
+  const [y, m] = ym.split('-');
+  let q = `att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&order=date.asc,employee_name.asc&select=*`;
+  if (branch) q += `&branch=eq.${encodeURIComponent(branch)}`;
+  const records = await sb(q);
+  const mLabel = `${monthName(parseInt(m)-1)} ${y}`;
+  const rows = [
+    [`บันทึกเวลาทำงาน — ${mLabel}${branch?' — '+branch:''}`],
+    ['วันที่','ชื่อพนักงาน','สาขา','เวลาเข้า','เวลาออก','ชั่วโมงทำงาน','OT (ชม.)','สถานะ'],
+    ...records.map(r => [
+      r.date,
+      r.employee_name,
+      r.branch||'',
+      r.check_in ? new Date(r.check_in).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '',
+      r.check_out ? new Date(r.check_out).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '',
+      r.work_hours ? r.work_hours.toFixed(1) : '',
+      r.ot_hours > 0 ? r.ot_hours.toFixed(1) : '0',
+      r.status||'',
+    ])
+  ];
+  downloadCSV(rows, `KPN_เวลางาน_${mLabel.replace(' ','_')}${branch?'_'+branch:''}.csv`);
+}
+
+async function exportReportExcel(ym, branch) {
+  const [y, m] = ym.split('-');
+  let q = `att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=*`;
+  if (branch) q += `&branch=eq.${encodeURIComponent(branch)}`;
+  const records = await sb(q);
+  const empSummary = {};
+  records.forEach(r => {
+    if (!empSummary[r.employee_id]) empSummary[r.employee_id] = { name: r.employee_name, branch: r.branch, _dates: new Set(), hours: 0, ot: 0 };
+    empSummary[r.employee_id]._dates.add(r.date);
+    empSummary[r.employee_id].hours += r.work_hours||0;
+    empSummary[r.employee_id].ot += r.ot_hours||0;
+  });
+  Object.values(empSummary).forEach(e => { e.days = e._dates.size; delete e._dates; });
+  const mLabel = `${monthName(parseInt(m)-1)} ${y}`;
+  const rows = [
+    [`สรุปการทำงานรายเดือน — ${mLabel}${branch?' — '+branch:''}`],
+    ['ชื่อพนักงาน','สาขา','วันทำงาน','ชั่วโมงรวม','OT (ชม.)'],
+    ...Object.values(empSummary).sort((a,b)=>(a.branch||'').localeCompare(b.branch||'')).map(e => [
+      e.name, e.branch||'', e.days, e.hours.toFixed(1), e.ot.toFixed(1)
+    ])
+  ];
+  downloadCSV(rows, `KPN_สรุปเดือน_${mLabel.replace(' ','_')}${branch?'_'+branch:''}.csv`);
+}
+
+async function exportWageExcel(ym, branch) {
+  const [y, m] = ym.split('-');
+  const [records, employees, holidays] = await Promise.all([
+    sb(`att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=*`),
+    sb(`att_employees?select=*`),
+    sb(`att_holidays?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=date`).catch(()=>[]),
+  ]);
+  const empMap = {};
+  employees.forEach(e => empMap[e.id] = e);
+  const filtered = branch ? records.filter(r => r.branch === branch) : records;
+  const holidayDatesExp = new Set(holidays.map(h => h.date));
+  const allWorkDatesExp = [...new Set(filtered.map(r => r.date))].sort();
+
+  const empData = {};
+  filtered.forEach(r => {
+    const emp = empMap[r.employee_id];
+    if (!emp) return;
+    if (!empData[r.employee_id]) {
+      empData[r.employee_id] = {
+        id: r.employee_id, name: r.employee_name, branch: r.branch,
+        _dates: new Set(), ot: 0, wage: emp.daily_wage||0,
+        otRateHourly: emp.ot_rate_hourly !== null && emp.ot_rate_hourly !== undefined ? emp.ot_rate_hourly : null,
+        allowance: emp.allowance||0,
+        positionPay: emp.position_pay||0,
+        travelPay: emp.travel_pay||0,
+        lateDeductRate: emp.late_deduct_rate||0, shifts: emp.work_shifts||[],
+        lateMinutes: 0, _datesSeen: new Set(),
+        empType: emp.emp_type || 'fulltime',
+        weeklyOff: emp.weekly_off || [], startDate: emp.start_date || null,
+      };
+    }
+    empData[r.employee_id]._dates.add(r.date);
+    empData[r.employee_id].ot += r.ot_hours||0;
+    const ed = empData[r.employee_id];
+    if (!ed._datesSeen.has(r.date) && r.check_in) {
+      ed._datesSeen.add(r.date);
+      const shifts = ed.shifts;
+      const shiftStart = shifts.length > 0 ? shifts[0].start : '08:00';
+      const [sh, sm] = shiftStart.split(':').map(Number);
+      const ci = new Date(r.check_in);
+      const ciMin = ci.getHours() * 60 + ci.getMinutes();
+      if (ciMin > sh * 60 + sm) ed.lateMinutes += (ciMin - sh * 60 - sm);
+    }
+  });
+
+  Object.values(empData).forEach(e => {
+    e.days = e._dates.size;
+    if (e.empType === 'fulltime') {
+      const workedDates = e._dates;
+      e.absentDays = allWorkDatesExp
+        .filter(d => !e.startDate || d >= e.startDate)
+        .filter(d => { const dow = new Date(d+'T00:00:00').getDay(); return !e.weeklyOff.includes(dow); })
+        .filter(d => !holidayDatesExp.has(d))
+        .filter(d => !workedDates.has(d)).length;
+    } else { e.absentDays = 0; }
+    delete e._dates; delete e._datesSeen;
+  });
+
+  let grandTotal = 0;
+  const mLabel = `${monthName(parseInt(m)-1)} ${y}`;
+  const dataRows = Object.values(empData).map(e => {
+    const ov = _wageOverrides[e.id] || {};
+    let reg, absDed;
+    if (e.empType === 'fulltime') {
+      reg = e.wage; absDed = e.absentDays * (e.wage / 26);
+    } else {
+      reg = e.days * e.wage; absDed = 0;
+    }
+    const dailyForOt = e.empType === 'fulltime' ? (e.wage / 26) : e.wage;
+    const otRate = e.otRateHourly !== null && e.otRateHourly !== undefined ? e.otRateHourly : (dailyForOt / 8 * 1.5);
+    const otPay = e.ot * otRate;
+    const allow = ov.allowance ?? e.allowance;
+    const pos = ov.positionPay ?? e.positionPay;
+    const travel = ov.travelPay ?? e.travelPay;
+    const bonus = ov.bonus ?? 0;
+    const otherInc = ov.otherIncome ?? 0;
+    const totalInc = reg + otPay + allow + pos + travel + bonus + otherInc;
+    const lateDed = e.lateDeductRate > 0 ? e.lateMinutes * e.lateDeductRate : 0;
+    const sso = ov.sso ?? 0;
+    const tax = ov.tax ?? 0;
+    const otherDed = ov.otherDeduct ?? 0;
+    const net = totalInc - absDed - lateDed - sso - tax - otherDed;
+    grandTotal += net;
+    return [e.name, e.branch||'', e.empType==='fulltime'?'ประจำ':'รายวัน', e.days,
+      reg.toFixed(0), e.ot.toFixed(1), otPay.toFixed(0),
+      allow.toFixed(0), pos.toFixed(0), travel.toFixed(0), bonus.toFixed(0), otherInc.toFixed(0), totalInc.toFixed(0),
+      absDed.toFixed(0), lateDed.toFixed(0), sso.toFixed(0), tax.toFixed(0), otherDed.toFixed(0), net.toFixed(0)];
+  });
+  const rows = [
+    [`สลิปเงินเดือน — ${mLabel}${branch?' — '+branch:''}`],
+    ['ชื่อ','สาขา','สถานะ','วันทำงาน','ค่าแรง/เงินเดือน','OT (ชม.)','ค่า OT','เบี้ยเลี้ยง','ค่าตำแหน่ง','ค่าเดินทาง','ค่าเช่ารถ','รายรับอื่น','รวมรายรับ','หักขาด','หักสาย','ประกันสังคม','ภาษี','หักอื่น','เงินสุทธิ'],
+    ...dataRows,
+    ['','','','','','','','','','','','','','','','','','รวมทั้งหมด', grandTotal.toFixed(0)],
+  ];
+  downloadCSV(rows, `KPN_สลิปเงินเดือน_${mLabel.replace(' ','_')}${branch?'_'+branch:''}.csv`);
+}
+
+// ─── ALERTS (แจ้งเตือนขาดงาน) ───
+async function renderAlerts() {
+  const today = todayStr();
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+
+  const [employees, todayRecs, monthRecs, branches] = await Promise.all([
+    sb(`att_employees?select=*`),
+    sb(`att_records?date=eq.${today}&select=employee_id`),
+    sb(`att_records?date=gte.${y}-${m}-01&date=lte.${y}-${m}-31&select=employee_id,date,status`),
+    sb(`tb_branches?status=eq.active&order=name.asc&select=*`).catch(()=>[]),
+  ]);
+
+  const checkedTodayIds = new Set(todayRecs.map(r => r.employee_id));
+  const selBranch = document.getElementById('alertBranchFilter')?.value || '';
+  const filteredEmps = selBranch ? employees.filter(e => e.branch === selBranch) : employees;
+  const branchOpts = `<option value="">ทุกสาขา</option>` + branches.map(b => `<option value="${b.name}" ${b.name===selBranch?'selected':''}>${b.name}</option>`).join('');
+
+  // นับวันขาดต่อเดือน
+  const absentCount = {};
+  const workdays = [...new Set(monthRecs.map(r => r.date))].length;
+  employees.forEach(e => absentCount[e.id] = 0);
+  const presentIds = new Set(monthRecs.map(r => r.employee_id));
+  // นับวันที่มี record แต่ละคน (นับ unique วัน ไม่ใช่จำนวน record เพื่อรองรับ multi-shift)
+  const daysWorked = {};
+  const _daysSet = {};
+  monthRecs.forEach(r => {
+    const key = r.employee_id;
+    if (!_daysSet[key]) _daysSet[key] = new Set();
+    _daysSet[key].add(r.date);
+  });
+  Object.keys(_daysSet).forEach(k => daysWorked[k] = _daysSet[k].size);
+
+  // ขาดงานวันนี้
+  const absentToday = filteredEmps.filter(e => !checkedTodayIds.has(e.id));
+
+  // ขาดมาก (น้อยกว่า 50% ของวันที่มีคนมา)
+  const threshold = Math.max(1, Math.floor(workdays * 0.5));
+  const frequentAbsent = filteredEmps.filter(e => (daysWorked[e.id]||0) < threshold && workdays > 3);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--gray);font-weight:600;">🏪 กรองตามสาขา:</div>
+      <select id="alertBranchFilter" onchange="renderAlerts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;min-width:180px;">${branchOpts}</select>
+      <button class="btn btn-outline btn-sm" onclick="renderAlerts()">🔄 รีเฟรช</button>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat-card red">
+        <div class="stat-icon">❌</div>
+        <div class="stat-label">ขาดงานวันนี้</div>
+        <div class="stat-value">${absentToday.length}</div>
+        <div class="stat-sub">คน ยังไม่เข้างาน</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-label">เสี่ยงขาดมาก</div>
+        <div class="stat-value">${frequentAbsent.length}</div>
+        <div class="stat-sub">มาน้อยกว่า 50%</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">วันที่มีข้อมูล</div>
+        <div class="stat-value">${workdays}</div>
+        <div class="stat-sub">วัน เดือนนี้</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">❌ ขาดงานวันนี้ (${absentToday.length} คน)</div>
+        <div style="font-size:12px;color:var(--gray);">${new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long'})}</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>ตำแหน่ง</th><th>มาเดือนนี้</th></tr></thead>
+          <tbody>
+            ${absentToday.length ? absentToday.map(e => `
+              <tr>
+                <td style="font-weight:700;color:var(--red);">${e.name}</td>
+                <td><span class="badge badge-gray">${e.branch||'—'}</span></td>
+                <td style="color:var(--gray);">${e.position||'—'}</td>
+                <td style="text-align:center;font-weight:700;">${daysWorked[e.id]||0} <span style="font-size:11px;color:var(--gray);">วัน</span></td>
+              </tr>`).join('')
+            : '<tr><td colspan="4" style="text-align:center;color:var(--green);padding:20px;font-weight:700;">✅ พนักงานทุกคนเข้างานแล้ว!</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    ${frequentAbsent.length > 0 ? `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚠️ พนักงานที่มาน้อยกว่า 50% เดือนนี้</div>
+        <div style="font-size:12px;color:var(--gray);">เกณฑ์: มาน้อยกว่า ${threshold} วัน จาก ${workdays} วัน</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ชื่อ</th><th>สาขา</th><th>วันที่มา</th><th>วันทั้งหมด</th><th>อัตราการมา</th></tr></thead>
+          <tbody>
+            ${frequentAbsent.map(e => {
+              const days = daysWorked[e.id]||0;
+              const pct = workdays > 0 ? Math.round(days/workdays*100) : 0;
+              return `
+                <tr>
+                  <td style="font-weight:700;">${e.name}</td>
+                  <td><span class="badge badge-gray">${e.branch||'—'}</span></td>
+                  <td style="text-align:center;font-weight:700;color:var(--red);">${days}</td>
+                  <td style="text-align:center;color:var(--gray);">${workdays}</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar" style="flex:1;"><div class="progress-fill" style="width:${pct}%;background:${pct<30?'var(--red)':'var(--orange)'};"></div></div>
+                      <span style="font-size:12px;font-weight:700;color:${pct<30?'var(--red)':'var(--orange)'};">${pct}%</span>
+                    </div>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+
+function openLeaveModal() {
+  selectedLeaveType = '';
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('leaveType').value = '';
+  document.getElementById('leaveStart').value = todayStr();
+  document.getElementById('leaveEnd').value = todayStr();
+  document.getElementById('leaveReason').value = '';
+  document.getElementById('leaveModal').classList.add('show');
+}
+
+function selectLeaveType(type, el) {
+  selectedLeaveType = type;
+  document.getElementById('leaveType').value = type;
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitLeave() {
+  const type = document.getElementById('leaveType').value;
+  const start = document.getElementById('leaveStart').value;
+  const end = document.getElementById('leaveEnd').value;
+  if (!type) return showToast('❌ เลือกประเภทการลาก่อน');
+  if (!start) return showToast('❌ ระบุวันที่ลา');
+  if (end && end < start) return showToast('❌ วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม');
+
+  // คำนวณจำนวนวันที่จะลา
+  const startDate = new Date(start);
+  const endDate = new Date(end || start);
+  const leaveDays = Math.max(1, Math.round((endDate - startDate) / 86400000) + 1);
+
+  // เช็ควันลาซ้ำ
+  const existing = await sb(`att_leaves?employee_id=eq.${currentUser.employeeId}&status=neq.rejected&select=date_start,date_end`);
+  const hasOverlap = existing.some(l => {
+    const ls = new Date(l.date_start);
+    const le = new Date(l.date_end || l.date_start);
+    return startDate <= le && endDate >= ls;
+  });
+  if (hasOverlap) return showToast('❌ มีใบลาช่วงวันนี้อยู่แล้ว (ซ้ำกับที่ยื่นไว้หรือได้รับอนุมัติแล้ว)');
+
+  // เช็คโควตา (ดึงจาก DB ของพนักงานคนนี้)
+  const empData = await sb(`att_employees?id=eq.${currentUser.employeeId}&select=leave_quota`).catch(() => []);
+  const q = empData && empData[0]?.leave_quota || {};
+  const QUOTA = { sick: q.sick ?? 30, personal: q.personal ?? 3, vacation: q.vacation ?? 6 };
+  const approved = await sb(`att_leaves?employee_id=eq.${currentUser.employeeId}&leave_type=eq.${type}&status=eq.approved&select=date_start,date_end`);
+  const usedDays = approved.reduce((sum, l) => {
+    const s = new Date(l.date_start);
+    const e = new Date(l.date_end || l.date_start);
+    return sum + Math.max(1, Math.round((e - s) / 86400000) + 1);
+  }, 0);
+  const quota = QUOTA[type] || 999;
+  if (usedDays + leaveDays > quota) {
+    const typeLabel = { sick: 'ลาป่วย', personal: 'ลากิจ', vacation: 'ลาพักร้อน' }[type];
+    return showToast(`❌ ${typeLabel}เกินโควตา — ใช้ไปแล้ว ${usedDays}/${quota} วัน ขอเพิ่ม ${leaveDays} วันไม่ได้`);
+  }
+
+  await sb('att_leaves', 'POST', {
+    id: 'leave_' + Date.now(),
+    employee_id: currentUser.employeeId,
+    employee_name: currentUser.name,
+    branch: currentUser.branch,
+    leave_type: type,
+    date_start: start,
+    date_end: end || start,
+    leave_days: leaveDays,
+    reason: document.getElementById('leaveReason').value,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  });
+  showToast(`✅ ยื่นใบลา ${leaveDays} วัน — รอการอนุมัติ`);
+  closeModal('leaveModal');
+  if (document.getElementById('mainContent').querySelector('.checkin-hero')) renderCheckin();
+  else renderLeave();
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Bug #17 fix: ดึงเวลาจาก server เพื่อป้องกันการแก้เวลาเครื่อง
+async function getServerTime() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/now`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    if (r.ok) {
+      const t = await r.text();
+      return new Date(t.replace(/"/g,''));
+    }
+  } catch(e) {}
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/att_employees?limit=1&select=id`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const dateHeader = r.headers.get('date');
+    if (dateHeader) return new Date(dateHeader);
+  } catch(e) {}
+  return new Date();
+}
+
+function serverTodayStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function monthName(m) {
+  return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m];
+}
+
+function statusBadge(s) {
+  const map = { present: ['badge-green','เข้างาน'], absent: ['badge-red','ขาดงาน'], late: ['badge-orange','มาสาย'], leave: ['badge-blue','ลา'] };
+  const [cls, label] = map[s] || ['badge-gray', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function leaveTypeLabel(t) {
+  return { sick: '🤒 ลาป่วย', personal: '🏠 ลากิจ', vacation: '✈️ ลาพักร้อน' }[t] || t;
+}
+
+function leaveStatusBadge(s) {
+  const map = { pending: ['badge-orange','รออนุมัติ'], approved: ['badge-green','อนุมัติ'], rejected: ['badge-red','ไม่อนุมัติ'] };
+  const [cls, label] = map[s] || ['badge-gray', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function filterTable(input, tbodyId) {
+  const q = input.value.toLowerCase();
+  document.querySelectorAll(`#${tbodyId} tr`).forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// เริ่มต้น
+document.getElementById('role-employee').click();
+</script>
+
+</body>
+</html>
