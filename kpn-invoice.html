@@ -7,10 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --navy: #1a3a2a;
-  --navy2: #243d2e;
-  --gold: #e8a020;
-  --gold2: #f0c96a;
+  --navy: #6b0f1a;
+  --navy2: #8b1a2a;
+  --gold: #e8c07a;
+  --gold2: #f5d99a;
   --cream: #faf7f2;
   --cream2: #f2ede4;
   --white: #ffffff;
@@ -377,14 +377,14 @@ textarea { resize: vertical; min-height: 72px; }
 <style id="lockscreen-style">
 #lockscreen {
   position: fixed; inset: 0; z-index: 99999;
-  background: linear-gradient(135deg, #0f2744 0%, #1a3a5c 100%);
+  background: linear-gradient(135deg, #3d0010 0%, #6b0f1a 100%);
   display: flex; align-items: center; justify-content: center;
 }
 .lock-box {
   background: white; border-radius: 20px; padding: 48px 40px;
   width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
 }
-.lock-logo { font-size: 26px; font-weight: 800; color: #0f2744; letter-spacing: 1px; margin-bottom: 4px; }
+.lock-logo { font-size: 26px; font-weight: 800; color: #6b0f1a; letter-spacing: 1px; margin-bottom: 4px; }
 .lock-sub { font-size: 11px; color: #8a8a9a; margin-bottom: 28px; letter-spacing: 1px; }
 .lock-icon { font-size: 44px; margin-bottom: 16px; }
 .lock-label { font-size: 13px; color: #8a8a9a; margin-bottom: 6px; text-align: left; font-weight: 600; }
@@ -393,15 +393,15 @@ textarea { resize: vertical; min-height: 72px; }
   border-radius: 10px; font-size: 16px; font-family: 'Sarabun', sans-serif;
   outline: none; transition: border 0.2s; letter-spacing: 3px; text-align: center;
 }
-.lock-input:focus { border-color: #0f2744; }
+.lock-input:focus { border-color: #6b0f1a; }
 .lock-input.error { border-color: #c0392b; animation: shake 0.3s; }
 .lock-btn {
   width: 100%; margin-top: 14px; padding: 13px;
-  background: #0f2744; color: white; border: none;
+  background: #6b0f1a; color: white; border: none;
   border-radius: 10px; font-size: 15px; font-weight: 700;
   font-family: 'Sarabun', sans-serif; cursor: pointer; transition: background 0.2s;
 }
-.lock-btn:hover { background: #1a3a5c; }
+.lock-btn:hover { background: #8b1a2a; }
 .lock-error { color: #c0392b; font-size: 13px; margin-top: 10px; min-height: 20px; font-weight: 600; }
 .lock-role-badge {
   display: inline-block; margin-top: 16px; padding: 4px 14px;
@@ -1047,7 +1047,7 @@ textarea { resize: vertical; min-height: 72px; }
         <select id="fin-filter-cat" onchange="renderFinance()" style="border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'Sarabun',sans-serif;min-width:160px;">
           <option value="">📦 ทุกหมวดหมู่</option>
         </select>
-        <div id="fin-branch-label" style="display:none;background:#0f2744;color:white;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;"></div>
+        <div id="fin-branch-label" style="display:none;background:#6b0f1a;color:white;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;"></div>
         <button onclick="document.getElementById('fin-filter-branch').value='';document.getElementById('fin-filter-cat').value='';renderFinance();" 
           id="fin-clear-branch" style="display:none;background:#eee;border:none;border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif;">✕ ล้างทั้งหมด</button>
       </div>
@@ -2197,7 +2197,7 @@ function printDoc() {
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
       body{font-family:'Sarabun',sans-serif;background:white;}
-      :root{--navy:#0f2744;--gold:#c9a84c;--cream:#faf7f2;--cream2:#f2ede4;--gray:#8a8a9a;--lgray:#e8e8f0;--green:#1a6b3c;}
+      :root{--navy:#6b0f1a;--gold:#c9a84c;--cream:#faf7f2;--cream2:#f2ede4;--gray:#8a8a9a;--lgray:#e8e8f0;--green:#1a6b3c;}
       .doc-preview{max-width:760px;margin:0 auto;padding:32px 40px;}
       .doc-header{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;}
       .doc-logo{font-size:24px;font-weight:800;color:var(--navy);letter-spacing:2px;}
@@ -4284,7 +4284,7 @@ function _finBranchNote(selBranch, selCat) {
         <input type="file" id="purPhotoInput" accept="image/*" multiple style="display:none;" onchange="handlePurPhoto(event)">
         <div id="purPhotoPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
         <button type="button" id="purAiBtn" onclick="analyzeReceiptWithAI()"
-          style="display:none;margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#0f2744,#1a3a5c);color:white;border:none;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
+          style="display:none;margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#3d0010,#6b0f1a);color:white;border:none;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
           🤖 ให้ AI อ่านบิลและกรอกข้อมูลให้
         </button>
         <div id="purAiStatus" style="display:none;margin-top:8px;padding:10px 14px;background:#eef2ff;border-radius:8px;font-size:13px;color:#3730a3;text-align:center;"></div>
