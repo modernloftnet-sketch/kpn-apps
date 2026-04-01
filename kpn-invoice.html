@@ -2182,11 +2182,16 @@ function viewDoc(id) {
 }
 
 function printDoc() {
-  const content = document.getElementById('previewContent').innerHTML;
+  // ปิด modal ทั้งหมดก่อน print
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+  // ดึงเฉพาะส่วน doc-preview ไม่เอา modal
+  const previewEl = document.getElementById('previewContent');
+  const docPreview = previewEl.querySelector('.doc-preview');
+  const content = docPreview ? docPreview.outerHTML : previewEl.innerHTML;
   const docNumber = document.getElementById('docNumber').value || 'document';
   const win = window.open('','_blank','width=900,height=700');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>KPN House &amp; Co — ระบบเอกสาร</title>
+    <title>${docNumber}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       *{box-sizing:border-box;margin:0;padding:0;}
