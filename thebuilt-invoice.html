@@ -3917,7 +3917,7 @@ function renderFinanceMonth() {
   const incDocs = state.documents.filter(d => {
     if(d.type!=='invoice' || d.status!=='paid') return false;
     if(selBranch && d.branch!==selBranch) return false;
-    if(selCat) { const hascat = d.items && d.items.some(i=>i.cat===selCat||i.category===selCat); if(!hascat) return false; }
+    if(selCat) { const getIC = i => i.cat||i.category||''; const hascat = d.items && d.items.some(i=>getIC(i)===selCat); if(!hascat) return false; }
     return true;
   });
   const byMonth = {};
@@ -3927,9 +3927,10 @@ function renderFinanceMonth() {
     if(dm.getFullYear()===selYear) {
       // ถ้ากรองหมวดหมู่ คิดเฉพาะ items ที่ตรง
       if(selCat && d.items) {
-        // กระจาย d.total ตามสัดส่วน item เพื่อให้ตรงกับยอดจริง (รวม VAT/WHT)
+        // กระจาย d.total ตามสัดส่วน item — ตรวจทั้ง cat และ category field
+        const getItemCat = i => i.cat || i.category || '';
         const itemsSubtotal = d.items.reduce((s,i)=>s+(+i.total||i.qty*(+i.price)||0),0);
-        const catItemsTotal = d.items.filter(i=>i.cat===selCat||i.category===selCat).reduce((s,i)=>s+(+i.total||i.qty*(+i.price)||0),0);
+        const catItemsTotal = d.items.filter(i=>getItemCat(i)===selCat).reduce((s,i)=>s+(+i.total||i.qty*(+i.price)||0),0);
         const proportional = itemsSubtotal > 0 ? (catItemsTotal / itemsSubtotal) * (+d.total||0) : 0;
         byMonth[dm.getMonth()+1].income+=proportional;
       } else {
@@ -3998,7 +3999,7 @@ function renderFinanceDay() {
     const dDate = (d.date||d.created_at||'').split('T')[0];
     if(dDate !== selDate) return false;
     if(selBranch && d.branch !== selBranch) return false;
-    if(selCat) { const hascat = d.items && d.items.some(i=>i.cat===selCat||i.category===selCat); if(!hascat) return false; }
+    if(selCat) { const getIC = i => i.cat||i.category||''; const hascat = d.items && d.items.some(i=>getIC(i)===selCat); if(!hascat) return false; }
     return true;
   });
   const dayPur = state.purchases.filter(p => (p.date||'').split('T')[0] === selDate);
@@ -4112,7 +4113,6 @@ function renderFinChart() {
         d.items.forEach(it => {
           const cat = it.cat || it.category || 'ไม่ระบุ';
           const itAmt = +it.total || it.qty*(+it.price)||0;
-          // กระจาย d.total ตามสัดส่วน item (ให้ยอดรวมตรงกับ d.total)
           const proportional = itemsSubtotal > 0 ? (itAmt / itemsSubtotal) * docTotal : 0;
           incCats[cat] = (incCats[cat]||0) + proportional;
         });
