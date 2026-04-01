@@ -979,7 +979,10 @@ textarea { resize: vertical; min-height: 72px; }
           </select>
           <input type="month" id="exp-filter-month" onchange="renderExpenses()" style="border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'Sarabun',sans-serif;">
         </div>
-        <button class="btn btn-primary" onclick="openExpenseModal()">+ บันทึกค่าใช้จ่าย</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="openExpCatModal()" style="font-size:13px;">⚙️ หมวดหมู่</button>
+          <button class="btn btn-primary" onclick="openExpenseModal()">+ บันทึกค่าใช้จ่าย</button>
+        </div>
       </div>
       <div class="stats-grid" style="margin-bottom:16px;">
         <div class="stat-card gold"><div class="stat-icon">💸</div><div class="stat-label">ค่าใช้จ่ายเดือนนี้</div><div class="stat-value" id="exp-stat-month">฿0</div></div>
@@ -1453,8 +1456,19 @@ let PUR_CATS = [
   { id:'ลงทุน', label:'ลงทุน' },
   { id:'อื่นๆ', label:'อื่นๆ' },
 ];
+
+function populateExpCats(savedVal) {
+  var cats = (state.expCats && state.expCats.length) ? state.expCats.map(c=>c.label) : [];
+  var opts = cats.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  var fOpts = '<option value="">ทุกหมวดหมู่</option>'+opts;
+  var fc = document.getElementById('exp-filter-cat');
+  var ec = document.getElementById('expCat');
+  if (fc) { var sv=fc.value; fc.innerHTML=fOpts; if(sv) fc.value=sv; }
+  if (ec) { var sv2=ec.value||savedVal||''; ec.innerHTML=opts; if(sv2) ec.value=sv2; }
+}
 function populatePurCats(savedVal) {
-  var opts = PUR_CATS.map(function(c){ return '<option value="'+c.id+'">'+c.label+'</option>'; }).join('');
+  var cats = (state.purCats && state.purCats.length) ? state.purCats : PUR_CATS;
+  var opts = cats.map(function(c){ return '<option value="'+c.id+'">'+c.label+'</option>'; }).join('');
   var fOpts = '<option value="">ทุกหมวดหมู่</option>' + opts;
   var fc = document.getElementById('pur-filter-cat');
   var pc = document.getElementById('purCat');
@@ -2215,6 +2229,28 @@ function printDoc() {
     </style>
   </head><body>${content}
 
+
+<!-- ─── MODAL: หมวดหมู่ค่าใช้จ่าย ─── -->
+<div class="modal-overlay" id="expCatModal" onclick="if(event.target===this)closeModal('expCatModal')">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">หมวดหมู่ค่าใช้จ่าย</div>
+      <button class="close-btn" onclick="closeModal('expCatModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <div id="expCatList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newExpCatLabel" placeholder="ชื่อหมวดหมู่ใหม่..."
+          style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Sarabun',sans-serif;"
+          onkeydown="if(event.key==='Enter')addExpCat()">
+        <button class="btn btn-primary btn-sm" onclick="addExpCat()">+ เพิ่ม</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('expCatModal')">✅ เสร็จแล้ว</button>
+    </div>
+  </div>
+</div>
 </body></html>`);
   win.document.close();
   win.onload = ()=>{ win.print(); };
@@ -2653,14 +2689,18 @@ async function debugSchema() {
 // ── Static: โหลดครั้งแรกอย่างเดียว (customers, products, branches, staff, cats) ──
 let _staticLoaded = false;
 async function loadStaticData() {
-  const [customers, products, branches, staff, productCats] = await Promise.all([
+  const [customers, products, branches, staff, productCats, purCats, expCats] = await Promise.all([
     supa.get('tb_customers', '?order=name'),
     supa.get('tb_products', '?order=name'),
     supa.get('tb_branches', '?order=brand,name').catch(()=>[]),
     supa.get('tb_staff', '?order=name&select=id,name,position,branches,pin').catch(()=>[]),
     supa.get('tb_product_cats', '?order=sort_order,name').catch(()=>[]),
+    supa.get('tb_pur_cats', '?order=sort_order,label').catch(()=>[]),
+    supa.get('tb_exp_cats', '?order=sort_order,label').catch(()=>[]),
   ]);
   state.productCats = productCats.length ? productCats.map(c=>c.name) : ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ'];
+  state.purCats = purCats.length ? purCats : [];
+  state.expCats = expCats.length ? expCats : [];
   state.customers = customers.map(c => ({
     id: c.id, name: c.name, phone: c.phone||c.tel||'',
     email: c.email||'', address: c.address||'',
@@ -3409,19 +3449,31 @@ function renderPurCatList() {
   }
   document.getElementById('purCatList').innerHTML = html;
 }
-function addPurCat() {
+async function addPurCat() {
   var label = document.getElementById('newPurCatLabel').value.trim();
   if (!label) return;
-  PUR_CATS.push({ id: 'cat_'+Date.now(), label: label });
-  document.getElementById('newPurCatLabel').value = '';
-  renderPurCatList(); populatePurCats();
-  showToast('เพิ่มหมวดหมู่แล้ว');
+  var newCat = { id: 'cat_'+Date.now(), label: label, sort_order: (state.purCats||[]).length };
+  try {
+    await supa.upsert('tb_pur_cats', newCat);
+    if (!state.purCats) state.purCats = [];
+    state.purCats.push(newCat);
+    PUR_CATS.push(newCat);
+    document.getElementById('newPurCatLabel').value = '';
+    renderPurCatList(); populatePurCats();
+    showToast('✅ เพิ่มหมวดหมู่แล้ว');
+  } catch(e) { showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
 }
 function renamePurCat(i, v) { if (v.trim()) { PUR_CATS[i].label = v.trim(); populatePurCats(); } }
-function deletePurCat(i) {
-  if (!confirm('ลบหมวดหมู่ "'+PUR_CATS[i].label+'"?')) return;
-  PUR_CATS.splice(i,1); renderPurCatList(); populatePurCats();
-  showToast('ลบหมวดหมู่แล้ว');
+async function deletePurCat(i) {
+  var cat = PUR_CATS[i];
+  if (!confirm('ลบหมวดหมู่ "'+cat.label+'"?')) return;
+  try {
+    await supa.del('tb_pur_cats', cat.id);
+    PUR_CATS.splice(i,1);
+    state.purCats = (state.purCats||[]).filter(c=>c.id!==cat.id);
+    renderPurCatList(); populatePurCats();
+    showToast('🗑️ ลบหมวดหมู่แล้ว');
+  } catch(e) { showToast('❌ ลบไม่สำเร็จ: '+e.message); }
 }
 
 // ═══════════════════════════════════════════
@@ -3614,7 +3666,29 @@ function printPo() {
     .doc-totals{max-width:360px;margin-left:auto;}
     .doc-total-row{display:flex;justify-content:space-between;padding:6px 0;}
     @media print{@page{margin:1cm;}}</style>
-  </head><body>${content}</body></html>`);
+  </head><body>${content}
+<!-- ─── MODAL: หมวดหมู่ค่าใช้จ่าย ─── -->
+<div class="modal-overlay" id="expCatModal" onclick="if(event.target===this)closeModal('expCatModal')">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">หมวดหมู่ค่าใช้จ่าย</div>
+      <button class="close-btn" onclick="closeModal('expCatModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <div id="expCatList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newExpCatLabel" placeholder="ชื่อหมวดหมู่ใหม่..."
+          style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Sarabun',sans-serif;"
+          onkeydown="if(event.key==='Enter')addExpCat()">
+        <button class="btn btn-primary btn-sm" onclick="addExpCat()">+ เพิ่ม</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('expCatModal')">✅ เสร็จแล้ว</button>
+    </div>
+  </div>
+</div>
+</body></html>`);
   win.document.close();
   setTimeout(()=>win.print(),500);
 }
@@ -3634,6 +3708,7 @@ function onPurMonthChange() {
 
 function renderPurchases() {
   populatePurCats();
+  populateExpCats();
   const catF = document.getElementById('pur-filter-cat')?.value||'';
   const statF = document.getElementById('pur-filter-status')?.value||'';
   const monthF = document.getElementById('pur-filter-month')?.value||'';
@@ -4969,8 +5044,7 @@ async function deleteBranch() {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('purCatModal')">ปิด</button>
-      <button class="btn btn-primary" onclick="savePurCatsExport()">💾 บันทึก & Export</button>
+      <button class="btn btn-primary" onclick="closeModal('purCatModal')">✅ เสร็จแล้ว</button>
     </div>
   </div>
 </div>
@@ -5287,7 +5361,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+function openExpCatModal() {
+  renderExpCatList();
+  document.getElementById('newExpCatLabel').value = '';
+  document.getElementById('expCatModal').classList.add('show');
+}
+function renderExpCatList() {
+  var cats = state.expCats || [];
+  var html = cats.map(function(c,i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#faf7f2;border-radius:8px;border:1px solid #ddd">'
+      +'<input type="text" value="'+c.label.replace(/"/g,'&quot;')+'" style="flex:1;border:1.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px" onchange="renameExpCat('+i+',this.value)">'
+      +'<button onclick="deleteExpCat('+i+')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-weight:700;padding:2px 8px">ลบ</button></div>';
+  }).join('');
+  document.getElementById('expCatList').innerHTML = html || '<div style="text-align:center;color:var(--gray);padding:16px;">ยังไม่มีหมวดหมู่</div>';
+}
+async function addExpCat() {
+  var label = document.getElementById('newExpCatLabel').value.trim();
+  if (!label) return;
+  var newCat = { id: 'cat_e_'+Date.now(), label: label, sort_order: (state.expCats||[]).length };
+  try {
+    await supa.upsert('tb_exp_cats', newCat);
+    if (!state.expCats) state.expCats = [];
+    state.expCats.push(newCat);
+    document.getElementById('newExpCatLabel').value = '';
+    renderExpCatList(); populateExpCats();
+    showToast('✅ เพิ่มหมวดหมู่แล้ว');
+  } catch(e) { showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
+}
+async function renameExpCat(i, v) {
+  if (!v.trim()) return;
+  var cat = state.expCats[i];
+  try {
+    await supa.req('PATCH', 'tb_exp_cats', { label: v.trim() }, '?id=eq.'+cat.id);
+    state.expCats[i].label = v.trim();
+    populateExpCats();
+  } catch(e) { showToast('❌ แก้ไขไม่สำเร็จ: '+e.message); }
+}
+async function deleteExpCat(i) {
+  var cat = state.expCats[i];
+  if (!confirm('ลบหมวดหมู่ "'+cat.label+'"?')) return;
+  try {
+    await supa.del('tb_exp_cats', cat.id);
+    state.expCats.splice(i,1);
+    renderExpCatList(); populateExpCats();
+    showToast('🗑️ ลบหมวดหมู่แล้ว');
+  } catch(e) { showToast('❌ ลบไม่สำเร็จ: '+e.message); }
+}
 </script>
 
+
+<!-- ─── MODAL: หมวดหมู่ค่าใช้จ่าย ─── -->
+<div class="modal-overlay" id="expCatModal" onclick="if(event.target===this)closeModal('expCatModal')">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">หมวดหมู่ค่าใช้จ่าย</div>
+      <button class="close-btn" onclick="closeModal('expCatModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <div id="expCatList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newExpCatLabel" placeholder="ชื่อหมวดหมู่ใหม่..."
+          style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Sarabun',sans-serif;"
+          onkeydown="if(event.key==='Enter')addExpCat()">
+        <button class="btn btn-primary btn-sm" onclick="addExpCat()">+ เพิ่ม</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('expCatModal')">✅ เสร็จแล้ว</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
