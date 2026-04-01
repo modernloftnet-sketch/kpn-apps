@@ -3927,8 +3927,11 @@ function renderFinanceMonth() {
     if(dm.getFullYear()===selYear) {
       // ถ้ากรองหมวดหมู่ คิดเฉพาะ items ที่ตรง
       if(selCat && d.items) {
-        const catTotal = d.items.filter(i=>i.cat===selCat||i.category===selCat).reduce((s,i)=>s+(+i.total||i.qty*i.price||0),0);
-        byMonth[dm.getMonth()+1].income+=catTotal;
+        // กระจาย d.total ตามสัดส่วน item เพื่อให้ตรงกับยอดจริง (รวม VAT/WHT)
+        const itemsSubtotal = d.items.reduce((s,i)=>s+(+i.total||i.qty*(+i.price)||0),0);
+        const catItemsTotal = d.items.filter(i=>i.cat===selCat||i.category===selCat).reduce((s,i)=>s+(+i.total||i.qty*(+i.price)||0),0);
+        const proportional = itemsSubtotal > 0 ? (catItemsTotal / itemsSubtotal) * (+d.total||0) : 0;
+        byMonth[dm.getMonth()+1].income+=proportional;
       } else {
         byMonth[dm.getMonth()+1].income+=(+d.total||0);
       }
