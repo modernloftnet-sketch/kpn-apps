@@ -1831,8 +1831,11 @@ function openDocModal(type, doc=null) {
   // render สาขาใหม่ก่อน แล้วค่อย set value
   renderBranchDropdowns(doc ? (doc.branch||'') : '');
   document.getElementById('docSalesperson').value = doc ? (doc.salesperson||'') : '';
-  document.getElementById('vatCheck').checked = doc ? (doc.vat>0) : false;
+  document.getElementById('vatCheck').checked = doc ? (doc.vat>0) : true; // default เปิด VAT
   document.getElementById('whtCheck').checked = doc ? (doc.wht>0) : false;
+  // default VAT ใน สำหรับเอกสารใหม่
+  if (!doc) setVatMode('inclusive');
+  else setVatMode(doc.vat > 0 && doc.vat_rate && doc.subtotal && doc.total > doc.subtotal + doc.vat - 1 ? 'exclusive' : 'inclusive');
 
   // Items
   state.editItems = doc ? JSON.parse(JSON.stringify(doc.items)) : [{name:'',qty:1,unit:'',price:0,total:0,description:'',category:''}];
@@ -1908,7 +1911,7 @@ function removeItem(i) {
   renderItems(); calcTotals();
 }
 
-let vatMode = 'exclusive'; // 'exclusive' = ราคายังไม่รวม VAT | 'inclusive' = ราคารวม VAT แล้ว
+let vatMode = 'inclusive'; // 'exclusive' = ราคายังไม่รวม VAT | 'inclusive' = ราคารวม VAT แล้ว
 
 function setVatMode(mode) {
   vatMode = mode;
