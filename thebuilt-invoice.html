@@ -3087,9 +3087,12 @@ function isPdfData(src) { return src && (src.startsWith('data:application/pdf') 
 function renderPhotoThumb(photos, containerId, removeCallback) {
   const el = document.getElementById(containerId);
   if(!el) return;
+  // เก็บ reference ไว้ใน global เพื่อให้ viewReceipt เรียกได้
+  window._photoRefs = window._photoRefs || {};
+  window._photoRefs[containerId] = photos;
   el.innerHTML = photos.map((p,i) => {
     const pdf = isPdfData(p);
-    return `<div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:pointer;" onclick="viewReceipt('${pdf ? '__PDF__'+i : p}',${pdf ? JSON.stringify(containerId==='purPhotoPreview'?'pur':'slip') : 'null'})">
+    return `<div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:pointer;" onclick="viewReceiptByIndex('${containerId}',${i})">
       ${pdf
         ? '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fdf0f0;flex-direction:column;"><span style="font-size:22px;">📄</span><span style="font-size:9px;color:#c0392b;font-weight:700;">PDF</span></div>'
         : `<img src="${p}" style="width:100%;height:100%;object-fit:cover;">`}
@@ -3097,21 +3100,40 @@ function renderPhotoThumb(photos, containerId, removeCallback) {
     </div>`;
   }).join('');
 }
-function viewReceipt(src, photoType) {
-  // PDF → เปิดในแท็บใหม่
-  if (src.startsWith('__PDF__')) {
-    const idx = +src.replace('__PDF__','');
-    const arr = photoType==='pur' ? state.purPhotos : state.slipPhotos;
-    if (arr[idx]) {
-      const win = window.open('');
-      win.document.write(`<iframe src="${arr[idx]}" style="width:100%;height:100%;border:none;position:fixed;inset:0;"></iframe>`);
+function viewReceiptByIndex(containerId, idx) {
+  const photos = (window._photoRefs && window._photoRefs[containerId]) || [];
+  const src = photos[idx];
+  if (!src) return;
+  if (isPdfData(src)) {
+    // PDF → เปิดในแท็บใหม่
+    const win = window.open('');
+    if (win) {
+      win.document.write(`<iframe src="${src}" style="width:100%;height:100%;border:none;position:fixed;inset:0;"></iframe>`);
+      win.document.title = 'PDF Preview';
+    }
+    return;
+  }
+  // รูปภาพ → แสดงใน viewer เดิม
+  document.getElementById('receiptViewerImg').src = src;
+  document.getElementById('receiptViewer').style.display = 'flex';
+}
+function viewReceipt(src) {
+  if (isPdfData(src)) {
+    const win = window.open('');
+    if (win) {
+      win.document.write(`<iframe src="${src}" style="width:100%;height:100%;border:none;position:fixed;inset:0;"></iframe>`);
       win.document.title = 'PDF Preview';
     }
     return;
   }
   document.getElementById('receiptViewerImg').src = src;
-  const v = document.getElementById('receiptViewer');
-  v.style.display = 'flex';
+  document.getElementById('receiptViewer').style.display = 'flex';
+}
+function viewReceiptFromTable(recordId, idx) {
+  const photos = (window._purTablePhotos && window._purTablePhotos[recordId]) || [];
+  const src = photos[idx];
+  if (!src) return;
+  viewReceipt(src);
 }
 function closeReceiptViewer() {
   document.getElementById('receiptViewer').style.display = 'none';
@@ -3748,7 +3770,14 @@ function renderPurchases() {
       <td style="font-weight:700;color:var(--navy);">${fmt(p.amount)}</td>
       <td><span style="background:${p.status==='paid'?'#eafaf1':'#fdf0f0'};color:${p.status==='paid'?'#1a6b3c':'#c0392b'};border-radius:20px;padding:2px 10px;font-size:12px;">${p.status==='paid'?'✅ จ่ายแล้ว':'⏳ ยังไม่จ่าย'}</span></td>
       <td style="color:${p.paid_date?'#1a6b3c':'#aaa'};font-size:13px;">${p.paid_date?fmtDate(p.paid_date):'—'}</td>
-      <td>${p.photos&&p.photos.length?p.photos.map(ph=>`<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceipt('${ph}')">`).join(''):'—'}</td>
+      <td>${p.photos&&p.photos.length?p.photos.map((ph,phi)=>{
+        const pdf=isPdfData(ph);
+        window._purTablePhotos=window._purTablePhotos||{};
+        window._purTablePhotos[p.id]=p.photos;
+        return pdf
+          ? `<span onclick="viewReceiptFromTable('${p.id}',${phi})" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:4px;background:#fdf0f0;cursor:pointer;margin-right:3px;font-size:14px;" title="PDF">📄</span>`
+          : `<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceiptFromTable('${p.id}',${phi})">`;
+      }).join(''):'—'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openPurchaseModal('${p.id}')">แก้ไข</button></td>
     </tr>`).join('');
 }
@@ -3850,7 +3879,14 @@ function renderExpenses() {
       <td><span style="background:#eef;border-radius:20px;padding:2px 10px;font-size:12px;">${e.cat||'-'}</span></td>
       <td style="font-weight:700;color:#c0392b;">${fmt(e.amount)}</td>
       <td>${e.paid_by||'-'}</td>
-      <td>${e.photos&&e.photos.length?e.photos.map(ph=>`<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceipt('${ph}')">`).join(''):'—'}</td>
+      <td>${e.photos&&e.photos.length?e.photos.map((ph,phi)=>{
+        const pdf=isPdfData(ph);
+        window._purTablePhotos=window._purTablePhotos||{};
+        window._purTablePhotos[e.id]=e.photos;
+        return pdf
+          ? `<span onclick="viewReceiptFromTable('${e.id}',${phi})" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:4px;background:#fdf0f0;cursor:pointer;margin-right:3px;font-size:14px;" title="PDF">📄</span>`
+          : `<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceiptFromTable('${e.id}',${phi})">`;
+      }).join(''):'—'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">แก้ไข</button></td>
     </tr>`).join('');
 }
