@@ -1556,6 +1556,24 @@ function renderPage(name) {
 const fmt = n => '฿' + (n||0).toLocaleString('th-TH', {minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtDate = d => d ? new Date(d).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'}) : '-';
 const typeLabel = t => ({quotation:'ใบเสนอราคา',invoice:'ใบกำกับภาษี',receipt:'ใบเสร็จรับเงิน',billing:'ใบวางบิล'})[t]||t;
+
+// ═══════════════════════════════════════════
+// GENERATE NEXT DOCUMENT NUMBER (รีเซ็ตเลขท้ายทุกเดือน)
+// ═══════════════════════════════════════════
+const DOC_PREFIXES = {quotation:'QT',invoice:'IV',receipt:'RC',billing:'BL'};
+
+function getNextDocNumber(type) {
+  const prefix = DOC_PREFIXES[type] || 'XX';
+  const yr = new Date().getFullYear().toString().slice(-2);
+  const mo = String(new Date().getMonth()+1).padStart(2,'0');
+  const monthPrefix = `${prefix}-${yr}${mo}-`; // e.g. "IV-2604-"
+  // หาเลขท้ายสูงสุดเฉพาะเดือนนี้
+  const numsThisMonth = state.documents
+    .filter(d => d.type === type && (d.number||'').startsWith(monthPrefix))
+    .map(d => +(d.number||'').split('-').pop() || 0);
+  const maxNum = numsThisMonth.length ? Math.max(...numsThisMonth) : 0;
+  return `${monthPrefix}${String(maxNum + 1).padStart(3,'0')}`;
+}
 const custName = id => {
   if (!id && id !== 0) return '-';
   const found = state.customers.find(c => String(c.id) === String(id));
@@ -1805,11 +1823,7 @@ function openDocModal(type, doc=null) {
   document.getElementById('docDueDateGroup').style.display = type==='receipt' ? 'none' : '';
 
   // Number
-  const prefixes = {quotation:'QT',invoice:'IV',receipt:'RC',billing:'BL'};
-  const yr = new Date().getFullYear().toString().slice(-2);
-  const mo = String(new Date().getMonth()+1).padStart(2,'0');
-  const num = String(state.counters[type]+1).padStart(3,'0');
-  document.getElementById('docNumber').value = doc ? doc.number : `${prefixes[type]}-${yr}${mo}-${num}`;
+  document.getElementById('docNumber').value = doc ? doc.number : getNextDocNumber(type);
 
   // Customer
   const sel = document.getElementById('docCustomer');
@@ -2464,11 +2478,9 @@ async function issueInstallmentInvoice(quotId, step) {
   const row = plan.find(p=>p.step===step);
   if (!row) return;
 
-  const yr = new Date().getFullYear().toString().slice(-2);
-  const mo = String(new Date().getMonth()+1).padStart(2,'0');
   const today = new Date().toISOString().split('T')[0];
 
-  state.counters.invoice++;
+  const invNumber = getNextDocNumber('invoice');
   const amt = quot.total * row.pct / 100;
   const hasVat = quot.vat > 0;
   const vat = hasVat ? amt * 7/107 : 0;
@@ -2483,7 +2495,7 @@ async function issueInstallmentInvoice(quotId, step) {
   const dbDoc = {
     id: String(Date.now()),
     type: 'invoice',
-    number: `IV-${yr}${mo}-${String(state.counters.invoice).padStart(3,'0')}`,
+    number: invNumber,
     customer: custObj,
     date: today,
     subtotal: sub, vat, wht,
@@ -2725,7 +2737,7 @@ async function loadFromSupabase() {
     state.purchases = purchases;
     state.expenses = expenses;
     state.pos = pos||[];
-    // Update counters
+    // Update counters (no longer used for number generation, kept for backward compat)
     ['quotation','invoice','receipt','billing'].forEach(type => {
       const nums = state.documents.filter(d=>d.type===type).map(d=>+d.number.split('-').pop()||0);
       if (nums.length) state.counters[type] = Math.max(...nums);
@@ -3427,10 +3439,12 @@ function openPoModal(id=null) {
   const po = id ? (state.pos||[]).find(x=>x.id===id) : null;
   document.getElementById('poModalTitle').textContent = po ? 'แก้ไขใบ PO' : 'สร้างใบ PO';
   document.getElementById('poEditId').value = po ? po.id : '';
-  const yr = new Date().getFullYear().toString().slice(-2);
-  const mo = String(new Date().getMonth()+1).padStart(2,'0');
-  const num = String((state.pos||[]).length+1).padStart(3,'0');
-  document.getElementById('poNumber').value = po ? po.number : `PO-${yr}${mo}-${num}`;
+  const poYr = new Date().getFullYear().toString().slice(-2);
+  const poMo = String(new Date().getMonth()+1).padStart(2,'0');
+  const poMonthPrefix = `PO-${poYr}${poMo}-`;
+  const poNums = (state.pos||[]).filter(p=>(p.number||'').startsWith(poMonthPrefix)).map(p=>+(p.number||'').split('-').pop()||0);
+  const poMaxNum = poNums.length ? Math.max(...poNums) : 0;
+  document.getElementById('poNumber').value = po ? po.number : `${poMonthPrefix}${String(poMaxNum+1).padStart(3,'0')}`;
   document.getElementById('poDate').value = po ? po.date : new Date().toISOString().split('T')[0];
   document.getElementById('poDeliveryDate').value = po ? (po.delivery_date||'') : '';
   document.getElementById('poSupplier').value = po ? po.supplier : '';
