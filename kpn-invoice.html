@@ -1280,7 +1280,7 @@ textarea { resize: vertical; min-height: 72px; }
             <div style="font-size:24px;">📎</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">คลิกหรือลากรูปมาวาง</div>
           </div>
-          <input type="file" id="slipFileInput" accept="image/*" multiple style="display:none" onchange="handleSlipUpload(event)">
+          <input type="file" id="slipFileInput" accept="image/*,application/pdf" multiple style="display:none" onchange="handleSlipUpload(event)">
           <div id="slipPhotoPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
         </div>
       </div>
@@ -3048,9 +3048,18 @@ async function deleteStaffFromDB(id) {
 loadFromSupabase();
 
 // ═══════════════════════════════════════════
-// PHOTO COMPRESS (shared)
+// PHOTO COMPRESS (shared) — รองรับ PDF
 // ═══════════════════════════════════════════
+function readFileAsDataURL(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
 function compressImg(file, maxW=800, q=0.72) {
+  // PDF → เก็บเป็น data URL ตรงๆ ไม่ compress
+  if (file.type === 'application/pdf') return readFileAsDataURL(file);
   return new Promise(res => {
     const r = new FileReader();
     r.onload = e => {
@@ -3068,16 +3077,32 @@ function compressImg(file, maxW=800, q=0.72) {
     r.readAsDataURL(file);
   });
 }
+function isPdfData(src) { return src && (src.startsWith('data:application/pdf') || src.endsWith('.pdf')); }
 function renderPhotoThumb(photos, containerId, removeCallback) {
   const el = document.getElementById(containerId);
   if(!el) return;
-  el.innerHTML = photos.map((p,i) => `
-    <div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:pointer;" onclick="viewReceipt('${p}')">
-      <img src="${p}" style="width:100%;height:100%;object-fit:cover;">
+  el.innerHTML = photos.map((p,i) => {
+    const pdf = isPdfData(p);
+    return `<div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:pointer;" onclick="viewReceipt('${pdf ? '__PDF__'+i : p}',${pdf ? JSON.stringify(containerId==='purPhotoPreview'?'pur':'slip') : 'null'})">
+      ${pdf
+        ? '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fdf0f0;flex-direction:column;"><span style="font-size:22px;">📄</span><span style="font-size:9px;color:#c0392b;font-weight:700;">PDF</span></div>'
+        : `<img src="${p}" style="width:100%;height:100%;object-fit:cover;">`}
       <button onclick="event.stopPropagation();${removeCallback}(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
-function viewReceipt(src) {
+function viewReceipt(src, photoType) {
+  // PDF → เปิดในแท็บใหม่
+  if (src.startsWith('__PDF__')) {
+    const idx = +src.replace('__PDF__','');
+    const arr = photoType==='pur' ? state.purPhotos : state.slipPhotos;
+    if (arr[idx]) {
+      const win = window.open('');
+      win.document.write(`<iframe src="${arr[idx]}" style="width:100%;height:100%;border:none;position:fixed;inset:0;"></iframe>`);
+      win.document.title = 'PDF Preview';
+    }
+    return;
+  }
   document.getElementById('receiptViewerImg').src = src;
   const v = document.getElementById('receiptViewer');
   v.style.display = 'flex';
@@ -3117,7 +3142,7 @@ async function handleSlipUpload(e) {
   e.target.value = '';
 }
 function handleSlipDrop(e) {
-  const files = Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).slice(0,5-state.slipPhotos.length);
+  const files = Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')||f.type==='application/pdf').slice(0,5-state.slipPhotos.length);
   files.forEach(async f => { state.slipPhotos.push(await compressImg(f)); renderPhotoThumb(state.slipPhotos,'slipPhotoPreview','removeSlipPhoto'); });
 }
 function removeSlipPhoto(i) { state.slipPhotos.splice(i,1); renderPhotoThumb(state.slipPhotos,'slipPhotoPreview','removeSlipPhoto'); }
@@ -4335,13 +4360,13 @@ function _finBranchNote(selBranch, selCat) {
         <input type="text" id="purNote" placeholder="บันทึกเพิ่มเติม">
       </div>
       <div class="form-group">
-        <label>📷 แนบรูปบิล/ใบเสร็จ (สูงสุด 3 รูป)</label>
+        <label>📷 แนบรูปบิล/ใบเสร็จ หรือ PDF (สูงสุด 3 ไฟล์)</label>
         <div onclick="document.getElementById('purPhotoInput').click()"
           style="border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#fafaf8;">
           <div style="font-size:20px;">📎</div>
           <div style="font-size:12px;color:#888;margin-top:4px;">คลิกหรือลากรูปมาวาง</div>
         </div>
-        <input type="file" id="purPhotoInput" accept="image/*" multiple style="display:none;" onchange="handlePurPhoto(event)">
+        <input type="file" id="purPhotoInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handlePurPhoto(event)">
         <div id="purPhotoPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
         <button type="button" id="purAiBtn" onclick="analyzeReceiptWithAI()"
           style="display:none;margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#3d0010,#6b0f1a);color:white;border:none;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
@@ -4412,7 +4437,7 @@ function _finBranchNote(selBranch, selCat) {
           <div style="font-size:20px;">📎</div>
           <div style="font-size:12px;color:#888;margin-top:4px;">คลิกหรือลากรูปมาวาง</div>
         </div>
-        <input type="file" id="expPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleExpPhoto(event)">
+        <input type="file" id="expPhotoInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleExpPhoto(event)">
         <div id="expPhotoPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
       </div>
     </div>
