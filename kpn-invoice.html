@@ -2714,9 +2714,9 @@ async function loadFromSupabase() {
   try {
     if (!_staticLoaded) await loadStaticData();
     const [docs, purchases, expenses, pos] = await Promise.all([
-      supa.get('kpn_documents', '?order=date.desc&limit=500'),
-      supa.get('kpn_purchases', '?order=date.desc&limit=300').catch(()=>[]),
-      supa.get('kpn_expenses', '?order=date.desc&limit=300').catch(()=>[]),
+      supa.get('kpn_documents', '?select=id,type,number,customer,date,due_date,subtotal,vat,wht,total,discount,vat_rate,note,status,items,branch,salesperson,ref_invoice&order=date.desc&limit=500'),
+      supa.get('kpn_purchases', '?select=id,supplier,description,cat,amount,date,due_date,status,paid_date,ref,note&order=date.desc&limit=300').catch(()=>[]),
+      supa.get('kpn_expenses', '?select=id,description,amount,date,cat,paid_by,method,note&order=date.desc&limit=300').catch(()=>[]),
       supa.get('kpn_pos', '?order=date.desc&limit=300').catch(()=>[]),
     ]);
     state.documents = docs.map(d => {
@@ -3019,10 +3019,10 @@ async function markPaid(id) {
 }
 
 // ═══════════════════════════════════════════
-// AUTO REFRESH ทุก 30 วินาที
+// AUTO REFRESH
 // ═══════════════════════════════════════════
-// Auto-refresh เฉพาะ dynamic data ทุก 5 นาที (ลด Egress ~80%)
-setInterval(() => { if (document.visibilityState === 'visible') loadFromSupabase(); }, 300000);
+// Auto-refresh เฉพาะ dynamic data ทุก 10 นาที (ลด RAM & Egress)
+setInterval(() => { if (document.visibilityState === 'visible') loadFromSupabase(); }, 600000);
 
 // Init — โหลดข้อมูลจาก Supabase ทันที
 // ─── LOCAL STORAGE: branches & staff ───
@@ -3134,7 +3134,7 @@ function closeReceiptViewer() {
 // PURCHASE SYSTEM
 // ═══════════════════════════════════════════
 async function handlePurPhoto(e) {
-  const files = Array.from(e.target.files).slice(0, 3 - state.purPhotos.length);
+  const files = Array.from(e.target.files).slice(0, 6 - state.purPhotos.length);
   for(const f of files) { state.purPhotos.push(await compressImg(f)); }
   renderPhotoThumb(state.purPhotos, 'purPhotoPreview', 'removePurPhoto');
   e.target.value='';
@@ -3258,9 +3258,18 @@ function togglePaidDate() {
   }
 }
 
-function openPurchaseModal(id=null) {
+async function openPurchaseModal(id=null) {
   const p = id ? state.purchases.find(x=>x.id===id) : null;
-  state.purPhotos = p && p.photos ? [...p.photos] : [];
+  // โหลด photos on-demand จาก Supabase (ไม่ได้ดึงตอน list)
+  if (p && id) {
+    try {
+      const rows = await supa.get('kpn_purchases', `?id=eq.${id}&select=photos`);
+      if (rows && rows[0]) state.purPhotos = rows[0].photos || [];
+      else state.purPhotos = [];
+    } catch(e) { state.purPhotos = []; }
+  } else {
+    state.purPhotos = [];
+  }
   document.getElementById('purEditId').value = p ? p.id : '';
   document.getElementById('purModalTitle').textContent = p ? 'แก้ไขบิลซื้อ' : 'บันทึกบิลซื้อ';
   document.getElementById('purSupplier').value = p ? p.supplier : '';
@@ -3765,16 +3774,25 @@ function renderPurchases() {
 // EXPENSE SYSTEM
 // ═══════════════════════════════════════════
 async function handleExpPhoto(e) {
-  const files = Array.from(e.target.files).slice(0, 3 - state.expPhotos.length);
+  const files = Array.from(e.target.files).slice(0, 6 - state.expPhotos.length);
   for(const f of files) { state.expPhotos.push(await compressImg(f)); }
   renderPhotoThumb(state.expPhotos,'expPhotoPreview','removeExpPhoto');
   e.target.value='';
 }
 function removeExpPhoto(i) { state.expPhotos.splice(i,1); renderPhotoThumb(state.expPhotos,'expPhotoPreview','removeExpPhoto'); }
 
-function openExpenseModal(id=null) {
+async function openExpenseModal(id=null) {
   const x = id ? state.expenses.find(e=>e.id===id) : null;
-  state.expPhotos = x && x.photos ? [...x.photos] : [];
+  // โหลด photos on-demand จาก Supabase
+  if (x && id) {
+    try {
+      const rows = await supa.get('kpn_expenses', `?id=eq.${id}&select=photos`);
+      if (rows && rows[0]) state.expPhotos = rows[0].photos || [];
+      else state.expPhotos = [];
+    } catch(e) { state.expPhotos = []; }
+  } else {
+    state.expPhotos = [];
+  }
   document.getElementById('expEditId').value = x ? x.id : '';
   document.getElementById('expModalTitle').textContent = x ? 'แก้ไขค่าใช้จ่าย' : 'บันทึกค่าใช้จ่าย';
   document.getElementById('expDesc').value = x ? (x.description||x.desc||'') : '';
@@ -4394,7 +4412,7 @@ function _finBranchNote(selBranch, selCat) {
         <input type="text" id="purNote" placeholder="บันทึกเพิ่มเติม">
       </div>
       <div class="form-group">
-        <label>📷 แนบรูปบิล/ใบเสร็จ หรือ PDF (สูงสุด 3 ไฟล์)</label>
+        <label>📷 แนบรูปบิล/ใบเสร็จ หรือ PDF (สูงสุด 6 ไฟล์)</label>
         <div onclick="document.getElementById('purPhotoInput').click()"
           style="border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#fafaf8;">
           <div style="font-size:20px;">📎</div>
