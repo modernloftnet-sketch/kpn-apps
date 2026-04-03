@@ -3384,8 +3384,8 @@ function renderPayables() {
   var today = new Date(); today.setHours(0,0,0,0);
   var soon = new Date(today); soon.setDate(soon.getDate()+7);
   var unpaid = state.purchases.filter(function(p){ return p.status==='unpaid'; });
-  var overdue = unpaid.filter(function(p){ return p.due_date && new Date(p.due_date)<today; });
-  var dueSoon = unpaid.filter(function(p){ return p.due_date && new Date(p.due_date)>=today && new Date(p.due_date)<=soon; });
+  var overdue = unpaid.filter(function(p){ return p.due_date && new Date(p.due_date)<today; }).sort(function(a,b){ return new Date(a.due_date)-new Date(b.due_date); });
+  var dueSoon = unpaid.filter(function(p){ return p.due_date && new Date(p.due_date)>=today && new Date(p.due_date)<=soon; }).sort(function(a,b){ return new Date(a.due_date)-new Date(b.due_date); });
   var noDue = unpaid.filter(function(p){ return !p.due_date; });
   var future = unpaid.filter(function(p){ return p.due_date && new Date(p.due_date)>soon; });
   var totalDebt = unpaid.reduce(function(s,p){ return s+(+p.amount||0); },0);
