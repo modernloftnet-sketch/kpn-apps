@@ -1563,7 +1563,7 @@ function openEditJobModal(id) {
   document.getElementById('jRef').value = j.ref || '';
   document.getElementById('jNote').value = j.note || '';
   document.getElementById('jStatus').value = j.status || 'pending';
-  document.getElementById('jDeleteBtn').style.display = currentRole==='admin' ? 'flex' : 'none';
+  document.getElementById('jDeleteBtn').style.display = (currentRole==='admin'||currentRole==='sale') ? 'flex' : 'none';
   populateFilters();
   document.getElementById('jBranch').value = j.branch || '';
   document.getElementById('jTeam').value = j.team || '';
