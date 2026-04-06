@@ -2747,7 +2747,7 @@ async function loadFromSupabase() {
         discount: +d.discount||0, vat_rate: +d.vat_rate||0,
         note: d.note||'', status: d.status||'draft', items: d.items||[],
         branch: d.branch||'', salesperson: d.salesperson||'',
-        ref_invoice: d.ref_invoice||'', slip_photos: d.slip_photos||[]
+        ref_invoice: d.ref_invoice||'', slip_photos: d.slip_photos || null
       };
     });
     state.purchases = purchases;

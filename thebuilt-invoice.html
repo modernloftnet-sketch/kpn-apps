@@ -1805,7 +1805,7 @@ const docStatuses = {
   billing: ['pending','paid','cancelled'],
 };
 
-function openDocModal(type, doc=null) {
+async function openDocModal(type, doc=null) {
   state.currentDocType = type;
   const titles = {quotation:'สร้างใบเสนอราคา',invoice:'สร้างใบกำกับภาษี',receipt:'สร้างใบเสร็จรับเงิน',billing:'สร้างใบวางบิล'};
   document.getElementById('docModalTitle').textContent = doc ? 'แก้ไข'+typeLabel(type) : titles[type];
@@ -1853,7 +1853,15 @@ function openDocModal(type, doc=null) {
   if (slipSec) slipSec.style.display = (type === 'invoice' || type === 'receipt') ? 'block' : 'none';
   const billRef = document.getElementById('billingRefSection');
   if (billRef) billRef.style.display = type === 'billing' ? 'block' : 'none';
-  state.slipPhotos = doc && doc.slip_photos ? [...doc.slip_photos] : [];
+  // โหลด slip_photos on-demand (ไม่ได้ดึงตอน list เพื่อลด RAM)
+  if (doc && doc.id && !doc.slip_photos) {
+    try {
+      const rows = await supa.get('tb_documents', `?id=eq.${doc.id}&select=slip_photos`);
+      state.slipPhotos = (rows && rows[0] && rows[0].slip_photos) ? [...rows[0].slip_photos] : [];
+    } catch(e) { state.slipPhotos = []; }
+  } else {
+    state.slipPhotos = doc && doc.slip_photos ? [...doc.slip_photos] : [];
+  }
   const slipPreview = document.getElementById('slipPhotoPreview');
   if (slipPreview) renderPhotoThumb(state.slipPhotos, 'slipPhotoPreview', 'removeSlipPhoto');
   document.getElementById('docModal').classList.add('show');
@@ -2163,7 +2171,7 @@ function previewDoc() {
   document.getElementById('previewModal').classList.add('show');
 }
 
-function viewDoc(id) {
+async function viewDoc(id) {
   const doc = state.documents.find(d=>String(d.id)===String(id));
   if (!doc) return;
   state.editItems = JSON.parse(JSON.stringify(doc.items));
@@ -2176,7 +2184,15 @@ function viewDoc(id) {
   document.getElementById('docBranch').value = doc.branch||'';
   const riEl = document.getElementById('docRefInvoice');
   if(riEl) riEl.value = doc.ref_invoice||'';
-  state.slipPhotos = doc && doc.slip_photos ? [...doc.slip_photos] : [];
+  // โหลด slip_photos on-demand
+  if (doc.id && !doc.slip_photos) {
+    try {
+      const rows = await supa.get('tb_documents', `?id=eq.${doc.id}&select=slip_photos`);
+      state.slipPhotos = (rows && rows[0] && rows[0].slip_photos) ? [...rows[0].slip_photos] : [];
+    } catch(e) { state.slipPhotos = []; }
+  } else {
+    state.slipPhotos = doc && doc.slip_photos ? [...doc.slip_photos] : [];
+  }
   renderPhotoThumb(state.slipPhotos, 'slipPhotoPreview', 'removeSlipPhoto');
   document.getElementById('docSalesperson').value = doc.salesperson||'';
   document.getElementById('vatCheck').checked = doc.vat>0;
@@ -2720,7 +2736,7 @@ async function loadFromSupabase() {
         discount: +d.discount||0, vat_rate: +d.vat_rate||0,
         note: d.note||'', status: d.status||'draft', items: d.items||[],
         branch: d.branch||'', salesperson: d.salesperson||'',
-        ref_invoice: d.ref_invoice||'', slip_photos: d.slip_photos||[]
+        ref_invoice: d.ref_invoice||'', slip_photos: d.slip_photos || null
       };
     });
     state.purchases = purchases;
