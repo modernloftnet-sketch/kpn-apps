@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE BUILT — ตารางจัดส่งสินค้า</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0d1f35;--navy2:#162c47;--navy3:#1e3a5f;
+  --gold:#c9a84c;--gold2:#e8c96b;--gold3:#f5e0a0;
+  --cream:#faf7f2;--cream2:#f2ede4;--white:#ffffff;
+  --gray:#8a8a9a;--lgray:#e8e8f0;--border:#ddd8cf;
+  --green:#1a6b3c;--lgreen:#eafaf1;
+  --red:#c0392b;--lred:#fdf0f0;
+  --orange:#e67e22;--lorange:#fff4e8;
+  --blue:#1976d2;--lblue:#e3f2fd;
+  --purple:#6a1b9a;--lpurple:#f3e5f5;
+  --shadow:0 4px 24px rgba(13,31,53,0.12);
+  --shadow2:0 2px 8px rgba(13,31,53,0.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);min-height:100vh}
+
+/* LOCKSCREEN */
+#lockscreen{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0d1f35 0%,#1e3a5f 60%,#0d1f35 100%);display:flex;align-items:center;justify-content:center}
+.lock-wrap{text-align:center;width:360px;max-width:92vw}
+.lock-logo{font-family:'Kanit',sans-serif;font-size:32px;font-weight:800;color:var(--gold);letter-spacing:3px;margin-bottom:4px}
+.lock-sub{font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-bottom:36px}
+.lock-card{background:white;border-radius:20px;padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+.lock-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin-bottom:20px}
+.lock-input{width:100%;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-size:16px;font-family:'Sarabun',sans-serif;letter-spacing:4px;text-align:center;background:var(--cream);color:var(--navy);transition:border 0.2s}
+.lock-input:focus{outline:none;border-color:var(--gold);background:white}
+.lock-input.error{border-color:var(--red);animation:shake 0.3s}
+.lock-btn{width:100%;margin-top:12px;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:12px;font-size:15px;font-weight:800;font-family:'Kanit',sans-serif;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
+.lock-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.lock-error{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;font-weight:600}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:0 28px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.3)}
+.tb-logo{font-family:'Kanit',sans-serif;font-size:18px;font-weight:800;color:var(--gold);letter-spacing:1px}
+.tb-sep{width:1px;height:24px;background:rgba(255,255,255,0.15)}
+.tb-title{font-size:14px;color:rgba(255,255,255,0.65)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.role-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.tb-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:white;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.tb-btn:hover{background:rgba(255,255,255,0.18)}
+.tb-btn.gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.tb-btn.gold:hover{background:var(--gold2)}
+
+/* STATS */
+.stats-bar{background:var(--navy2);padding:10px 28px;display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.si{display:flex;align-items:center;gap:8px}
+.sl{font-size:11px;color:rgba(255,255,255,0.45)}
+.sv{font-size:15px;font-weight:800;font-family:'Kanit',sans-serif;color:var(--gold)}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;gap:14px;padding:20px 28px 14px}
+.week-title{font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;color:var(--navy);min-width:280px}
+.nav-btn{background:white;border:1.5px solid var(--border);color:var(--navy);border-radius:8px;width:36px;height:36px;font-size:16px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+.nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.today-btn{padding:7px 16px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:'Kanit',sans-serif;cursor:pointer;letter-spacing:1px}
+.today-btn:hover{background:var(--navy2)}
+.legend{margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* GRID 7 COLUMNS */
+.grid-wrap{padding:0 28px 32px}
+.trip-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.trip-col{background:white;border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--lgray);overflow:hidden;min-height:350px;display:flex;flex-direction:column}
+.trip-header{padding:12px 10px;text-align:center;border-bottom:1px solid var(--lgray)}
+.trip-day{font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;color:var(--navy)}
+.trip-date{font-size:12px;color:var(--gray);margin-top:2px}
+.trip-count{display:inline-block;background:var(--gold);color:var(--navy);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:800;font-family:'Kanit',sans-serif;margin-top:6px}
+.trip-header.today-col{background:linear-gradient(135deg,var(--navy),var(--navy3));border-bottom:none}
+.trip-header.today-col .trip-day{color:var(--gold)}
+.trip-header.today-col .trip-date{color:rgba(255,255,255,0.6)}
+.trip-header.weekend{background:var(--cream2)}
+.trip-header.weekend .trip-day{color:var(--gray)}
+.trip-body{padding:10px;flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100vh - 320px);min-height:80px;transition:background 0.2s}
+.trip-body.drag-over{background:rgba(201,168,76,0.12);border-radius:0 0 14px 14px}
+
+/* JOB CHIPS */
+.job-chip{border-radius:8px;padding:8px 10px;cursor:grab;transition:all 0.15s;border:1.5px solid transparent;position:relative;user-select:none}
+.job-chip:active{cursor:grabbing}
+.job-chip.dragging{opacity:0.4;transform:scale(0.95)}
+.job-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow2)}
+.chip-producing{background:#fdf0f0;border-color:#f5c6c2;color:#721c24}
+.chip-produced{background:var(--lorange);border-color:#fdd;color:#7d3c0a}
+.chip-packed{background:var(--lblue);border-color:#b5d4f4;color:#0c447c}
+.chip-ready{background:var(--lgreen);border-color:#b2e8c8;color:var(--green)}
+.chip-shipped{background:var(--lgray);border-color:#ccc;color:#666}
+.chip-issue{background:var(--lpurple);border-color:#d4b5e0;color:var(--purple)}
+.chip-name{font-size:13px;font-weight:700}
+.chip-meta{font-size:11px;margin-top:3px;opacity:0.8}
+.chip-status-dot{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%}
+.dot-producing{background:var(--red)}
+.dot-produced{background:var(--orange)}
+.dot-packed{background:var(--blue)}
+.dot-ready{background:var(--green)}
+.dot-shipped{background:var(--gray)}
+.dot-issue{background:var(--purple)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,31,53,0.55);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(13,31,53,0.3);animation:modalIn 0.22s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(12px)}to{opacity:1;transform:none}}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--lgray);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;border-radius:20px 20px 0 0}
+.modal-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);padding:4px 8px;border-radius:6px}
+.modal-close:hover{background:var(--lgray)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--lgray);display:flex;gap:10px;justify-content:flex-end}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px}
+.fg input,.fg select,.fg textarea{border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-size:14px;font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);transition:border 0.2s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold);background:white}
+.fg textarea{min-height:60px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* BUTTONS */
+.btn{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all 0.2s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--navy);color:white}
+.btn-primary:hover{background:var(--navy2)}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-gold:hover{background:var(--gold2)}
+.btn-outline{background:white;color:var(--navy);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--navy)}
+.btn-danger{background:var(--lred);color:var(--red);border:1.5px solid #f5c6c2}
+.btn-danger:hover{background:#f5c6c2}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-producing{background:var(--lred);color:var(--red)}
+.badge-produced{background:var(--lorange);color:var(--orange)}
+.badge-packed{background:var(--lblue);color:var(--blue)}
+.badge-ready{background:var(--lgreen);color:var(--green)}
+.badge-shipped{background:var(--lgray);color:#666}
+.badge-issue{background:var(--lpurple);color:var(--purple)}
+
+/* DETAIL */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.detail-item{}
+.detail-label{font-size:11px;color:var(--gray);font-weight:600;margin-bottom:3px}
+.detail-val{font-size:14px;font-weight:600;color:var(--navy)}
+.note-box{background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:13px;color:var(--navy);line-height:1.6;min-height:40px}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:white;padding:12px 28px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:9999;opacity:0;transition:all 0.3s}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* FILTER */
+.filter-bar{background:white;border-bottom:1px solid var(--lgray);padding:12px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow2)}
+.filter-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'Sarabun',sans-serif;background:white;color:var(--navy);min-width:160px}
+.filter-bar select:focus{outline:none;border-color:var(--gold)}
+
+/* MOBILE */
+@media(max-width:1200px){
+  .trip-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:900px){
+  .trip-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .topbar{padding:0 14px}.tb-sep,.tb-title{display:none}
+  .week-nav{padding:14px 14px 10px;flex-wrap:wrap;gap:10px}.week-title{font-size:18px;min-width:auto}
+  .grid-wrap{padding:0 10px 24px}
+  .trip-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .form-row,.detail-grid{grid-template-columns:1fr}
+  .stats-bar{padding:8px 14px;gap:16px}
+  .legend{display:none}
+  .filter-bar{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOCKSCREEN -->
+<div id="lockscreen">
+  <div class="lock-wrap">
+    <div class="lock-logo">THE BUILT</div>
+    <div class="lock-sub">ตารางจัดส่งสินค้า · Delivery Schedule</div>
+    <div class="lock-card">
+      <div style="font-size:40px;margin-bottom:12px">🚚</div>
+      <div class="lock-title">เข้าสู่ระบบ</div>
+      <input type="password" class="lock-input" id="lockInput" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkLock()">
+      <button class="lock-btn" onclick="checkLock()">🔓 เข้าสู่ระบบ</button>
+      <div class="lock-error" id="lockError"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">THE BUILT</div>
+  <div class="tb-sep"></div>
+  <div class="tb-title">ตารางจัดส่งสินค้า</div>
+  <div class="tb-right">
+    <span id="syncDot" style="font-size:11px;color:rgba(255,255,255,0.4)">☁️</span>
+    <div id="roleBadge" class="role-badge" style="display:none;"></div>
+    <button class="tb-btn gold" id="btnAdd" style="display:none" onclick="openAddModal()">+ เพิ่มงานจัดส่ง</button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar" id="statsBar">
+  <div class="si"><div class="sl">งานสัปดาห์นี้</div><div class="sv" id="st-total">0</div></div>
+  <div class="si"><div class="sl">กำลังผลิต</div><div class="sv" id="st-producing" style="color:#fca5a5">0</div></div>
+  <div class="si"><div class="sl">ผลิตเสร็จ</div><div class="sv" id="st-produced" style="color:#fdba74">0</div></div>
+  <div class="si"><div class="sl">แพ็คแล้ว</div><div class="sv" id="st-packed" style="color:#93c5fd">0</div></div>
+  <div class="si"><div class="sl">พร้อมส่ง</div><div class="sv" id="st-ready" style="color:#6ee7b7">0</div></div>
+  <div class="si"><div class="sl">ส่งแล้ว</div><div class="sv" id="st-shipped" style="color:#d1d5db">0</div></div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <select id="filterBranch" onchange="render()"><option value="">🏪 ทุกสาขา</option></select>
+  <select id="filterStatus" onchange="render()">
+    <option value="">📋 ทุกสถานะ</option>
+    <option value="producing">🔴 กำลังผลิต</option>
+    <option value="produced">🟠 ผลิตเสร็จ</option>
+    <option value="packed">🔵 แพ็คแล้ว</option>
+    <option value="ready">🟢 พร้อมส่ง</option>
+    <option value="shipped">⚪ ส่งแล้ว</option>
+    <option value="issue">🟣 มีปัญหา</option>
+  </select>
+</div>
+
+<!-- WEEK NAV -->
+<div class="week-nav">
+  <button class="nav-btn" onclick="changeWeek(-1)">◀</button>
+  <button class="nav-btn" onclick="changeWeek(1)">▶</button>
+  <button class="today-btn" onclick="goThisWeek()">สัปดาห์นี้</button>
+  <div class="week-title" id="weekTitle"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>กำลังผลิต</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>ผลิตเสร็จ</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>แพ็คแล้ว</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>พร้อมส่ง</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray)"></div>ส่งแล้ว</div>
+  </div>
+</div>
+
+<!-- GRID -->
+<div class="grid-wrap">
+  <div class="trip-grid" id="tripGrid"></div>
+</div>
+
+<!-- MODAL: ADD/EDIT -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="formTitle">เพิ่มงานจัดส่ง</div>
+      <button class="modal-close" onclick="closeModal('formModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+      <div class="fg">
+        <label>ชื่อลูกค้า *</label>
+        <input type="text" id="fCustomer" placeholder="ชื่อลูกค้า">
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>สาขา *</label>
+          <select id="fBranch"></select>
+        </div>
+        <div class="fg">
+          <label>วันที่จัดส่ง *</label>
+          <input type="date" id="fDate">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>สถานะ</label>
+          <select id="fStatus">
+            <option value="producing">🔴 กำลังผลิต</option>
+            <option value="produced">🟠 ผลิตเสร็จ</option>
+            <option value="packed">🔵 แพ็คแล้ว</option>
+            <option value="ready">🟢 พร้อมส่ง</option>
+            <option value="shipped">⚪ ส่งแล้ว</option>
+            <option value="issue">🟣 มีปัญหา</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>รายการสินค้า</label>
+          <input type="text" id="fItems" placeholder="เช่น ตู้ครัว 3.2m, เคาน์เตอร์">
+        </div>
+      </div>
+      <div class="fg">
+        <label>หมายเหตุ</label>
+        <textarea id="fNote" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnDel" style="display:none;margin-right:auto" onclick="deleteJob()">🗑 ลบ</button>
+      <button class="btn btn-outline" onclick="closeModal('formModal')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveJob()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETAIL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 รายละเอียดงาน</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('detailModal')">ปิด</button>
+      <button class="btn btn-primary" id="btnEdit" style="display:none" onclick="editFromDetail()">✏️ แก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// CONFIG
+const ROLES = [
+  {pass:'16012521',role:'admin',label:'👑 Admin',color:'#fff3cd;#856404'},
+  {pass:'1234',role:'manager',label:'💼 ผู้จัดการ',color:'#d4edda;#155724'},
+  {pass:'5555',role:'factory',label:'🏭 โรงงาน',color:'#e3f2fd;#0c447c'},
+  {pass:'9999',role:'driver',label:'🚚 คนขับรถ',color:'#f8d7da;#58151c'}
+];
+const BRANCHES = ["เชียงใหม่","เชียงราย","ลำปาง","ขอนแก่น","อุดรธานี","อุบลฯ","โคราช","ภูเก็ต","หาดใหญ่","สุราษฎร์ฯ","นครสวรรค์","พิษณุโลก","ลพบุรี","ราชบุรี","ระยอง","มหาสารคาม","สกลนคร","ร้อยเอ็ด","บุรีรัมย์","สุรินทร์","ปทุมธานี","winเชียงใหม่","winเชียงราย","winนครสวรรค์","winขอนแก่น","winอุบลฯ"];
+const TRIP_DAYS = [1,2,3,4,5,6,0]; // จันทร์=1 ถึง อาทิตย์=0
+const DAY_NAMES = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+const MONTH_NAMES = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+const STATUS_MAP = {
+  producing:{label:'กำลังผลิต',emoji:'🔴',chip:'chip-producing',badge:'badge-producing',dot:'dot-producing'},
+  produced:{label:'ผลิตเสร็จ',emoji:'🟠',chip:'chip-produced',badge:'badge-produced',dot:'dot-produced'},
+  packed:{label:'แพ็คแล้ว',emoji:'🔵',chip:'chip-packed',badge:'badge-packed',dot:'dot-packed'},
+  ready:{label:'พร้อมส่ง',emoji:'🟢',chip:'chip-ready',badge:'badge-ready',dot:'dot-ready'},
+  shipped:{label:'ส่งแล้ว',emoji:'⚪',chip:'chip-shipped',badge:'badge-shipped',dot:'dot-shipped'},
+  issue:{label:'มีปัญหา',emoji:'🟣',chip:'chip-issue',badge:'badge-issue',dot:'dot-issue'}
+};
+
+// SUPABASE
+const SB_URL = 'https://qybntZlfnrcownntzmir.supabase.co';
+const SB_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
+const supa = {
+  async req(method, table, body=null, params='') {
+    const res = await fetch(`${SB_URL}/rest/v1/${table}${params}`, {
+      method,
+      headers: {
+        'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal',
+      },
+      body: body ? JSON.stringify(body) : null,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return method==='GET' ? res.json() : true;
+  },
+  get:    (t,p='')  => supa.req('GET',t,null,p),
+  upsert: (t,d)     => supa.req('POST',t,Array.isArray(d)?d:[d]),
+  del:    (t,id)    => supa.req('DELETE',t,null,`?id=eq.${id}`),
+  patch:  (t,id,d)  => supa.req('PATCH',t,d,`?id=eq.${id}`),
+};
+
+// STATE
+let currentRole = null;
+let jobs = [];
+let weekStart = getMonday(new Date());
+
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getTripDates() {
+  return TRIP_DAYS.map((dayIdx, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i); // 0=Mon, 1=Tue, ... 6=Sun
+    return d;
+  });
+}
+
+// LOCK
+(function() {
+  const saved = sessionStorage.getItem('del_role');
+  if (saved) {
+    const r = ROLES.find(x => x.role === saved);
+    if (r) { applyRole(r); return; }
+  }
+  setTimeout(() => document.getElementById('lockInput').focus(), 200);
+})();
+
+function checkLock() {
+  const val = document.getElementById('lockInput').value;
+  const r = ROLES.find(x => x.pass === val);
+  if (r) {
+    sessionStorage.setItem('del_role', r.role);
+    applyRole(r);
+  } else {
+    const inp = document.getElementById('lockInput');
+    inp.classList.add('error');
+    document.getElementById('lockError').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+    inp.value = '';
+    setTimeout(() => { inp.classList.remove('error'); inp.focus(); }, 400);
+  }
+}
+
+function applyRole(r) {
+  currentRole = r.role;
+  document.getElementById('lockscreen').style.display = 'none';
+  const badge = document.getElementById('roleBadge');
+  const [bg, col] = r.color.split(';');
+  badge.textContent = r.label;
+  badge.style.cssText = `background:${bg};color:${col};padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block;`;
+  if (r.role === 'admin' || r.role === 'manager' || r.role === 'factory') {
+    document.getElementById('btnAdd').style.display = 'flex';
+  }
+  populateFilters();
+  loadJobs();
+}
+
+// FILTERS
+function populateFilters() {
+  const fb = document.getElementById('filterBranch');
+  fb.innerHTML = '<option value="">🏪 ทุกสาขา</option>' + BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+  const ff = document.getElementById('fBranch');
+  ff.innerHTML = BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function getFiltered() {
+  let list = [...jobs];
+  const fb = document.getElementById('filterBranch')?.value || '';
+  const fs = document.getElementById('filterStatus')?.value || '';
+  if (fb) list = list.filter(j => j.branch === fb);
+  if (fs) list = list.filter(j => j.status === fs);
+  return list;
+}
+
+// LOAD
+async function loadJobs() {
+  document.getElementById('syncDot').textContent = '🔄';
+  try {
+    const data = await supa.get('delivery_jobs', '?order=date,customer');
+    jobs = data || [];
+    document.getElementById('syncDot').textContent = '☁️ ซิงค์แล้ว';
+  } catch(e) {
+    document.getElementById('syncDot').textContent = '⚠️ Error';
+    toast('⚠️ โหลดข้อมูลไม่สำเร็จ — ใช้ข้อมูลใน Local');
+  }
+  render();
+}
+
+// RENDER
+function render() {
+  const tripDates = getTripDates();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const sundayEnd = new Date(weekStart); sundayEnd.setDate(sundayEnd.getDate() + 6);
+  document.getElementById('weekTitle').textContent =
+    `${weekStart.getDate()} ${MONTH_NAMES[weekStart.getMonth()]} — ${sundayEnd.getDate()} ${MONTH_NAMES[sundayEnd.getMonth()]} ${sundayEnd.getFullYear() + 543}`;
+
+  const filtered = getFiltered();
+  const grid = document.getElementById('tripGrid');
+  let html = '';
+
+  tripDates.forEach(td => {
+    const ds = dateStr(td);
+    const isToday = ds === dateStr(today);
+    const isWeekend = (td.getDay() === 0 || td.getDay() === 6);
+    const dayJobs = filtered.filter(j => j.date === ds).sort((a,b) => (a.customer||'').localeCompare(b.customer||''));
+
+    html += `<div class="trip-col">`;
+    html += `<div class="trip-header${isToday ? ' today-col' : isWeekend ? ' weekend' : ''}">`;
+    html += `<div class="trip-day">🚚 ${DAY_NAMES[td.getDay()]}</div>`;
+    html += `<div class="trip-date">${td.getDate()} ${MONTH_NAMES[td.getMonth()]} ${td.getFullYear()+543}</div>`;
+    if (dayJobs.length > 0) html += `<div class="trip-count">${dayJobs.length} งาน</div>`;
+    html += `</div>`;
+    html += `<div class="trip-body" data-date="${ds}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">`;
+
+    if (dayJobs.length === 0) {
+      html += `<div class="empty-state drop-hint"><div class="empty-icon">📦</div><div class="empty-title">ไม่มีงาน</div></div>`;
+    } else {
+      dayJobs.forEach(j => {
+        const st = STATUS_MAP[j.status] || STATUS_MAP.producing;
+        html += `<div class="job-chip ${st.chip}" draggable="true" data-id="${j.id}" ondragstart="onDragStart(event)" ondragend="onDragEnd(event)" onclick="openDetail('${j.id}')">`;
+        html += `<div class="chip-status-dot ${st.dot}"></div>`;
+        html += `<div class="chip-name">👤 ${j.customer}</div>`;
+        html += `<div class="chip-meta">🏪 ${j.branch||'-'}${j.items ? ' · '+j.items : ''}</div>`;
+        html += `</div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+
+  grid.innerHTML = html;
+  updateStats(filtered, tripDates);
+}
+
+function updateStats(filtered, tripDates) {
+  if (!filtered || !tripDates) return;
+  const dates = new Set(tripDates.map(dateStr));
+  const week = filtered.filter(j => dates.has(j.date));
+  document.getElementById('st-total').textContent = week.length;
+  document.getElementById('st-producing').textContent = week.filter(j=>j.status==='producing').length;
+  document.getElementById('st-produced').textContent = week.filter(j=>j.status==='produced').length;
+  document.getElementById('st-packed').textContent = week.filter(j=>j.status==='packed').length;
+  document.getElementById('st-ready').textContent = week.filter(j=>j.status==='ready').length;
+  document.getElementById('st-shipped').textContent = week.filter(j=>j.status==='shipped').length;
+}
+
+// WEEK NAV
+function changeWeek(dir) {
+  weekStart.setDate(weekStart.getDate() + dir * 7);
+  render();
+}
+function goThisWeek() {
+  weekStart = getMonday(new Date());
+  render();
+}
+
+// DETAIL
+let currentDetailId = null;
+function openDetail(id) {
+  currentDetailId = id;
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  const st = STATUS_MAP[j.status] || STATUS_MAP.producing;
+  const canEdit = currentRole === 'admin' || currentRole === 'manager' || currentRole === 'factory';
+  document.getElementById('btnEdit').style.display = canEdit ? 'inline-flex' : 'none';
+
+  document.getElementById('detailBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <span class="badge ${st.badge}" style="font-size:14px;padding:6px 18px;">${st.emoji} ${st.label}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">ชื่อลูกค้า</div><div class="detail-val">👤 ${j.customer||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">สาขา</div><div class="detail-val">🏪 ${j.branch||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">วันที่จัดส่ง</div><div class="detail-val">📅 ${fmtDate(j.date)}</div></div>
+      <div class="detail-item"><div class="detail-label">รายการสินค้า</div><div class="detail-val">📦 ${j.items||'-'}</div></div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div class="detail-label" style="margin-bottom:6px;">📝 หมายเหตุ</div>
+      <div class="note-box">${j.note || '<span style="color:var(--gray)">ไม่มีหมายเหตุ</span>'}</div>
+    </div>
+    <div style="font-size:11px;color:var(--gray);margin-top:12px;text-align:right;">
+      อัปเดตล่าสุด: ${j.updated_at ? new Date(j.updated_at).toLocaleString('th-TH') : '-'}
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function editFromDetail() {
+  closeModal('detailModal');
+  const j = jobs.find(x => x.id === currentDetailId);
+  if (j) openEditModal(j);
+}
+
+// ADD/EDIT
+function openAddModal() {
+  document.getElementById('formTitle').textContent = '➕ เพิ่มงานจัดส่ง';
+  document.getElementById('fId').value = '';
+  document.getElementById('fCustomer').value = '';
+  document.getElementById('fDate').value = '';
+  document.getElementById('fStatus').value = 'producing';
+  document.getElementById('fItems').value = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('btnDel').style.display = 'none';
+  document.getElementById('formModal').classList.add('show');
+}
+
+function openEditModal(j) {
+  document.getElementById('formTitle').textContent = '✏️ แก้ไขงานจัดส่ง';
+  document.getElementById('fId').value = j.id;
+  document.getElementById('fCustomer').value = j.customer || '';
+  document.getElementById('fBranch').value = j.branch || '';
+  document.getElementById('fDate').value = j.date || '';
+  document.getElementById('fStatus').value = j.status || 'producing';
+  document.getElementById('fItems').value = j.items || '';
+  document.getElementById('fNote').value = j.note || '';
+  document.getElementById('btnDel').style.display = currentRole === 'admin' ? 'inline-flex' : 'none';
+  document.getElementById('formModal').classList.add('show');
+}
+
+async function saveJob() {
+  const customer = document.getElementById('fCustomer').value.trim();
+  const branch = document.getElementById('fBranch').value;
+  const date = document.getElementById('fDate').value;
+  if (!customer || !date) return toast('❌ กรุณากรอกชื่อลูกค้าและวันที่');
+
+  const data = {
+    customer, branch, date,
+    status: document.getElementById('fStatus').value,
+    items: document.getElementById('fItems').value.trim(),
+    note: document.getElementById('fNote').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+
+  const id = document.getElementById('fId').value;
+  try {
+    if (id) {
+      await supa.patch('delivery_jobs', id, data);
+      const idx = jobs.findIndex(j => j.id === id);
+      if (idx >= 0) jobs[idx] = { ...jobs[idx], ...data };
+      toast('✅ แก้ไขแล้ว');
+    } else {
+      data.id = crypto.randomUUID();
+      data.created_at = new Date().toISOString();
+      await supa.upsert('delivery_jobs', data);
+      jobs.push(data);
+      toast('✅ เพิ่มงานแล้ว');
+    }
+    closeModal('formModal');
+    render();
+  } catch(e) {
+    toast('⚠️ บันทึกไม่สำเร็จ: ' + e.message);
+  }
+}
+
+async function deleteJob() {
+  const id = document.getElementById('fId').value;
+  if (!id || !confirm('ลบงานนี้?')) return;
+  try {
+    await supa.del('delivery_jobs', id);
+    jobs = jobs.filter(j => j.id !== id);
+    closeModal('formModal');
+    render();
+    toast('🗑 ลบแล้ว');
+  } catch(e) {
+    toast('⚠️ ลบไม่สำเร็จ');
+  }
+}
+
+// DRAG & DROP
+let dragId = null;
+
+function onDragStart(e) {
+  dragId = e.target.closest('.job-chip').dataset.id;
+  e.target.closest('.job-chip').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragId);
+}
+
+function onDragEnd(e) {
+  dragId = null;
+  document.querySelectorAll('.job-chip.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.trip-body.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function onDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  const newDate = e.currentTarget.dataset.date;
+  if (!id || !newDate) return;
+
+  const job = jobs.find(j => j.id === id);
+  if (!job || job.date === newDate) return;
+
+  const oldDate = job.date;
+  job.date = newDate;
+  job.updated_at = new Date().toISOString();
+  render();
+
+  try {
+    await supa.patch('delivery_jobs', id, { date: newDate, updated_at: job.updated_at });
+    toast(`✅ ย้ายไป ${fmtDateShort(newDate)} แล้ว`);
+  } catch(err) {
+    job.date = oldDate;
+    render();
+    toast('⚠️ ย้ายไม่สำเร็จ');
+  }
+}
+
+function fmtDateShort(d) {
+  if (!d) return '-';
+  const dt = new Date(d+'T00:00:00');
+  return `${DAY_NAMES[dt.getDay()]} ${dt.getDate()} ${MONTH_NAMES[dt.getMonth()]}`;
+}
+
+// UTILS
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function fmtDate(d) {
+  if (!d) return '-';
+  return new Date(d+'T00:00:00').toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+}
+
+// Close modals on backdrop
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// Auto refresh
+setInterval(() => { if (document.visibilityState==='visible' && currentRole) loadJobs(); }, 60000);
+</script>
+</body></html>
