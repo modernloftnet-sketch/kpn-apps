@@ -86,21 +86,23 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
 .job-chip:active{cursor:grabbing}
 .job-chip.dragging{opacity:0.4;transform:scale(0.95)}
 .job-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow2)}
+.chip-wait-design{background:#f1f1f1;border-color:#ccc;color:#555}
+.chip-designed{background:var(--lblue);border-color:#b5d4f4;color:#0c447c}
+.chip-wait-wood{background:#fdf0e6;border-color:#e6c9a8;color:#6b4226}
+.chip-wait-produce{background:var(--lorange);border-color:#fdd;color:#7d3c0a}
 .chip-producing{background:#fdf0f0;border-color:#f5c6c2;color:#721c24}
-.chip-produced{background:var(--lorange);border-color:#fdd;color:#7d3c0a}
-.chip-packed{background:var(--lblue);border-color:#b5d4f4;color:#0c447c}
-.chip-ready{background:var(--lgreen);border-color:#b2e8c8;color:var(--green)}
-.chip-shipped{background:var(--lgray);border-color:#ccc;color:#666}
-.chip-issue{background:var(--lpurple);border-color:#d4b5e0;color:var(--purple)}
+.chip-qc-done{background:var(--lgreen);border-color:#b2e8c8;color:var(--green)}
+.chip-wait-ship{background:var(--lpurple);border-color:#d4b5e0;color:var(--purple)}
 .chip-name{font-size:13px;font-weight:700}
 .chip-meta{font-size:11px;margin-top:3px;opacity:0.8}
 .chip-status-dot{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%}
+.dot-wait-design{background:#999}
+.dot-designed{background:var(--blue)}
+.dot-wait-wood{background:#8B5E3C}
+.dot-wait-produce{background:var(--orange)}
 .dot-producing{background:var(--red)}
-.dot-produced{background:var(--orange)}
-.dot-packed{background:var(--blue)}
-.dot-ready{background:var(--green)}
-.dot-shipped{background:var(--gray)}
-.dot-issue{background:var(--purple)}
+.dot-qc-done{background:var(--green)}
+.dot-wait-ship{background:var(--purple)}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(13,31,53,0.55);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
@@ -135,12 +137,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
 
 /* BADGE */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-wait-design{background:#f1f1f1;color:#555}
+.badge-designed{background:var(--lblue);color:var(--blue)}
+.badge-wait-wood{background:#fdf0e6;color:#6b4226}
+.badge-wait-produce{background:var(--lorange);color:var(--orange)}
 .badge-producing{background:var(--lred);color:var(--red)}
-.badge-produced{background:var(--lorange);color:var(--orange)}
-.badge-packed{background:var(--lblue);color:var(--blue)}
-.badge-ready{background:var(--lgreen);color:var(--green)}
-.badge-shipped{background:var(--lgray);color:#666}
-.badge-issue{background:var(--lpurple);color:var(--purple)}
+.badge-qc-done{background:var(--lgreen);color:var(--green)}
+.badge-wait-ship{background:var(--lpurple);color:var(--purple)}
 
 /* DETAIL */
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
@@ -213,12 +216,14 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
 
 <!-- STATS -->
 <div class="stats-bar" id="statsBar">
-  <div class="si"><div class="sl">งานสัปดาห์นี้</div><div class="sv" id="st-total">0</div></div>
+  <div class="si"><div class="sl">สัปดาห์นี้</div><div class="sv" id="st-total">0</div></div>
+  <div class="si"><div class="sl">รอทำแบบ</div><div class="sv" id="st-wait-design" style="color:#d1d5db">0</div></div>
+  <div class="si"><div class="sl">ทำแบบแล้ว</div><div class="sv" id="st-designed" style="color:#93c5fd">0</div></div>
+  <div class="si"><div class="sl">รอไม้</div><div class="sv" id="st-wait-wood" style="color:#c9a87c">0</div></div>
+  <div class="si"><div class="sl">รอผลิต</div><div class="sv" id="st-wait-produce" style="color:#fdba74">0</div></div>
   <div class="si"><div class="sl">กำลังผลิต</div><div class="sv" id="st-producing" style="color:#fca5a5">0</div></div>
-  <div class="si"><div class="sl">ผลิตเสร็จ</div><div class="sv" id="st-produced" style="color:#fdba74">0</div></div>
-  <div class="si"><div class="sl">แพ็คแล้ว</div><div class="sv" id="st-packed" style="color:#93c5fd">0</div></div>
-  <div class="si"><div class="sl">พร้อมส่ง</div><div class="sv" id="st-ready" style="color:#6ee7b7">0</div></div>
-  <div class="si"><div class="sl">ส่งแล้ว</div><div class="sv" id="st-shipped" style="color:#d1d5db">0</div></div>
+  <div class="si"><div class="sl">เสร็จ-QC</div><div class="sv" id="st-qc-done" style="color:#6ee7b7">0</div></div>
+  <div class="si"><div class="sl">รอจัดส่ง</div><div class="sv" id="st-wait-ship" style="color:#c4b5fd">0</div></div>
 </div>
 
 <!-- FILTER -->
@@ -226,12 +231,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
   <select id="filterBranch" onchange="render()"><option value="">🏪 ทุกสาขา</option></select>
   <select id="filterStatus" onchange="render()">
     <option value="">📋 ทุกสถานะ</option>
+    <option value="wait_design">⚪ รอทำแบบ</option>
+    <option value="designed">🔵 ทำแบบแล้ว</option>
+    <option value="wait_wood">🟤 รอไม้</option>
+    <option value="wait_produce">🟠 รอผลิต</option>
     <option value="producing">🔴 กำลังผลิต</option>
-    <option value="produced">🟠 ผลิตเสร็จ</option>
-    <option value="packed">🔵 แพ็คแล้ว</option>
-    <option value="ready">🟢 พร้อมส่ง</option>
-    <option value="shipped">⚪ ส่งแล้ว</option>
-    <option value="issue">🟣 มีปัญหา</option>
+    <option value="qc_done">🟢 เสร็จแล้ว-QC</option>
+    <option value="wait_ship">🟣 รอจัดส่ง</option>
   </select>
 </div>
 
@@ -242,11 +248,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
   <button class="today-btn" onclick="goThisWeek()">สัปดาห์นี้</button>
   <div class="week-title" id="weekTitle"></div>
   <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#999"></div>รอทำแบบ</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>ทำแบบแล้ว</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8B5E3C"></div>รอไม้</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>รอผลิต</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>กำลังผลิต</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>ผลิตเสร็จ</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>แพ็คแล้ว</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>พร้อมส่ง</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--gray)"></div>ส่งแล้ว</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>เสร็จ-QC</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>รอจัดส่ง</div>
   </div>
 </div>
 
@@ -282,12 +290,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);
         <div class="fg">
           <label>สถานะ</label>
           <select id="fStatus">
+            <option value="wait_design">⚪ รอทำแบบ</option>
+            <option value="designed">🔵 ทำแบบแล้ว</option>
+            <option value="wait_wood">🟤 รอไม้</option>
+            <option value="wait_produce">🟠 รอผลิต</option>
             <option value="producing">🔴 กำลังผลิต</option>
-            <option value="produced">🟠 ผลิตเสร็จ</option>
-            <option value="packed">🔵 แพ็คแล้ว</option>
-            <option value="ready">🟢 พร้อมส่ง</option>
-            <option value="shipped">⚪ ส่งแล้ว</option>
-            <option value="issue">🟣 มีปัญหา</option>
+            <option value="qc_done">🟢 เสร็จแล้ว-QC</option>
+            <option value="wait_ship">🟣 รอจัดส่ง</option>
           </select>
         </div>
         <div class="fg">
@@ -339,12 +348,13 @@ const DAY_NAMES = ['อาทิตย์','จันทร์','อังคา
 const MONTH_NAMES = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 const STATUS_MAP = {
+  wait_design:{label:'รอทำแบบ',emoji:'⚪',chip:'chip-wait-design',badge:'badge-wait-design',dot:'dot-wait-design'},
+  designed:{label:'ทำแบบแล้ว',emoji:'🔵',chip:'chip-designed',badge:'badge-designed',dot:'dot-designed'},
+  wait_wood:{label:'รอไม้',emoji:'🟤',chip:'chip-wait-wood',badge:'badge-wait-wood',dot:'dot-wait-wood'},
+  wait_produce:{label:'รอผลิต',emoji:'🟠',chip:'chip-wait-produce',badge:'badge-wait-produce',dot:'dot-wait-produce'},
   producing:{label:'กำลังผลิต',emoji:'🔴',chip:'chip-producing',badge:'badge-producing',dot:'dot-producing'},
-  produced:{label:'ผลิตเสร็จ',emoji:'🟠',chip:'chip-produced',badge:'badge-produced',dot:'dot-produced'},
-  packed:{label:'แพ็คแล้ว',emoji:'🔵',chip:'chip-packed',badge:'badge-packed',dot:'dot-packed'},
-  ready:{label:'พร้อมส่ง',emoji:'🟢',chip:'chip-ready',badge:'badge-ready',dot:'dot-ready'},
-  shipped:{label:'ส่งแล้ว',emoji:'⚪',chip:'chip-shipped',badge:'badge-shipped',dot:'dot-shipped'},
-  issue:{label:'มีปัญหา',emoji:'🟣',chip:'chip-issue',badge:'badge-issue',dot:'dot-issue'}
+  qc_done:{label:'เสร็จแล้ว-QC',emoji:'🟢',chip:'chip-qc-done',badge:'badge-qc-done',dot:'dot-qc-done'},
+  wait_ship:{label:'รอจัดส่ง',emoji:'🟣',chip:'chip-wait-ship',badge:'badge-wait-ship',dot:'dot-wait-ship'}
 };
 
 // SUPABASE
@@ -516,11 +526,13 @@ function updateStats(filtered, tripDates) {
   const dates = new Set(tripDates.map(dateStr));
   const week = filtered.filter(j => dates.has(j.date));
   document.getElementById('st-total').textContent = week.length;
+  document.getElementById('st-wait-design').textContent = week.filter(j=>j.status==='wait_design').length;
+  document.getElementById('st-designed').textContent = week.filter(j=>j.status==='designed').length;
+  document.getElementById('st-wait-wood').textContent = week.filter(j=>j.status==='wait_wood').length;
+  document.getElementById('st-wait-produce').textContent = week.filter(j=>j.status==='wait_produce').length;
   document.getElementById('st-producing').textContent = week.filter(j=>j.status==='producing').length;
-  document.getElementById('st-produced').textContent = week.filter(j=>j.status==='produced').length;
-  document.getElementById('st-packed').textContent = week.filter(j=>j.status==='packed').length;
-  document.getElementById('st-ready').textContent = week.filter(j=>j.status==='ready').length;
-  document.getElementById('st-shipped').textContent = week.filter(j=>j.status==='shipped').length;
+  document.getElementById('st-qc-done').textContent = week.filter(j=>j.status==='qc_done').length;
+  document.getElementById('st-wait-ship').textContent = week.filter(j=>j.status==='wait_ship').length;
 }
 
 // WEEK NAV
