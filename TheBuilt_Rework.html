@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE BUILT — กระดานรวมงานแก้ไข</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0d1f35;--navy2:#162c47;--navy3:#1e3a5f;
+  --gold:#c9a84c;--gold2:#e8c96b;--gold3:#f5e0a0;
+  --cream:#faf7f2;--cream2:#f2ede4;--white:#ffffff;
+  --gray:#8a8a9a;--lgray:#e8e8f0;--border:#ddd8cf;
+  --green:#1a6b3c;--lgreen:#eafaf1;
+  --red:#c0392b;--lred:#fdf0f0;
+  --orange:#e67e22;--lorange:#fff4e8;
+  --blue:#1976d2;--lblue:#e3f2fd;
+  --purple:#6a1b9a;--lpurple:#f3e5f5;
+  --shadow:0 4px 24px rgba(13,31,53,0.10);
+  --shadow2:0 2px 8px rgba(13,31,53,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);min-height:100vh}
+
+/* LOCKSCREEN */
+#lockscreen{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0d1f35 0%,#1e3a5f 60%,#0d1f35 100%);display:flex;align-items:center;justify-content:center}
+.lock-wrap{text-align:center;width:360px;max-width:92vw}
+.lock-logo{font-family:'Kanit',sans-serif;font-size:32px;font-weight:800;color:var(--gold);letter-spacing:3px;margin-bottom:4px}
+.lock-sub{font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-bottom:36px}
+.lock-card{background:white;border-radius:20px;padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+.lock-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin-bottom:20px}
+.lock-input{width:100%;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-size:16px;font-family:'Sarabun',sans-serif;letter-spacing:4px;text-align:center;background:var(--cream);color:var(--navy);transition:border 0.2s}
+.lock-input:focus{outline:none;border-color:var(--gold);background:white}
+.lock-input.error{border-color:var(--red);animation:shake 0.3s}
+.lock-btn{width:100%;margin-top:12px;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:12px;font-size:15px;font-weight:800;font-family:'Kanit',sans-serif;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
+.lock-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.lock-error{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;font-weight:600}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:0 24px;height:56px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.3)}
+.tb-logo{font-family:'Kanit',sans-serif;font-size:17px;font-weight:800;color:var(--gold);letter-spacing:1px}
+.tb-sep{width:1px;height:22px;background:rgba(255,255,255,0.15)}
+.tb-title{font-size:13px;color:rgba(255,255,255,0.65)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tb-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:white;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.tb-btn:hover{background:rgba(255,255,255,0.18)}
+.tb-btn.gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.tb-btn.gold:hover{background:var(--gold2)}
+
+/* STATS */
+.stats-bar{background:var(--navy2);padding:10px 24px;display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.si{display:flex;align-items:center;gap:8px}
+.sl{font-size:11px;color:rgba(255,255,255,0.45)}
+.sv{font-size:15px;font-weight:800;font-family:'Kanit',sans-serif;color:var(--gold)}
+
+/* FILTER */
+.filter-bar{padding:14px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--white);border-bottom:1px solid var(--lgray)}
+.filter-bar select,.filter-bar input{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;background:white;color:var(--navy)}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--gold)}
+.filter-bar input[type="text"]{width:200px}
+
+/* TABLE BOARD */
+.board-wrap{padding:16px 24px 32px}
+.board-table{width:100%;border-collapse:separate;border-spacing:0;background:white;border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.board-table thead th{background:var(--navy);color:var(--gold);font-family:'Kanit',sans-serif;font-size:13px;font-weight:700;padding:14px 12px;text-align:left;letter-spacing:0.5px;white-space:nowrap;position:sticky;top:56px;z-index:10}
+.board-table thead th:first-child{border-radius:0}
+.board-table thead th:last-child{border-radius:0}
+.board-table tbody tr{cursor:pointer;transition:background 0.15s}
+.board-table tbody tr:hover{background:rgba(201,168,76,0.08)}
+.board-table tbody tr:nth-child(even){background:var(--cream)}
+.board-table tbody tr:nth-child(even):hover{background:rgba(201,168,76,0.12)}
+.board-table tbody td{padding:12px 12px;font-size:13px;border-bottom:1px solid var(--lgray);vertical-align:middle}
+.board-table tbody tr:last-child td{border-bottom:none}
+
+/* STATUS BADGES */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap}
+.st-pending{background:var(--lorange);color:var(--orange)}
+.st-inprogress{background:var(--lblue);color:var(--blue)}
+.st-done{background:var(--lgreen);color:var(--green)}
+.st-cancelled{background:var(--lred);color:var(--red)}
+
+/* PRIORITY */
+.priority-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.pri-high{background:var(--red)}
+.pri-medium{background:var(--orange)}
+.pri-low{background:var(--green)}
+
+/* EMPTY */
+.empty-board{text-align:center;padding:80px 20px;color:var(--gray)}
+.empty-board .empty-icon{font-size:64px;margin-bottom:16px}
+.empty-board .empty-title{font-family:'Kanit',sans-serif;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:18px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,0.3)}
+.modal-header{padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--lgray)}
+.modal-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.modal-close:hover{background:var(--cream);color:var(--navy)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--lgray)}
+
+/* FORM */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--gray);margin-bottom:5px;letter-spacing:0.5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--navy);transition:border 0.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold);background:white}
+.fg textarea{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* DETAIL VIEW */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.detail-item{background:var(--cream);border-radius:10px;padding:12px 14px}
+.detail-label{font-size:11px;font-weight:700;color:var(--gray);letter-spacing:0.5px;margin-bottom:4px}
+.detail-val{font-size:14px;font-weight:600;color:var(--navy)}
+.detail-full{grid-column:1/-1}
+.note-box{background:var(--cream);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.7;min-height:60px}
+
+/* BUTTONS */
+.btn{padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;font-family:'Kanit',sans-serif;cursor:pointer;border:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:var(--gold2);transform:translateY(-1px)}
+.btn-primary{background:var(--navy);color:white}.btn-primary:hover{background:var(--navy2)}
+.btn-outline{background:white;color:var(--navy);border:1.5px solid var(--border)}.btn-outline:hover{border-color:var(--gold)}
+.btn-danger{background:var(--red);color:white}.btn-danger:hover{background:#a93226}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--navy);color:white;padding:14px 28px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;transition:transform 0.3s;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .topbar{padding:0 14px}.tb-sep,.tb-title{display:none}
+  .stats-bar{padding:8px 14px;gap:16px}
+  .filter-bar{padding:10px 14px}
+  .filter-bar input[type="text"]{width:140px}
+  .board-wrap{padding:10px 10px 24px}
+  .board-table thead th{font-size:11px;padding:10px 8px}
+  .board-table tbody td{font-size:12px;padding:10px 8px}
+  .form-row,.detail-grid{grid-template-columns:1fr}
+  .modal{border-radius:14px}
+  .col-hide-mobile{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOCKSCREEN -->
+<div id="lockscreen">
+  <div class="lock-wrap">
+    <div class="lock-logo">THE BUILT</div>
+    <div class="lock-sub">กระดานรวมงานแก้ไข · Rework Board</div>
+    <div class="lock-card">
+      <div class="lock-title">🔧 ใส่รหัสผ่านเข้าระบบ</div>
+      <input type="password" class="lock-input" id="lockInput" placeholder="••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkLock()">
+      <button class="lock-btn" onclick="checkLock()">เข้าสู่ระบบ</button>
+      <div class="lock-error" id="lockError"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">THE BUILT</div>
+  <div class="tb-sep"></div>
+  <div class="tb-title">🔧 กระดานรวมงานแก้ไข</div>
+  <div class="tb-right">
+    <span id="roleBadge" class="role-badge"></span>
+    <span id="syncDot" class="tb-btn" style="font-size:11px;padding:5px 10px;pointer-events:none">☁️</span>
+    <button class="tb-btn gold" id="btnAdd" style="display:none" onclick="openAddModal()">➕ เพิ่มงานแก้ไข</button>
+    <button class="tb-btn" onclick="sessionStorage.removeItem('rw_role');location.reload()">🚪</button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="si"><div class="sl">ทั้งหมด</div><div class="sv" id="st-total">0</div></div>
+  <div class="si"><div class="sl">รอดำเนินการ</div><div class="sv" id="st-pending" style="color:#fdba74">0</div></div>
+  <div class="si"><div class="sl">กำลังแก้ไข</div><div class="sv" id="st-inprogress" style="color:#93c5fd">0</div></div>
+  <div class="si"><div class="sl">แก้ไขเสร็จ</div><div class="sv" id="st-done" style="color:#6ee7b7">0</div></div>
+  <div class="si"><div class="sl">ยกเลิก</div><div class="sv" id="st-cancelled" style="color:#fca5a5">0</div></div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <input type="text" id="filterSearch" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="renderBoard()">
+  <select id="filterBranch" onchange="renderBoard()"></select>
+  <select id="filterStatus" onchange="renderBoard()">
+    <option value="">📋 ทุกสถานะ</option>
+    <option value="pending">🟠 รอดำเนินการ</option>
+    <option value="inprogress">🔵 กำลังแก้ไข</option>
+    <option value="done">🟢 แก้ไขเสร็จ</option>
+    <option value="cancelled">🔴 ยกเลิก</option>
+  </select>
+  <select id="filterPriority" onchange="renderBoard()">
+    <option value="">🔥 ทุกความเร่งด่วน</option>
+    <option value="high">🔴 เร่งด่วน</option>
+    <option value="medium">🟠 ปกติ</option>
+    <option value="low">🟢 ไม่เร่ง</option>
+  </select>
+</div>
+
+<!-- BOARD -->
+<div class="board-wrap">
+  <table class="board-table">
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th>วันที่แจ้ง</th>
+        <th>ชื่อลูกค้า</th>
+        <th>สาขา</th>
+        <th class="col-hide-mobile">สินค้า</th>
+        <th>สถานะ</th>
+        <th>ความเร่งด่วน</th>
+        <th>วันนัดหมาย</th>
+      </tr>
+    </thead>
+    <tbody id="boardBody"></tbody>
+  </table>
+  <div class="empty-board" id="emptyBoard" style="display:none">
+    <div class="empty-icon">🔧</div>
+    <div class="empty-title">ไม่มีงานแก้ไข</div>
+    <div>ยังไม่มีรายการงานแก้ไข กดปุ่ม "เพิ่มงานแก้ไข" เพื่อเริ่มต้น</div>
+  </div>
+</div>
+
+<!-- MODAL: FORM -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="formTitle">➕ เพิ่มงานแก้ไข</div>
+      <button class="modal-close" onclick="closeModal('formModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+      <div class="form-row">
+        <div class="fg">
+          <label>ชื่อลูกค้า *</label>
+          <input type="text" id="fCustomer" placeholder="ชื่อ-สกุล ลูกค้า">
+        </div>
+        <div class="fg">
+          <label>สาขา *</label>
+          <select id="fBranch"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>วันที่แจ้ง *</label>
+          <input type="date" id="fReportDate">
+        </div>
+        <div class="fg">
+          <label>วันที่นัดหมายแก้ไข</label>
+          <input type="date" id="fAppointDate">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>สินค้า</label>
+          <input type="text" id="fProduct" placeholder="เช่น ตู้ครัว, ตู้เสื้อผ้า, เคาน์เตอร์">
+        </div>
+        <div class="fg">
+          <label>ความเร่งด่วน</label>
+          <select id="fPriority">
+            <option value="medium">🟠 ปกติ</option>
+            <option value="high">🔴 เร่งด่วน</option>
+            <option value="low">🟢 ไม่เร่ง</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>สถานะ</label>
+          <select id="fStatus">
+            <option value="pending">🟠 รอดำเนินการ</option>
+            <option value="inprogress">🔵 กำลังแก้ไข</option>
+            <option value="done">🟢 แก้ไขเสร็จ</option>
+            <option value="cancelled">🔴 ยกเลิก</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>ผู้รับผิดชอบ</label>
+          <input type="text" id="fAssignee" placeholder="ชื่อช่าง/ผู้ดำเนินการ">
+        </div>
+      </div>
+      <div class="fg">
+        <label>รายละเอียดงานแก้ไข</label>
+        <textarea id="fDetail" placeholder="อธิบายปัญหาที่ต้องแก้ไข เช่น บานประตูบิด ลิ้นชักเปิดไม่ได้ สีถลอก..."></textarea>
+      </div>
+      <div class="fg">
+        <label>หมายเหตุ</label>
+        <textarea id="fNote" placeholder="ข้อมูลเพิ่มเติม เช่น ลูกค้าอยู่ชั้น 5 ไม่มีลิฟต์ ต้องแจ้งรปภ.ก่อน..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnDel" style="display:none;margin-right:auto" onclick="deleteRework()">🗑 ลบ</button>
+      <button class="btn btn-outline" onclick="closeModal('formModal')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveRework()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETAIL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔧 รายละเอียดงานแก้ไข</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('detailModal')">ปิด</button>
+      <button class="btn btn-primary" id="btnEdit" style="display:none" onclick="editFromDetail()">✏️ แก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════ CONFIG ═══════════
+const ROLES = [
+  {pass:'16012521',role:'admin',label:'👑 Admin',color:'#fff3cd;#856404'},
+  {pass:'1234',role:'manager',label:'💼 ผู้จัดการ',color:'#d4edda;#155724'},
+  {pass:'5555',role:'factory',label:'🏭 โรงงาน',color:'#e3f2fd;#0c447c'},
+  {pass:'9999',role:'driver',label:'🚚 คนขับรถ',color:'#f8d7da;#58151c'}
+];
+const BRANCHES = ["เชียงใหม่","เชียงราย","ลำปาง","ขอนแก่น","อุดรธานี","อุบลฯ","โคราช","ภูเก็ต","หาดใหญ่","สุราษฎร์ฯ","นครสวรรค์","พิษณุโลก","ลพบุรี","ราชบุรี","ระยอง","ฉะเชิงเทรา","มหาสารคาม","สกลนคร","ร้อยเอ็ด","บุรีรัมย์","สุรินทร์","ปทุมธานี","winเชียงใหม่","winเชียงราย","winนครสวรรค์","winขอนแก่น","winอุบลฯ"];
+
+const STATUS_MAP = {
+  pending:{label:'รอดำเนินการ',emoji:'🟠',cls:'st-pending'},
+  inprogress:{label:'กำลังแก้ไข',emoji:'🔵',cls:'st-inprogress'},
+  done:{label:'แก้ไขเสร็จ',emoji:'🟢',cls:'st-done'},
+  cancelled:{label:'ยกเลิก',emoji:'🔴',cls:'st-cancelled'}
+};
+const PRIORITY_MAP = {
+  high:{label:'เร่งด่วน',cls:'pri-high'},
+  medium:{label:'ปกติ',cls:'pri-medium'},
+  low:{label:'ไม่เร่ง',cls:'pri-low'}
+};
+
+const DAY_NAMES = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+const MONTH_NAMES = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+// ═══════════ SUPABASE ═══════════
+const SB_URL = 'https://qybntZlfnrcownntzmir.supabase.co';
+const SB_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
+const TABLE = 'rework_jobs';
+const supa = {
+  async req(method, table, body=null, params='') {
+    const res = await fetch(`${SB_URL}/rest/v1/${table}${params}`, {
+      method,
+      headers: {
+        'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal',
+      },
+      body: body ? JSON.stringify(body) : null,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return method==='GET' ? res.json() : true;
+  },
+  get:    (t,p='') => supa.req('GET',t,null,p),
+  upsert: (t,d)    => supa.req('POST',t,Array.isArray(d)?d:[d]),
+  del:    (t,id)   => supa.req('DELETE',t,null,`?id=eq.${id}`),
+  patch:  (t,id,d) => supa.req('PATCH',t,d,`?id=eq.${id}`),
+};
+
+// ═══════════ STATE ═══════════
+let currentRole = null;
+let reworks = [];
+
+// ═══════════ LOCK ═══════════
+(function() {
+  const saved = sessionStorage.getItem('rw_role');
+  if (saved) { const r = ROLES.find(x=>x.role===saved); if(r){applyRole(r);return;} }
+  setTimeout(() => document.getElementById('lockInput').focus(), 200);
+})();
+
+function checkLock() {
+  const val = document.getElementById('lockInput').value;
+  const r = ROLES.find(x => x.pass === val);
+  if (r) { sessionStorage.setItem('rw_role', r.role); applyRole(r); }
+  else {
+    const inp = document.getElementById('lockInput');
+    inp.classList.add('error');
+    document.getElementById('lockError').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+    inp.value = '';
+    setTimeout(() => { inp.classList.remove('error'); inp.focus(); }, 400);
+  }
+}
+
+function applyRole(r) {
+  currentRole = r.role;
+  document.getElementById('lockscreen').style.display = 'none';
+  const badge = document.getElementById('roleBadge');
+  const [bg, col] = r.color.split(';');
+  badge.textContent = r.label;
+  badge.style.cssText = `background:${bg};color:${col};padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block;`;
+  if (r.role === 'admin' || r.role === 'manager' || r.role === 'factory') {
+    document.getElementById('btnAdd').style.display = 'flex';
+  }
+  populateFilters();
+  loadReworks();
+}
+
+// ═══════════ FILTERS ═══════════
+function populateFilters() {
+  const fb = document.getElementById('filterBranch');
+  fb.innerHTML = '<option value="">🏪 ทุกสาขา</option>' + BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+  const ff = document.getElementById('fBranch');
+  ff.innerHTML = BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function getFiltered() {
+  let list = [...reworks];
+  const search = (document.getElementById('filterSearch')?.value || '').toLowerCase();
+  const fb = document.getElementById('filterBranch')?.value || '';
+  const fs = document.getElementById('filterStatus')?.value || '';
+  const fp = document.getElementById('filterPriority')?.value || '';
+  if (search) list = list.filter(j => (j.customer||'').toLowerCase().includes(search) || (j.product||'').toLowerCase().includes(search));
+  if (fb) list = list.filter(j => j.branch === fb);
+  if (fs) list = list.filter(j => j.status === fs);
+  if (fp) list = list.filter(j => j.priority === fp);
+  return list;
+}
+
+// ═══════════ LOAD ═══════════
+async function loadReworks() {
+  document.getElementById('syncDot').textContent = '🔄';
+  try {
+    const data = await supa.get(TABLE, '?order=report_date.desc,created_at.desc');
+    reworks = data || [];
+    document.getElementById('syncDot').textContent = '☁️ ซิงค์แล้ว';
+  } catch(e) {
+    document.getElementById('syncDot').textContent = '⚠️ Error';
+    toast('⚠️ โหลดข้อมูลไม่สำเร็จ');
+  }
+  renderBoard();
+}
+
+// ═══════════ RENDER BOARD ═══════════
+function renderBoard() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('boardBody');
+  const empty = document.getElementById('emptyBoard');
+
+  // Stats
+  document.getElementById('st-total').textContent = reworks.length;
+  document.getElementById('st-pending').textContent = reworks.filter(j=>j.status==='pending').length;
+  document.getElementById('st-inprogress').textContent = reworks.filter(j=>j.status==='inprogress').length;
+  document.getElementById('st-done').textContent = reworks.filter(j=>j.status==='done').length;
+  document.getElementById('st-cancelled').textContent = reworks.filter(j=>j.status==='cancelled').length;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map((j, i) => {
+    const st = STATUS_MAP[j.status] || STATUS_MAP.pending;
+    const pri = PRIORITY_MAP[j.priority] || PRIORITY_MAP.medium;
+    const isOverdue = j.appoint_date && new Date(j.appoint_date+'T00:00:00') < new Date() && j.status !== 'done' && j.status !== 'cancelled';
+    return `<tr onclick="openDetail('${j.id}')" style="${isOverdue ? 'background:rgba(192,57,43,0.06)' : ''}">
+      <td style="font-weight:700;color:var(--gray);font-size:12px">${i+1}</td>
+      <td>${fmtDateShort(j.report_date)}</td>
+      <td style="font-weight:700">👤 ${j.customer||'-'}</td>
+      <td>🏪 ${j.branch||'-'}</td>
+      <td class="col-hide-mobile">📦 ${j.product||'-'}</td>
+      <td><span class="status-badge ${st.cls}">${st.emoji} ${st.label}</span></td>
+      <td><span class="priority-dot ${pri.cls}"></span>${pri.label}</td>
+      <td style="${isOverdue ? 'color:var(--red);font-weight:700' : ''}">${isOverdue ? '⚠️ ' : ''}${fmtDateShort(j.appoint_date)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════ DETAIL ═══════════
+let currentDetailId = null;
+function openDetail(id) {
+  currentDetailId = id;
+  const j = reworks.find(x => x.id === id);
+  if (!j) return;
+  const st = STATUS_MAP[j.status] || STATUS_MAP.pending;
+  const pri = PRIORITY_MAP[j.priority] || PRIORITY_MAP.medium;
+  const canEdit = currentRole === 'admin' || currentRole === 'manager' || currentRole === 'factory';
+  document.getElementById('btnEdit').style.display = canEdit ? 'inline-flex' : 'none';
+
+  document.getElementById('detailBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <span class="status-badge ${st.cls}" style="font-size:14px;padding:6px 18px;">${st.emoji} ${st.label}</span>
+      <span style="margin-left:8px"><span class="priority-dot ${pri.cls}"></span>${pri.label}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">ชื่อลูกค้า</div><div class="detail-val">👤 ${j.customer||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">สาขา</div><div class="detail-val">🏪 ${j.branch||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">สินค้า</div><div class="detail-val">📦 ${j.product||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">ผู้รับผิดชอบ</div><div class="detail-val">👷 ${j.assignee||'-'}</div></div>
+      <div class="detail-item"><div class="detail-label">วันที่แจ้ง</div><div class="detail-val">📅 ${fmtDate(j.report_date)}</div></div>
+      <div class="detail-item"><div class="detail-label">วันที่นัดหมายแก้ไข</div><div class="detail-val">🗓 ${fmtDate(j.appoint_date)}</div></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div class="detail-label" style="margin-bottom:6px;">🔧 รายละเอียดงานแก้ไข</div>
+      <div class="note-box">${(j.detail||'').replace(/\n/g,'<br>') || '<span style="color:var(--gray)">ไม่มีรายละเอียด</span>'}</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div class="detail-label" style="margin-bottom:6px;">📝 หมายเหตุ</div>
+      <div class="note-box">${(j.note||'').replace(/\n/g,'<br>') || '<span style="color:var(--gray)">ไม่มีหมายเหตุ</span>'}</div>
+    </div>
+    <div style="font-size:11px;color:var(--gray);margin-top:12px;text-align:right;">
+      อัปเดตล่าสุด: ${j.updated_at ? new Date(j.updated_at).toLocaleString('th-TH') : '-'}
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function editFromDetail() {
+  closeModal('detailModal');
+  const j = reworks.find(x => x.id === currentDetailId);
+  if (j) openEditModal(j);
+}
+
+// ═══════════ ADD/EDIT ═══════════
+function openAddModal() {
+  document.getElementById('formTitle').textContent = '➕ เพิ่มงานแก้ไข';
+  document.getElementById('fId').value = '';
+  document.getElementById('fCustomer').value = '';
+  document.getElementById('fReportDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fAppointDate').value = '';
+  document.getElementById('fProduct').value = '';
+  document.getElementById('fPriority').value = 'medium';
+  document.getElementById('fStatus').value = 'pending';
+  document.getElementById('fAssignee').value = '';
+  document.getElementById('fDetail').value = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('btnDel').style.display = 'none';
+  document.getElementById('formModal').classList.add('show');
+}
+
+function openEditModal(j) {
+  document.getElementById('formTitle').textContent = '✏️ แก้ไขงานแก้ไข';
+  document.getElementById('fId').value = j.id;
+  document.getElementById('fCustomer').value = j.customer || '';
+  document.getElementById('fBranch').value = j.branch || '';
+  document.getElementById('fReportDate').value = j.report_date || '';
+  document.getElementById('fAppointDate').value = j.appoint_date || '';
+  document.getElementById('fProduct').value = j.product || '';
+  document.getElementById('fPriority').value = j.priority || 'medium';
+  document.getElementById('fStatus').value = j.status || 'pending';
+  document.getElementById('fAssignee').value = j.assignee || '';
+  document.getElementById('fDetail').value = j.detail || '';
+  document.getElementById('fNote').value = j.note || '';
+  document.getElementById('btnDel').style.display = currentRole === 'admin' ? 'inline-flex' : 'none';
+  document.getElementById('formModal').classList.add('show');
+}
+
+async function saveRework() {
+  const customer = document.getElementById('fCustomer').value.trim();
+  const reportDate = document.getElementById('fReportDate').value;
+  if (!customer || !reportDate) return toast('❌ กรุณากรอกชื่อลูกค้าและวันที่แจ้ง');
+
+  const data = {
+    customer,
+    branch: document.getElementById('fBranch').value,
+    report_date: reportDate,
+    appoint_date: document.getElementById('fAppointDate').value || null,
+    product: document.getElementById('fProduct').value.trim(),
+    priority: document.getElementById('fPriority').value,
+    status: document.getElementById('fStatus').value,
+    assignee: document.getElementById('fAssignee').value.trim(),
+    detail: document.getElementById('fDetail').value.trim(),
+    note: document.getElementById('fNote').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+
+  const id = document.getElementById('fId').value;
+  try {
+    if (id) {
+      await supa.patch(TABLE, id, data);
+      const idx = reworks.findIndex(j => j.id === id);
+      if (idx >= 0) reworks[idx] = { ...reworks[idx], ...data };
+      toast('✅ แก้ไขแล้ว');
+    } else {
+      data.id = crypto.randomUUID();
+      data.created_at = new Date().toISOString();
+      await supa.upsert(TABLE, data);
+      reworks.unshift(data);
+      toast('✅ เพิ่มงานแก้ไขแล้ว');
+    }
+    closeModal('formModal');
+    renderBoard();
+  } catch(e) {
+    toast('⚠️ บันทึกไม่สำเร็จ: ' + e.message);
+  }
+}
+
+async function deleteRework() {
+  const id = document.getElementById('fId').value;
+  if (!id || !confirm('ลบงานแก้ไขนี้?')) return;
+  try {
+    await supa.del(TABLE, id);
+    reworks = reworks.filter(j => j.id !== id);
+    closeModal('formModal');
+    renderBoard();
+    toast('🗑 ลบแล้ว');
+  } catch(e) { toast('⚠️ ลบไม่สำเร็จ'); }
+}
+
+// ═══════════ UTILS ═══════════
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function fmtDate(d) {
+  if (!d) return '-';
+  return new Date(d+'T00:00:00').toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+}
+function fmtDateShort(d) {
+  if (!d) return '-';
+  const dt = new Date(d+'T00:00:00');
+  return `${dt.getDate()} ${MONTH_NAMES[dt.getMonth()]} ${dt.getFullYear()+543-2500}`;
+}
+
+// Close modals on backdrop
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// Auto refresh
+setInterval(() => { if (document.visibilityState==='visible' && currentRole) loadReworks(); }, 600000);
+</script>
+</body></html>
