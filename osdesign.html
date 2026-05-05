@@ -14352,9 +14352,12 @@ function getNextSeller() {
       if (d === ym) counts[c.seller]++;
     }
   });
-  let minCount = Infinity, next = SELLERS[0];
-  SELLERS.forEach(s => { if (counts[s] < minCount) { minCount = counts[s]; next = s; } });
-  return next;
+  // หา count ที่น้อยที่สุด
+  const minCount = Math.min(...SELLERS.map(s => counts[s]));
+  // หาผู้ขายทุกคนที่มี count เท่ากับ minCount
+  const candidates = SELLERS.filter(s => counts[s] === minCount);
+  // สุ่มเลือก 1 คนจากกลุ่มที่ count น้อยสุด
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 function populateSellerDropdown(selectedValue) {
