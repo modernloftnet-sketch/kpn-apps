@@ -1885,7 +1885,7 @@ function showCustInfo() {
 }
 
 function renderItems() {
-  const cats = state.productCats || ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ'];
+  const cats = state.productCats || ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ','งวดแรก','งวดที่2','งวดที่3','งวดสุดท้าย'];
   const catOpts = cats.map(c => `<option value="${c}">${c}</option>`).join('');
   document.getElementById('itemsBody').innerHTML = state.editItems.map((item,i)=>`
     <tr>
@@ -2698,7 +2698,7 @@ async function loadStaticData() {
     supa.get('kpn_pur_cats', '?order=sort_order,label').catch(()=>[]),
     supa.get('kpn_exp_cats', '?order=sort_order,label').catch(()=>[]),
   ]);
-  state.productCats = productCats.length ? productCats.map(c=>c.name) : ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ'];
+  state.productCats = productCats.length ? productCats.map(c=>c.name) : ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ','งวดแรก','งวดที่2','งวดที่3','งวดสุดท้าย'];
   state.purCats = purCats.length ? purCats : [];
   state.expCats = expCats.length ? expCats : [];
   state.customers = customers.map(c => ({
