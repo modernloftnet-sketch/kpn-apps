@@ -337,8 +337,12 @@ function buildConversations(){
   for(const msg of sorted){
     let custId='';
     if(isAdminMsg(msg)){
-      // admin ตอบ: 1) raw_data.recipient_id (Edge Function send-message) 2) conv_id mapping
+      // admin ตอบ — ลองหา customer_id จากหลายที่:
+      // 1) raw_data.recipient_id (Edge Function send-message)
+      // 2) raw_data.recipient.id (Facebook webhook echo: is_echo=true)
+      // 3) conversation_id mapping (จาก Pass 1)
       custId = msg.raw_data?.recipient_id
+            || msg.raw_data?.recipient?.id
             || (msg.conversation_id && cidToCust[msg.conversation_id])
             || '';
     }else{
@@ -550,7 +554,6 @@ function renderChat(conv){
         <div class="chat-header-name">
           ${esc(dispName)}
           <button class="edit-name-btn" onclick="editCustomName('${esc(conv.id)}')" title="ตั้งชื่อ/บันทึก note">✏️</button>
-          <button class="edit-name-btn" onclick="resolveFbName('${esc(conv.id)}', this)" title="ลองดึงชื่อจาก Facebook">🔄</button>
           ${conv.sender_name && conv.custom_name ? `<span style="font-size:11px;color:var(--text3);margin-left:8px">FB: ${esc(conv.sender_name)}</span>` : ''}
         </div>
         ${conv.custom_note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 ${esc(conv.custom_note)}</div>`:''}
