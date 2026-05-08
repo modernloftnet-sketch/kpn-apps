@@ -117,6 +117,8 @@
   .chat-header-av { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:white; flex-shrink:0; }
   .chat-header-info { flex:1; min-width:0; }
   .chat-header-name { font-size:15px; font-weight:700; }
+  .edit-name-btn { background:transparent; border:1px solid var(--border); color:var(--text3); padding:2px 6px; border-radius:4px; cursor:pointer; font-size:11px; margin-left:6px; vertical-align:middle; transition:all 0.2s; }
+  .edit-name-btn:hover { background:var(--surface2); color:var(--text); }
   .chat-header-meta { display:flex; align-items:center; gap:6px; margin-top:2px; flex-wrap:wrap; }
   .chat-header-page { font-size:11px; color:var(--text3); }
 
@@ -260,6 +262,7 @@ let cBrand='all', cType='all', cPage='all';
 let offset=0, pageSize=500, hasMore=false;
 let selConvId=null, notifOn=false, newCount=0;
 let knownIds=new Set();
+let custLabels={}; // key: sender_id+'_'+page_id, value: {custom_name, note}
 
 async function api(tbl, q='', method='GET', body=null){
   const r=await fetch(`${SB_URL}/rest/v1/${tbl}${q}`,{
@@ -276,6 +279,10 @@ async function loadData(isRef=false){
   btn.textContent='⏳'; btn.disabled=true;
   try{
     if(isRef||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name&order=brand,branch_name');
+    // โหลด customer labels
+    const labels=await api('fb_customer_labels','?select=sender_id,page_id,custom_name,note');
+    custLabels={};
+    (labels||[]).forEach(l=>{ custLabels[l.sender_id+'_'+l.page_id]={custom_name:l.custom_name,note:l.note}; });
     offset=0;
     const msgs=await api('fb_messages',`?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data&order=created_at.desc&limit=${pageSize}&offset=0`);
     if(isRef&&knownIds.size){
@@ -365,6 +372,15 @@ function buildConversations(){
   }
   // เรียงจากใหม่ไปเก่า
   conversations=Object.values(convMap).sort((a,b)=>new Date(b.last_time)-new Date(a.last_time));
+  // ใส่ custom_name/note จาก label ที่พนักงานตั้งไว้
+  conversations.forEach(c=>{
+    const lk=c.sender_id+'_'+c.page_id;
+    const lab=custLabels[lk];
+    if(lab){
+      c.custom_name=lab.custom_name||'';
+      c.custom_note=lab.note||'';
+    }
+  });
 }
 
 function renderPageFilter(){
@@ -390,8 +406,9 @@ function filterConvs(){
     if(cType!=='all'&&c.type!==cType) return false;
     if(q){
       const nameMatch=(c.sender_name||'').toLowerCase().includes(q);
+      const customMatch=((c.custom_name||'')+' '+(c.custom_note||'')).toLowerCase().includes(q);
       const msgMatch=(c.last_msg?.message||'').toLowerCase().includes(q);
-      if(!nameMatch&&!msgMatch) return false;
+      if(!nameMatch&&!customMatch&&!msgMatch) return false;
     }
     return true;
   });
@@ -410,7 +427,8 @@ function renderConvList(){
     const p=pages.find(p=>p.id===c.page_id);
     const pn=p?.branch_name||p?.name||'—';
     const brand=p?.brand||'thebuilt';
-    const ini=(c.sender_name||'?')[0].toUpperCase();
+    const dispName = c.custom_name || c.sender_name || 'ไม่ทราบชื่อ';
+    const ini=(dispName||'?')[0].toUpperCase();
     const bg=brand==='thebuilt'?'linear-gradient(135deg,#3b82f6,#06b6d4)':'linear-gradient(135deg,#f59e0b,#f97316)';
     const tm=c.last_time?fmtTime(c.last_time):'—';
     const preview=c.last_msg?.message||'(รูปภาพ/สื่อ)';
@@ -419,11 +437,12 @@ function renderConvList(){
     const tl={messenger:'MSG',comment:'CMT',review:'★'};
     const stMap={new:'NEW',follow:'FOLLOW',pending:'PENDING',closed:'CLOSED'};
     const st=c.conv_status||'new';
+    const labelIcon = c.custom_name ? '<span style="color:#10b981" title="ตั้งชื่อแล้ว">✓</span> ' : '';
     h+=`<div class="ci ${hasUnread?'unread':''} ${isActive?'active':''}" onclick="openConv('${esc(c.id)}')" data-cid="${esc(c.id)}">
       <div class="av" style="background:${bg}">${esc(ini)}</div>
       <div class="ci-body">
         <div class="ci-head">
-          <span class="ci-name">${esc(c.sender_name||'ไม่ทราบชื่อ')}</span>
+          <span class="ci-name">${labelIcon}${esc(dispName)}</span>
           <span class="ci-time">${tm}</span>
         </div>
         <div class="ci-meta">
@@ -465,7 +484,8 @@ function renderChat(conv){
   const pn=p?.branch_name||p?.name||'—';
   const brand=p?.brand||'thebuilt';
   const bg=brand==='thebuilt'?'linear-gradient(135deg,#3b82f6,#06b6d4)':'linear-gradient(135deg,#f59e0b,#f97316)';
-  const ini=(conv.sender_name||'?')[0].toUpperCase();
+  const dispName = conv.custom_name || conv.sender_name || 'ไม่ทราบชื่อ';
+  const ini=(dispName||'?')[0].toUpperCase();
   const canReply=conv.type==='messenger';
 
   // เรียงข้อความจากเก่าไปใหม่
@@ -528,7 +548,12 @@ function renderChat(conv){
     <div class="chat-header">
       <div class="chat-header-av" style="background:${bg}">${esc(ini)}</div>
       <div class="chat-header-info">
-        <div class="chat-header-name">${esc(conv.sender_name||'ไม่ทราบชื่อ')}</div>
+        <div class="chat-header-name">
+          ${esc(dispName)}
+          <button class="edit-name-btn" onclick="editCustomName('${esc(conv.id)}')" title="ตั้งชื่อ/บันทึก note">✏️</button>
+          ${conv.sender_name && conv.custom_name ? `<span style="font-size:11px;color:var(--text3);margin-left:8px">FB: ${esc(conv.sender_name)}</span>` : ''}
+        </div>
+        ${conv.custom_note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 ${esc(conv.custom_note)}</div>`:''}
         <div class="chat-header-meta">
           <span class="tbg ${conv.type}">${conv.type}</span>
           <span class="bbg ${brand}">${brand==='thebuilt'?'The Built':'WIN-WIN'}</span>
@@ -706,6 +731,45 @@ async function setConvStatus(status){
   const ids=conv.messages.map(m=>m.id);
   for(const id of ids){
     await api('fb_messages',`?id=eq.${id}`,'PATCH',{conv_status:status});
+  }
+}
+
+// ตั้ง/แก้ ชื่อลูกค้าที่พนักงานบันทึกเอง
+async function editCustomName(convId){
+  const conv=conversations.find(c=>c.id===convId);
+  if(!conv) return;
+  const cur=conv.custom_name||'';
+  const curNote=conv.custom_note||'';
+  const name=prompt('ตั้งชื่อลูกค้า (เว้นว่าง = ลบชื่อ):', cur);
+  if(name===null) return; // กด Cancel
+  const note=prompt('หมายเหตุ/เบอร์โทร (ใส่หรือเว้นว่างก็ได้):', curNote);
+  if(note===null) return;
+  const sid=conv.sender_id;
+  const pid=conv.page_id;
+  if(!sid){ alert('ไม่พบ sender_id ของลูกค้า'); return; }
+  try{
+    if(!name.trim() && !note.trim()){
+      // ลบ
+      await api('fb_customer_labels',`?sender_id=eq.${encodeURIComponent(sid)}&page_id=eq.${encodeURIComponent(pid)}`,'DELETE');
+      delete custLabels[sid+'_'+pid];
+      conv.custom_name=''; conv.custom_note='';
+    }else{
+      // upsert
+      const r=await fetch(`${SB_URL}/rest/v1/fb_customer_labels?on_conflict=sender_id,page_id`,{
+        method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({sender_id:sid,page_id:pid,custom_name:name.trim(),note:note.trim(),updated_at:new Date().toISOString()})
+      });
+      if(!r.ok) throw new Error('บันทึกไม่สำเร็จ');
+      custLabels[sid+'_'+pid]={custom_name:name.trim(),note:note.trim()};
+      conv.custom_name=name.trim();
+      conv.custom_note=note.trim();
+    }
+    // refresh ทั้งสองส่วน
+    filterConvs();
+    renderChat(conv);
+  }catch(e){
+    alert('ผิดพลาด: '+e.message);
   }
 }
 
