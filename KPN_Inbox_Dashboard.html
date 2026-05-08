@@ -550,6 +550,7 @@ function renderChat(conv){
         <div class="chat-header-name">
           ${esc(dispName)}
           <button class="edit-name-btn" onclick="editCustomName('${esc(conv.id)}')" title="ตั้งชื่อ/บันทึก note">✏️</button>
+          <button class="edit-name-btn" onclick="resolveFbName('${esc(conv.id)}', this)" title="ลองดึงชื่อจาก Facebook">🔄</button>
           ${conv.sender_name && conv.custom_name ? `<span style="font-size:11px;color:var(--text3);margin-left:8px">FB: ${esc(conv.sender_name)}</span>` : ''}
         </div>
         ${conv.custom_note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 ${esc(conv.custom_note)}</div>`:''}
@@ -730,6 +731,43 @@ async function setConvStatus(status){
   const ids=conv.messages.map(m=>m.id);
   for(const id of ids){
     await api('fb_messages',`?id=eq.${id}`,'PATCH',{conv_status:status});
+  }
+}
+
+// ลองดึงชื่อจาก Facebook Graph API ผ่าน Edge Function
+async function resolveFbName(convId, btn){
+  const conv=conversations.find(c=>c.id===convId);
+  if(!conv) return;
+  if(!conv.sender_id){ alert('ไม่พบ sender_id ของลูกค้า'); return; }
+  const orig=btn?.textContent;
+  if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  try{
+    const r=await fetch(`${SB_URL}/functions/v1/resolve-customer-name`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SB_KEY,'apikey':SB_KEY},
+      body:JSON.stringify({page_id:conv.page_id, sender_id:conv.sender_id})
+    });
+    const d=await r.json();
+    if(d.success && d.name){
+      // อัปเดต local state แล้ว rerender
+      conv.sender_name=d.name;
+      conv.messages.forEach(m=>{
+        if(m.sender_id===conv.sender_id) m.sender_name=d.name;
+      });
+      // อัปเดต allMsgs ด้วย เผื่อ rebuild
+      allMsgs.forEach(m=>{
+        if(m.page_id===conv.page_id && m.sender_id===conv.sender_id) m.sender_name=d.name;
+      });
+      filterConvs();
+      safeRenderChat(conv);
+      alert('✅ ดึงชื่อสำเร็จ: '+d.name);
+    }else{
+      alert('❌ Facebook ไม่ปล่อยข้อมูลของลูกค้าคนนี้\n\nสาเหตุ: '+(d.reason||d.error||'ไม่ทราบ')+'\n\nกรุณาตั้งชื่อเองด้วยปุ่ม ✏️');
+    }
+  }catch(e){
+    alert('ผิดพลาด: '+e.message);
+  }finally{
+    if(btn){ btn.textContent=orig||'🔄'; btn.disabled=false; }
   }
 }
 
