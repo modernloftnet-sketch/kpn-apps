@@ -313,14 +313,29 @@ async function loadMore(){
   btn.textContent='โหลดเพิ่ม ↓'; btn.disabled=false;
 }
 
-// สร้าง conversations จาก messages (group by conversation_id หรือ sender_id)
+// สร้าง conversations จาก messages (group by customer sender_id + page_id)
 function buildConversations(){
   const convMap={};
-  // เรียงจากเก่าไปใหม่ก่อน เพื่อให้ข้อความแรกถูก
+  // Pass 1: เรียงเก่า→ใหม่ แล้วหา customer_sender_id ของแต่ละ conversation_id
   const sorted=[...allMsgs].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  // map: conversation_id -> customer_sender_id (เอาจากข้อความที่ไม่ใช่ admin)
+  const cidToCust={};
+  for(const m of sorted){
+    if(m.conversation_id && !cidToCust[m.conversation_id] && !isAdminSender(m.sender_name) && m.sender_id){
+      cidToCust[m.conversation_id]=m.sender_id;
+    }
+  }
+  // Pass 2: build conversations โดยใช้ customer_sender_id+page_id เป็น key หลัก
   for(const msg of sorted){
-    // ใช้ conversation_id ถ้ามี ไม่งั้นใช้ sender_id+page_id
-    const key=msg.conversation_id||(msg.sender_id+'_'+msg.page_id);
+    // หา customer_id: ถ้า admin ตอบกลับ → ใช้จาก conversation_id mapping; ถ้าลูกค้าส่ง → ใช้ sender_id ตรงๆ
+    let custId='';
+    if(isAdminSender(msg.sender_name)){
+      custId = (msg.conversation_id && cidToCust[msg.conversation_id]) || '';
+    }else{
+      custId = msg.sender_id||'';
+    }
+    // key: customer_id+page_id ถ้ามี ไม่งั้น fallback เป็น conversation_id หรือ message_id
+    const key = custId ? (custId+'_'+msg.page_id) : (msg.conversation_id||msg.id);
     if(!convMap[key]){
       convMap[key]={
         id:key,
@@ -328,7 +343,7 @@ function buildConversations(){
         page_id:msg.page_id,
         type:msg.type,
         sender_name: isAdminSender(msg.sender_name) ? '' : (msg.sender_name||''),
-        sender_id: isAdminSender(msg.sender_name) ? '' : (msg.sender_id||''),
+        sender_id: custId,
         messages:[],
         last_msg:null,
         last_time:null,
@@ -339,7 +354,7 @@ function buildConversations(){
     // ถ้ายังไม่มีชื่อลูกค้า และ message นี้เป็นลูกค้า — อัปเดตชื่อ
     if(!isAdminSender(msg.sender_name) && !convMap[key].sender_name){
       convMap[key].sender_name = msg.sender_name||'';
-      convMap[key].sender_id   = msg.sender_id||'';
+      convMap[key].sender_id   = msg.sender_id||custId||'';
     }
     convMap[key].messages.push(msg);
     convMap[key].last_msg=msg;
