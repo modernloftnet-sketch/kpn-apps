@@ -323,25 +323,27 @@ async function loadMore(){
 // สร้าง conversations จาก messages (group by customer sender_id + page_id)
 function buildConversations(){
   const convMap={};
-  // Pass 1: เรียงเก่า→ใหม่ แล้วหา customer_sender_id ของแต่ละ conversation_id
   const sorted=[...allMsgs].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  // map: conversation_id -> customer_sender_id (เอาจากข้อความที่ไม่ใช่ admin)
+  // ตรวจ admin: ถ้า sender_id == page_id ถือเป็น admin (เพจตอบ) ก่อน — กันชื่อหลุด
+  const isAdminMsg=(m)=> (m.sender_id && m.page_id && m.sender_id===m.page_id) || isAdminSender(m.sender_name);
+  // Pass 1: map conversation_id -> customer_id (เอาจากข้อความลูกค้า)
   const cidToCust={};
   for(const m of sorted){
-    if(m.conversation_id && !cidToCust[m.conversation_id] && !isAdminSender(m.sender_name) && m.sender_id){
+    if(m.conversation_id && !cidToCust[m.conversation_id] && !isAdminMsg(m) && m.sender_id){
       cidToCust[m.conversation_id]=m.sender_id;
     }
   }
-  // Pass 2: build conversations โดยใช้ customer_sender_id+page_id เป็น key หลัก
+  // Pass 2: build conversations
   for(const msg of sorted){
-    // หา customer_id: ถ้า admin ตอบกลับ → ใช้จาก conversation_id mapping; ถ้าลูกค้าส่ง → ใช้ sender_id ตรงๆ
     let custId='';
-    if(isAdminSender(msg.sender_name)){
-      custId = (msg.conversation_id && cidToCust[msg.conversation_id]) || '';
+    if(isAdminMsg(msg)){
+      // admin ตอบ: 1) raw_data.recipient_id (Edge Function send-message) 2) conv_id mapping
+      custId = msg.raw_data?.recipient_id
+            || (msg.conversation_id && cidToCust[msg.conversation_id])
+            || '';
     }else{
       custId = msg.sender_id||'';
     }
-    // key: customer_id+page_id ถ้ามี ไม่งั้น fallback เป็น conversation_id หรือ message_id
     const key = custId ? (custId+'_'+msg.page_id) : (msg.conversation_id||msg.id);
     if(!convMap[key]){
       convMap[key]={
@@ -349,7 +351,7 @@ function buildConversations(){
         conversation_id:msg.conversation_id,
         page_id:msg.page_id,
         type:msg.type,
-        sender_name: isAdminSender(msg.sender_name) ? '' : (msg.sender_name||''),
+        sender_name: isAdminMsg(msg) ? '' : (msg.sender_name||''),
         sender_id: custId,
         messages:[],
         last_msg:null,
@@ -358,8 +360,7 @@ function buildConversations(){
         conv_status: msg.conv_status||'new',
       };
     }
-    // ถ้ายังไม่มีชื่อลูกค้า และ message นี้เป็นลูกค้า — อัปเดตชื่อ
-    if(!isAdminSender(msg.sender_name) && !convMap[key].sender_name){
+    if(!isAdminMsg(msg) && !convMap[key].sender_name){
       convMap[key].sender_name = msg.sender_name||'';
       convMap[key].sender_id   = msg.sender_id||custId||'';
     }
@@ -367,10 +368,8 @@ function buildConversations(){
     convMap[key].last_msg=msg;
     convMap[key].last_time=msg.created_at;
     if(!msg.is_read) convMap[key].unread_count++;
-    // ใช้ status จาก message ล่าสุด
     if(msg.conv_status) convMap[key].conv_status=msg.conv_status;
   }
-  // เรียงจากใหม่ไปเก่า
   conversations=Object.values(convMap).sort((a,b)=>new Date(b.last_time)-new Date(a.last_time));
   // ใส่ custom_name/note จาก label ที่พนักงานตั้งไว้
   conversations.forEach(c=>{
