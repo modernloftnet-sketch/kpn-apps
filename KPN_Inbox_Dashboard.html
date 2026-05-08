@@ -560,7 +560,7 @@ async function sendReply(convId){
   body?.appendChild(bub); body?.scrollTo({top:body.scrollHeight,behavior:'smooth'});
 
   try{
-    const sid=conv?.messages.find(m=>!isAdminSender(m))?.sender_id;
+    const sid=conv?.messages.find(m=>!isAdminSender(m.sender_name))?.sender_id;
     if(!sid) throw new Error('ไม่พบ sender_id ของลูกค้า');
     if(!p?.id) throw new Error('ไม่พบ page_id');
     // เรียก Edge Function send-message (ปลอดภัย — token เก็บฝั่ง server)
@@ -711,7 +711,7 @@ function startRealtime(){
         if(knownIds.has(m.id)) return;
         knownIds.add(m.id);
         allMsgs=[m,...allMsgs];
-        if(!isAdminSender(m)) showNotif(m);
+        if(!isAdminSender(m.sender_name)) showNotif(m);
         buildConversations();
         renderPageFilter();
         filterConvs();
