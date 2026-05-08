@@ -525,7 +525,6 @@ function renderChat(conv){
     <div class="chat-body" id="chatBody">${bubblesH}</div>
     ${canReply?`
     <div class="reply-box">
-      <div class="reply-warn">⚠️ ต้องขอ Meta Advanced Access ก่อนจึงจะส่งได้</div>
       <div class="reply-row">
         <textarea class="reply-input" id="replyInput" placeholder="พิมพ์ข้อความตอบกลับ..." rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${esc(conv.id)}')}"></textarea>
@@ -561,14 +560,17 @@ async function sendReply(convId){
   body?.appendChild(bub); body?.scrollTo({top:body.scrollHeight,behavior:'smooth'});
 
   try{
-    const sid=conv?.messages[0]?.sender_id;
-    if(!sid||!p?.access_token) throw new Error('ไม่มีข้อมูลที่จำเป็น');
-    const r=await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${p.access_token}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({recipient:{id:sid},message:{text:txt}})
+    const sid=conv?.messages.find(m=>!isAdminSender(m))?.sender_id;
+    if(!sid) throw new Error('ไม่พบ sender_id ของลูกค้า');
+    if(!p?.id) throw new Error('ไม่พบ page_id');
+    // เรียก Edge Function send-message (ปลอดภัย — token เก็บฝั่ง server)
+    const r=await fetch(`${SB_URL}/functions/v1/send-message`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SB_KEY,'apikey':SB_KEY},
+      body:JSON.stringify({page_id:p.id, recipient_id:sid, message:txt})
     });
     const d=await r.json();
-    if(d.error) throw new Error(d.error.message);
+    if(!r.ok||d.error) throw new Error(d.error||'ส่งไม่สำเร็จ');
     bub.querySelector('.msg-time').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     bub.querySelector('.msg-bubble').style.background='var(--danger)';
@@ -694,13 +696,50 @@ async function setConvStatus(status){
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// POLLING ทุก 30 วินาที — เร็วและเชื่อถือได้กว่า WebSocket
-setInterval(()=>loadData(true), 30*1000);
+// REALTIME — ฟังข้อความใหม่จาก Supabase (เด้งทันที 1-2 วินาที)
+let rtChan=null;
+function startRealtime(){
+  if(rtChan) return;
+  // โหลด supabase-js แบบ on-demand
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  s.onload=()=>{
+    const sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:10}}});
+    rtChan=sb.channel('fb_messages_changes')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'fb_messages'},(payload)=>{
+        const m=payload.new;
+        if(knownIds.has(m.id)) return;
+        knownIds.add(m.id);
+        allMsgs=[m,...allMsgs];
+        if(!isAdminSender(m)) showNotif(m);
+        buildConversations();
+        renderPageFilter();
+        filterConvs();
+        updateStats();
+        if(selConvId){
+          const conv=conversations.find(c=>c.id===selConvId);
+          if(conv) renderChat(conv);
+        }
+        document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString('th-TH');
+      })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'fb_messages'},(payload)=>{
+        // อัปเดต status/is_read ในหน่วยความจำ
+        const m=payload.new;
+        const idx=allMsgs.findIndex(x=>x.id===m.id);
+        if(idx>=0){ allMsgs[idx]=m; }
+      })
+      .subscribe((status)=>{
+        const el=document.getElementById('lastUpdate');
+        if(status==='SUBSCRIBED') el.textContent=new Date().toLocaleTimeString('th-TH')+' 🟢';
+      });
+  };
+  document.head.appendChild(s);
+}
 
-// AUTO REFRESH ทุก 3 นาที (fallback)
-// setInterval(()=>loadData(true), 3*60*1000);
+// SAFETY NET — refresh เต็มทุก 5 นาที เผื่อ realtime หลุด
+setInterval(()=>loadData(true), 5*60*1000);
 
-loadData();
+loadData().then(()=>startRealtime());
 </script>
 </body>
 </html>
