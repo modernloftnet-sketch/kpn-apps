@@ -5,8 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily News">
 <meta name="theme-color" content="#1A2A4A">
 <title>Daily News - The Built</title>
+
+<!-- PWA Icons (SVG inline - works on iOS and Android) -->
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%231A2A4A"/><text x="50" y="68" font-family="Georgia,serif" font-size="56" font-style="italic" font-weight="600" fill="%23C9A961" text-anchor="middle">N</text></svg>'>
+<link rel="apple-touch-icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="40" fill="%231A2A4A"/><text x="90" y="125" font-family="Georgia,serif" font-size="105" font-style="italic" font-weight="600" fill="%23C9A961" text-anchor="middle">N</text></svg>'>
+
+<!-- PWA Manifest (inline) -->
+<link rel="manifest" href='data:application/manifest+json,{"name":"Daily News - The Built","short_name":"Daily News","description":"%E0%B8%82%E0%B9%88%E0%B8%B2%E0%B8%A7%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%88%E0%B8%B3%E0%B8%A7%E0%B8%B1%E0%B8%99%20The%20Built","start_url":"./News_Voice_Player.html","scope":"./","display":"standalone","orientation":"portrait","background_color":"%23F5F3EE","theme_color":"%231A2A4A","icons":[{"src":"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22%231A2A4A%22%2F%3E%3Ctext%20x%3D%22256%22%20y%3D%22360%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%22300%22%20font-style%3D%22italic%22%20font-weight%3D%22600%22%20fill%3D%22%23C9A961%22%20text-anchor%3D%22middle%22%3EN%3C%2Ftext%3E%3C%2Fsvg%3E","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"},{"src":"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20192%20192%22%3E%3Crect%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%2242%22%20fill%3D%22%231A2A4A%22%2F%3E%3Ctext%20x%3D%2296%22%20y%3D%22135%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%22112%22%20font-style%3D%22italic%22%20font-weight%3D%22600%22%20fill%3D%22%23C9A961%22%20text-anchor%3D%22middle%22%3EN%3C%2Ftext%3E%3C%2Fsvg%3E","sizes":"192x192","type":"image/svg+xml","purpose":"any"}]}'>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1318,6 +1327,63 @@ async function init() {
   }
   
   render();
+}
+
+// ========== PWA Service Worker (inline) ==========
+// Register a service worker created from a Blob URL — no separate file needed
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE_NAME = 'daily-news-v1';
+    const ASSETS = [self.registration.scope];
+    
+    self.addEventListener('install', e => {
+      self.skipWaiting();
+    });
+    
+    self.addEventListener('activate', e => {
+      e.waitUntil(
+        caches.keys().then(keys => 
+          Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+      );
+    });
+    
+    self.addEventListener('fetch', e => {
+      // Only cache GET requests
+      if (e.request.method !== 'GET') return;
+      
+      // Network first for HTML and Supabase API (always fresh data)
+      const url = new URL(e.request.url);
+      if (url.pathname.endsWith('.html') || url.hostname.includes('supabase.co')) {
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+        return;
+      }
+      
+      // Cache first for fonts and other static assets
+      e.respondWith(
+        caches.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(response => {
+            // Only cache successful responses from same origin or fonts
+            if (response.ok && (url.hostname.includes('fonts.g') || url.origin === location.origin)) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+            }
+            return response;
+          }).catch(() => cached);
+        })
+      );
+    });
+  `;
+  
+  const swBlob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(swBlob);
+  
+  navigator.serviceWorker.register(swUrl, { scope: './' })
+    .then(reg => console.log('✅ PWA Service Worker registered'))
+    .catch(err => console.log('⚠️ Service Worker registration failed:', err));
 }
 
 init();
