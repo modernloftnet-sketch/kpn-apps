@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<title>KPN Inbox Overview — ภาพรวมข้อความเข้า</title>
+
+<!-- ===== PWA: เพิ่มลงหน้าจอหลักได้ ===== -->
+<meta name="theme-color" content="#1a2744">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KPN Inbox">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- ไอคอน: ตัว B บนพื้นทอง วาดด้วย SVG ฝังตัว (data URI) — ไม่ต้องมีไฟล์รูปแยก -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='220' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='220' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#1a2744; --navy-light:#2a3a5c; --gold:#c9a84a; --gold-soft:#e0c878;
+  --cream:#f7f4ec; --cream-dark:#ebe6d8;
+  --ink:#1a2026; --muted:#6b7280; --hint:#9aa1ad;
+  --line:#e3ddd0; --white:#ffffff;
+  --red:#c0392b; --red-bg:#fbecea; --amber:#b8860b; --amber-bg:#fbf2da;
+  --green:#1e7d4f; --green-bg:#e6f3ec;
+  --shadow:0 1px 3px rgba(26,39,68,.06),0 1px 2px rgba(26,39,68,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--ink);
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-bottom:48px;
+}
+h1,h2,h3,.kanit{font-family:'Kanit',sans-serif;font-weight:500;}
+
+/* ===== HEADER ===== */
+header{
+  background:var(--navy);color:var(--cream);
+  padding:18px 24px;position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(26,39,68,.18);
+}
+.head-row{
+  max-width:1080px;margin:0 auto;display:flex;
+  align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:8px;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit',sans-serif;font-weight:600;color:var(--navy);font-size:18px;
+}
+.brand-txt h1{font-size:18px;color:var(--cream);letter-spacing:.2px;}
+.brand-txt p{font-size:12px;color:var(--gold-soft);font-weight:300;}
+.head-meta{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.sync{font-size:12.5px;color:#aeb6c6;display:flex;align-items:center;gap:7px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);
+  box-shadow:0 0 0 0 rgba(201,168,74,.6);animation:pulse 2.4s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,168,74,.5);}
+  70%{box-shadow:0 0 0 8px rgba(201,168,74,0);}100%{box-shadow:0 0 0 0 rgba(201,168,74,0);}}
+.btn-refresh{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--navy-light);color:var(--cream);border:1px solid #3d4f72;
+  padding:7px 14px;border-radius:7px;cursor:pointer;transition:.15s;
+}
+.btn-refresh:hover{background:#34466a;border-color:var(--gold);}
+.btn-refresh:active{transform:scale(.97);}
+.btn-refresh:disabled{opacity:.5;cursor:wait;}
+
+/* ===== LAYOUT ===== */
+.wrap{max-width:1080px;margin:0 auto;padding:24px;}
+.section-label{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;
+  color:var(--muted);letter-spacing:.3px;
+  margin:26px 0 12px;display:flex;align-items:center;gap:8px;
+}
+.section-label::before{content:'';width:3px;height:14px;background:var(--gold);border-radius:2px;}
+
+/* ===== RANGE PICKER ===== */
+.range-bar{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.range-bar .rb-label{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);
+  margin-right:2px;
+}
+.range-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.rbtn{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--cream);color:var(--navy);border:1px solid var(--line);
+  padding:6px 14px;border-radius:7px;cursor:pointer;transition:.13s;
+}
+.rbtn:hover{border-color:var(--gold);background:var(--white);}
+.rbtn.active{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+.range-custom{
+  display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;
+}
+.range-custom input[type=date]{
+  font-family:'Sarabun',sans-serif;font-size:13px;
+  border:1px solid var(--line);border-radius:7px;padding:5px 9px;
+  color:var(--ink);background:var(--white);cursor:pointer;
+}
+.range-custom span{font-size:12.5px;color:var(--hint);}
+.btn-apply{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--gold);color:var(--navy);border:1px solid var(--gold);
+  padding:6px 16px;border-radius:7px;cursor:pointer;transition:.13s;
+}
+.btn-apply:hover{background:var(--gold-soft);}
+.btn-apply:active{transform:scale(.97);}
+.range-now{
+  width:100%;font-size:12px;color:var(--hint);margin-top:2px;
+}
+.range-now b{color:var(--navy);font-family:'Kanit',sans-serif;font-weight:500;}
+
+/* ===== SUMMARY CARDS ===== */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.scard{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.scard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--navy);}
+.scard.ok::before{background:var(--green);}
+.scard.warn::before{background:var(--amber);}
+.scard.alert::before{background:var(--red);}
+.scard .lbl{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:4px;}
+.scard .val{font-family:'Kanit',sans-serif;font-size:30px;font-weight:600;line-height:1.1;color:var(--navy);}
+.scard.alert .val{color:var(--red);}
+.scard.ok .val{color:var(--green);}
+.scard .sub{font-size:11.5px;color:var(--hint);margin-top:2px;}
+
+/* ===== PAGE LIST ===== */
+.page-list{display:flex;flex-direction:column;gap:10px;}
+.pcard{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);overflow:hidden;transition:.15s;
+}
+.pcard:hover{border-color:var(--gold-soft);box-shadow:0 3px 10px rgba(26,39,68,.1);}
+.pcard-head{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;
+  border-left:4px solid var(--green);
+}
+.pcard.s-alert .pcard-head{border-left-color:var(--red);}
+.pcard.s-warn .pcard-head{border-left-color:var(--amber);}
+.pcard.s-ok .pcard-head{border-left-color:var(--green);}
+.pcard-info{flex:1;min-width:0;}
+.pcard-name{
+  font-family:'Kanit',sans-serif;font-weight:500;font-size:15.5px;color:var(--navy);
+  display:flex;align-items:center;gap:8px;
+}
+.brand-tag{
+  font-size:10.5px;font-weight:500;font-family:'Kanit',sans-serif;
+  padding:1px 7px;border-radius:4px;letter-spacing:.2px;
+}
+.brand-tag.thebuilt{background:var(--navy);color:var(--gold-soft);}
+.brand-tag.winwin{background:var(--cream-dark);color:var(--navy);}
+.pcard-sub{font-size:11.5px;color:var(--hint);margin-top:1px;}
+.stat-group{display:flex;align-items:center;gap:6px;}
+.stat{text-align:center;min-width:50px;padding:0 4px;}
+.stat .n{font-family:'Kanit',sans-serif;font-size:18px;font-weight:600;line-height:1.15;color:var(--navy);}
+.stat .n.g{color:var(--green);}
+.stat .n.r{color:var(--red);}
+.stat .n.a{color:var(--amber);}
+.stat .n.z{color:var(--hint);}
+.stat .t{font-size:10px;color:var(--hint);}
+.stat-div{width:1px;height:26px;background:var(--line);}
+.wait-pill{
+  min-width:74px;text-align:center;font-family:'Kanit',sans-serif;
+  font-size:13px;font-weight:500;padding:5px 10px;border-radius:7px;
+}
+.wait-pill.r{background:var(--red-bg);color:var(--red);}
+.wait-pill.a{background:var(--amber-bg);color:var(--amber);}
+.wait-pill.none{background:transparent;color:var(--hint);font-weight:400;}
+.chev{
+  color:var(--hint);font-size:13px;transition:transform .2s;
+  font-family:'Kanit',sans-serif;width:16px;text-align:center;
+}
+.pcard.open .chev{transform:rotate(90deg);}
+
+/* ===== DRILL-DOWN ===== */
+.drill{
+  display:none;border-top:1px solid var(--line);
+  background:var(--cream);padding:6px 18px 14px;
+}
+.pcard.open .drill{display:block;}
+.drill-label{
+  font-size:11.5px;color:var(--muted);font-family:'Kanit',sans-serif;
+  font-weight:500;margin:10px 2px 8px;
+}
+.cust-row{
+  display:flex;align-items:center;gap:11px;padding:8px 12px;
+  background:var(--white);border:1px solid var(--line);border-radius:9px;
+  margin-bottom:6px;
+}
+.cust-row:last-child{margin-bottom:0;}
+.avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit',sans-serif;font-size:12px;font-weight:500;
+}
+.avatar.new{background:var(--navy);color:var(--gold-soft);}
+.avatar.old{background:var(--cream-dark);color:var(--navy);}
+.cust-info{flex:1;min-width:0;}
+.cust-name{font-size:13.5px;font-weight:500;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cust-msg{font-size:11.5px;color:var(--hint);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tag{
+  font-size:10.5px;font-weight:500;font-family:'Kanit',sans-serif;
+  padding:3px 9px;border-radius:5px;flex-shrink:0;
+}
+.tag.new{background:var(--navy);color:var(--gold-soft);}
+.tag.old{background:var(--white);color:var(--muted);border:1px solid var(--line);}
+.cust-wait{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;
+  min-width:62px;text-align:right;flex-shrink:0;
+}
+.cust-wait.r{color:var(--red);}
+.cust-wait.a{color:var(--amber);}
+.cust-wait.ok{color:var(--green);}
+.drill-empty{font-size:12.5px;color:var(--hint);padding:8px 2px;font-style:italic;}
+
+/* ===== STATES ===== */
+.loading,.error,.empty{
+  text-align:center;padding:60px 20px;color:var(--muted);
+}
+.loading .spin{
+  width:34px;height:34px;border:3px solid var(--cream-dark);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:rot .8s linear infinite;margin:0 auto 16px;
+}
+@keyframes rot{to{transform:rotate(360deg);}}
+.error{color:var(--red);}
+.error-box{
+  background:var(--red-bg);border:1px solid #e8c4bf;border-radius:10px;
+  padding:16px 20px;max-width:560px;margin:0 auto;text-align:left;
+}
+.error-box code{
+  font-family:monospace;font-size:12px;background:rgba(0,0,0,.05);
+  padding:2px 5px;border-radius:3px;word-break:break-all;
+}
+
+/* ===== FOOTER NOTE ===== */
+.foot-note{
+  margin-top:24px;padding:14px 18px;background:var(--white);
+  border:1px solid var(--line);border-radius:10px;
+  font-size:12px;color:var(--muted);line-height:1.7;
+}
+.foot-note b{color:var(--navy);font-family:'Kanit',sans-serif;font-weight:500;}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;}
+.legend span{display:flex;align-items:center;gap:6px;}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+
+/* ===== ปุ่มติดตั้ง PWA (โผล่เฉพาะตอนติดตั้งได้) ===== */
+.install-bar{
+  display:none;max-width:1080px;margin:14px auto 0;padding:0 24px;
+}
+.install-card{
+  background:var(--navy);color:var(--cream);border-radius:12px;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow);
+}
+.install-card .ic-txt{flex:1;min-width:0;}
+.install-card .ic-txt b{font-family:'Kanit',sans-serif;font-weight:500;font-size:14px;display:block;}
+.install-card .ic-txt span{font-size:12px;color:#aeb6c6;}
+.install-card button{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--gold);color:var(--navy);border:none;
+  padding:8px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;
+}
+.install-card button:active{transform:scale(.97);}
+.install-card .ic-close{
+  background:transparent;color:#aeb6c6;border:1px solid #3d4f72;
+  padding:6px 10px;font-size:12px;
+}
+
+/* ===== มือถือ (จอแคบ) ===== */
+@media(max-width:680px){
+  body{padding-bottom:32px;}
+  header{padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));}
+  .brand-mark{width:34px;height:34px;font-size:16px;}
+  .brand-txt h1{font-size:16px;}
+  .brand-txt p{font-size:11px;}
+  .head-meta{gap:10px;width:100%;justify-content:space-between;}
+  .sync{font-size:11.5px;}
+  .btn-refresh{padding:8px 16px;}
+
+  .wrap{padding:16px;}
+  .install-bar{padding:0 16px;}
+
+  /* แถบเลือกช่วงเวลา — ปุ่มเต็มความกว้าง กดง่ายด้วยนิ้ว */
+  .range-bar{padding:12px;gap:8px;}
+  .range-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .rbtn{padding:9px 8px;text-align:center;font-size:13px;}
+  .range-custom{margin-left:0;width:100%;gap:6px;}
+  .range-custom input[type=date]{flex:1;min-width:0;padding:8px;}
+  .btn-apply{padding:8px 14px;}
+
+  /* การ์ดสรุป — 2 คอลัมน์ ตัวเลขใหญ่อ่านง่าย */
+  .summary{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .scard{padding:13px 14px;}
+  .scard .val{font-size:26px;}
+  .scard .lbl{font-size:12px;}
+
+  /* การ์ดเพจ — ตัวเลขย้ายลงล่าง เต็มความกว้าง */
+  .pcard-head{flex-wrap:wrap;padding:13px 14px;gap:10px;}
+  .pcard-name{font-size:15px;}
+  .stat{min-width:0;flex:1;}
+  .stat .n{font-size:17px;}
+  .stat-group{order:3;width:100%;justify-content:space-around;
+    padding-top:10px;margin-top:2px;border-top:1px dashed var(--line);gap:0;}
+  .wait-pill{order:2;min-width:70px;font-size:12.5px;}
+  .chev{order:1;}
+
+  /* drill-down */
+  .drill{padding:6px 14px 12px;}
+  .cust-row{padding:9px 11px;gap:9px;}
+  .cust-name{font-size:13px;}
+
+  .section-label{margin:20px 0 10px;}
+}
+
+/* จอเล็กมาก (มือถือเครื่องเล็ก) */
+@media(max-width:380px){
+  .summary{grid-template-columns:1fr;}
+  .scard .val{font-size:24px;}
+}
+</style>
+</head>
+<body>
+<noscript>หน้านี้ต้องเปิดด้วยเบราว์เซอร์ที่เปิดใช้งาน JavaScript</noscript>
+
+<header>
+  <div class="head-row">
+    <div class="brand">
+      <div class="brand-mark">B</div>
+      <div class="brand-txt">
+        <h1>KPN Inbox Overview</h1>
+        <p>ภาพรวมข้อความเข้า · The Built In Company</p>
+      </div>
+    </div>
+    <div class="head-meta">
+      <div class="sync"><span class="dot"></span><span id="syncTxt">กำลังโหลด…</span></div>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadAll()">รีเฟรช</button>
+    </div>
+  </div>
+</header>
+
+<!-- แถบเชิญติดตั้งเป็นแอป (โผล่เฉพาะตอนติดตั้งได้) -->
+<div class="install-bar" id="installBar">
+  <div class="install-card">
+    <div class="ic-txt">
+      <b>เพิ่มลงหน้าจอหลัก</b>
+      <span>เปิดได้เร็วเหมือนแอป ไม่ต้องพิมพ์ URL</span>
+    </div>
+    <button id="btnInstall">ติดตั้ง</button>
+    <button class="ic-close" id="btnInstallClose">ปิด</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ตัวเลือกช่วงเวลา -->
+  <div class="range-bar">
+    <span class="rb-label">ช่วงเวลา</span>
+    <div class="range-btns" id="rangeBtns">
+      <button class="rbtn active" data-range="today">วันนี้</button>
+      <button class="rbtn" data-range="yesterday">เมื่อวาน</button>
+      <button class="rbtn" data-range="7d">7 วันล่าสุด</button>
+      <button class="rbtn" data-range="month">เดือนนี้</button>
+    </div>
+    <div class="range-custom">
+      <input type="date" id="dateFrom" title="วันเริ่มต้น">
+      <span>ถึง</span>
+      <input type="date" id="dateTo" title="วันสิ้นสุด">
+      <button class="btn-apply" onclick="applyCustomRange()">ดูช่วงนี้</button>
+    </div>
+    <div class="range-now" id="rangeNow"></div>
+  </div>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spin"></div>
+      <div class="kanit">กำลังดึงข้อมูลข้อความ…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   KPN INBOX OVERVIEW — read-only dashboard
+   ต่อกับ Supabase project: kpn-inbox (ref kgjymqajwkhymqcofkhn)
+   อ่านจาก fb_messages + fb_pages เท่านั้น — ไม่แตะการส่งข้อความ
+
+   v2: เพิ่มการเลือกช่วงเวลา (วันนี้ / เมื่อวาน / 7 วัน / เดือน / กำหนดเอง)
+       เมื่อดูย้อนหลัง ช่อง "ค้าง" = เคยค้างนานสุดในช่วงนั้น (ดู performance)
+   ============================================================ */
+
+/* ---- CONFIG ---- */
+const SB_URL = 'https://kgjymqajwkhymqcofkhn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE';
+
+/* ---- กติกาทางธุรกิจ (แก้ได้ตรงนี้) ---- */
+const WORK_START   = 8;      // เวลาเริ่มงาน (08:00)
+const WORK_END     = 17;     // เวลาเลิกงาน (17:00)
+const SLA_MINUTES  = 30;     // ค้างเกินกี่ "นาทีทำงาน" = ขึ้นแดง
+const WARN_RATIO   = 0.6;    // ถึงกี่ % ของเกณฑ์ = ขึ้นเหลือง (0.6 = 18 นาที)
+const WAIT_CAP_MINUTES = 540; // เพดานเวลาค้าง = 9 ชม.ทำงาน (1 วันทำการ)
+                              // ค้างเกินนี้ถือเป็น "ค้างยาว/หลุด" ไม่นับเวลาต่อ
+const FETCH_LIMIT  = 30000;  // เพดานข้อความที่ดึงมาวิเคราะห์ต่อช่วง (วนดึงทีละ 1,000)
+const PRIOR_LIMIT  = 5000;   // เพดานประวัติเก่า (ใช้แค่เช็คลูกค้าใหม่/เก่า ไม่ต้องเยอะ)
+const AUTO_REFRESH = 5;      // รีเฟรชอัตโนมัติทุกกี่นาที (เฉพาะตอนดู "วันนี้")
+
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+/* ---- สถานะช่วงเวลาที่กำลังดู ---- */
+let curRange = { type:'today', from:null, to:null, label:'วันนี้' };
+let autoTimer = null;
+
+/* ============================================================
+   เวลาทำงานสะสม — นับเฉพาะนาทีที่อยู่ในช่วง 08:00–17:00
+   ============================================================ */
+function workingMinutesBetween(start, end){
+  if(end <= start) return 0;
+  let total = 0;
+  const cur = new Date(start);
+  while(cur < end){
+    const dayStart = new Date(cur); dayStart.setHours(WORK_START, 0, 0, 0);
+    const dayEnd   = new Date(cur); dayEnd.setHours(WORK_END, 0, 0, 0);
+    const segStart = cur > dayStart ? cur : dayStart;
+    const segEnd   = end < dayEnd   ? end : dayEnd;
+    if(segEnd > segStart) total += (segEnd - segStart) / 60000;
+    cur.setDate(cur.getDate() + 1);
+    cur.setHours(0, 0, 0, 0);
+  }
+  return Math.round(total);
+}
+
+function fmtWait(mins){
+  if(mins < 1) return 'เพิ่งทัก';
+  if(mins >= WAIT_CAP_MINUTES) return 'เกิน 1 วันทำการ';
+  if(mins < 60) return mins + ' นาที';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? h + ' ชม.' : h + ' ชม. ' + m + ' น.';
+}
+
+/* ตัดเวลาค้างไม่ให้เกินเพดาน — ค้างเกิน 1 วันทำการถือว่า "หลุด" เท่ากันหมด */
+function capWait(mins){
+  return mins > WAIT_CAP_MINUTES ? WAIT_CAP_MINUTES : mins;
+}
+
+function waitLevel(mins){
+  if(mins >= SLA_MINUTES) return 'r';
+  if(mins >= SLA_MINUTES * WARN_RATIO) return 'a';
+  return 'ok';
+}
+
+/* เช็คว่า sender เป็นฝั่งเพจ/แอดมินไหม */
+function isAdminMsg(m){
+  if(m.sender_id && m.page_id && String(m.sender_id) === String(m.page_id)) return true;
+  if(m.raw_data && m.raw_data.is_echo === true) return true;
+  const rd = m.raw_data || {};
+  const rdSender = rd.sender && rd.sender.id;
+  if(rdSender && m.page_id && String(rdSender) === String(m.page_id)) return true;
+  const n = (m.sender_name || '').toLowerCase();
+  return n.includes('the built') || n.includes('win win') ||
+         n.includes('win-win') || n.includes('winwin') ||
+         n.includes('บิวท์อิน') || n.includes('built-in');
+}
+
+/* ดึง customer id ของข้อความ ไม่ว่ามาจากฝั่งไหน */
+function customerIdOf(m, admin){
+  const rd = m.raw_data || {};
+  const recipId = (rd.recipient && rd.recipient.id) || rd.recipient_id || null;
+  const sendId  = (rd.sender && rd.sender.id) || rd.sender_id || null;
+  if(admin) return recipId || null;
+  return sendId || m.sender_id || null;
+}
+
+function initials(name){
+  const t = (name || '?').trim();
+  const parts = t.split(/\s+/);
+  if(parts.length >= 2) return (parts[0][0] || '') + (parts[1][0] || '');
+  return t.slice(0, 2);
+}
+
+function esc(s){
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   จัดการช่วงเวลา
+   ============================================================ */
+function startOfDay(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function endOfDay(d){ const x = new Date(d); x.setHours(23,59,59,999); return x; }
+
+/* แปลงปุ่ม preset เป็นช่วงวันที่จริง */
+function resolveRange(type){
+  const now = new Date();
+  if(type === 'today'){
+    return { type, from:startOfDay(now), to:endOfDay(now), label:'วันนี้' };
+  }
+  if(type === 'yesterday'){
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    return { type, from:startOfDay(y), to:endOfDay(y), label:'เมื่อวาน' };
+  }
+  if(type === '7d'){
+    const s = new Date(now); s.setDate(s.getDate() - 6);
+    return { type, from:startOfDay(s), to:endOfDay(now), label:'7 วันล่าสุด' };
+  }
+  if(type === 'month'){
+    const s = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { type, from:startOfDay(s), to:endOfDay(now), label:'เดือนนี้' };
+  }
+  return { type:'today', from:startOfDay(now), to:endOfDay(now), label:'วันนี้' };
+}
+
+/* ช่วงนับเป็น "วันนี้" ไหม (มีผลกับ auto-refresh + ความหมายของ "ค้าง") */
+function rangeIsToday(r){
+  return r.type === 'today';
+}
+
+/* ฟอร์แมตวันที่ไทยสั้น ๆ */
+function fmtDate(d){
+  return d.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
+}
+function fmtRangeText(r){
+  if(r.type === 'today') return 'วันนี้ (' + fmtDate(r.from) + ')';
+  if(r.type === 'yesterday') return 'เมื่อวาน (' + fmtDate(r.from) + ')';
+  const sameDay = startOfDay(r.from).getTime() === startOfDay(r.to).getTime();
+  if(sameDay) return fmtDate(r.from);
+  return fmtDate(r.from) + ' – ' + fmtDate(r.to);
+}
+
+/* ปุ่ม preset */
+document.getElementById('rangeBtns').addEventListener('click', function(e){
+  const btn = e.target.closest('.rbtn');
+  if(!btn) return;
+  document.querySelectorAll('.rbtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  curRange = resolveRange(btn.dataset.range);
+  loadAll();
+});
+
+/* ช่วงกำหนดเอง */
+function applyCustomRange(){
+  const fv = document.getElementById('dateFrom').value;
+  const tv = document.getElementById('dateTo').value;
+  if(!fv || !tv){
+    alert('กรุณาเลือกทั้งวันเริ่มต้นและวันสิ้นสุด');
+    return;
+  }
+  let from = new Date(fv + 'T00:00:00');
+  let to   = new Date(tv + 'T23:59:59');
+  if(from > to){ const tmp = from; from = startOfDay(to); to = endOfDay(tmp); }
+  document.querySelectorAll('.rbtn').forEach(function(b){ b.classList.remove('active'); });
+  curRange = { type:'custom', from:from, to:to,
+               label:fmtRangeText({type:'custom',from:from,to:to}) };
+  loadAll();
+}
+
+/* ============================================================
+   ดึงข้อมูลตามช่วงที่เลือก
+   ============================================================ */
+
+/* Supabase บังคับเพดาน 1,000 แถวต่อ query — ต้องวนดึงทีละหน้า (pagination)
+   จนกว่าจะครบช่วงที่เลือก หรือชน FETCH_LIMIT (กันค้างกรณีช่วงยาวมาก) */
+const PAGE_SIZE = 1000;
+
+async function fetchAllRows(columns, fromISO, toISO, maxRows, onProgress){
+  let all = [];
+  let offset = 0;
+  while(offset < maxRows){
+    let q = sb.from('fb_messages')
+      .select(columns)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if(fromISO) q = q.gte('created_at', fromISO);
+    if(toISO)   q = q.lte('created_at', toISO);
+    const res = await q;
+    if(res.error) throw res.error;
+    const batch = res.data || [];
+    all = all.concat(batch);
+    if(onProgress) onProgress(all.length);
+    // ถ้าได้น้อยกว่าเต็มหน้า = หมดแล้ว
+    if(batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return all;
+}
+
+async function loadAll(){
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true;
+  document.getElementById('syncTxt').textContent = 'กำลังซิงค์…';
+  try{
+    // ดึงเพจที่ active
+    const pagesRes = await sb
+      .from('fb_pages')
+      .select('id,name,brand,branch_name,active')
+      .eq('active', true);
+    if(pagesRes.error) throw pagesRes.error;
+    const pages = pagesRes.data || [];
+
+    // ดึงข้อความเฉพาะช่วงที่เลือก (ดึงเผื่อก่อนช่วง 1 วัน เพื่อให้บทสนทนาคาบเกี่ยวครบ)
+    const ctxFrom = new Date(curRange.from);
+    ctxFrom.setDate(ctxFrom.getDate() - 1);
+
+    const msgs = await fetchAllRows(
+      'id,page_id,conversation_id,sender_name,sender_id,message,created_at,raw_data',
+      ctxFrom.toISOString(),
+      curRange.to.toISOString(),
+      FETCH_LIMIT,
+      function(count){
+        document.getElementById('syncTxt').textContent =
+          'กำลังโหลดข้อความ… ' + count.toLocaleString('th-TH') + ' รายการ';
+      }
+    );
+
+    // ดึงประวัติเก่ากว่าช่วง — ใช้เช็ค "ลูกค้าเคยทักมาก่อนไหม"
+    document.getElementById('syncTxt').textContent = 'กำลังโหลดประวัติเก่า…';
+    const priorMsgs = await fetchAllRows(
+      'page_id,sender_id,raw_data,created_at',
+      null,
+      curRange.from.toISOString(),
+      PRIOR_LIMIT,
+      null
+    );
+
+    render(analyze(pages, msgs, priorMsgs));
+
+    const now = new Date();
+    let syncMsg = 'อัปเดต ' + now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) + ' น.';
+    syncMsg += ' · ' + msgs.length.toLocaleString('th-TH') + ' ข้อความ';
+    if(!rangeIsToday(curRange)) syncMsg += ' · ดูย้อนหลัง';
+    document.getElementById('syncTxt').textContent = syncMsg;
+
+    // auto-refresh เฉพาะตอนดู "วันนี้"
+    if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+    if(rangeIsToday(curRange)){
+      autoTimer = setInterval(loadAll, AUTO_REFRESH * 60 * 1000);
+    }
+  }catch(err){
+    showError(err);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ============================================================
+   วิเคราะห์ — group ข้อความเป็นบทสนทนา รายเพจ ตามช่วงที่เลือก
+   ============================================================ */
+function analyze(pages, msgs, priorMsgs){
+  const now = new Date();
+  const rFrom = curRange.from;
+  const rTo   = curRange.to;
+  const isToday = rangeIsToday(curRange);
+
+  // เรียงเก่า→ใหม่ เพื่อ build บทสนทนา
+  const sorted = msgs.slice().sort(function(a, b){
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+
+  // เซ็ตของ customer ที่เคยทักมา "ก่อน" ช่วงที่เลือก → ใช้บอกลูกค้าเก่า/ใหม่
+  const priorCustSet = {};
+  for(let i = 0; i < priorMsgs.length; i++){
+    const m = priorMsgs[i];
+    if(m.sender_id && String(m.sender_id) !== String(m.page_id)){
+      const rd = m.raw_data || {};
+      const sid = (rd.sender && rd.sender.id) || m.sender_id;
+      if(sid) priorCustSet[sid + '_' + m.page_id] = true;
+    }
+  }
+
+  // pass 1: หา customer_id ของแต่ละ conversation_id
+  const cidToCust = {};
+  for(let i = 0; i < sorted.length; i++){
+    const m = sorted[i];
+    if(m.conversation_id && !cidToCust[m.conversation_id] && !isAdminMsg(m)){
+      const cid = customerIdOf(m, false);
+      if(cid) cidToCust[m.conversation_id] = cid;
+    }
+  }
+
+  // pass 2: group เป็นบทสนทนา + เก็บลำดับเหตุการณ์ไว้คำนวณ "เคยค้างนานสุด"
+  const convs = {};
+  for(let i = 0; i < sorted.length; i++){
+    const m = sorted[i];
+    const admin = isAdminMsg(m);
+    let custId = customerIdOf(m, admin)
+              || (m.conversation_id && cidToCust[m.conversation_id])
+              || '';
+    const key = custId ? (custId + '_' + m.page_id) : (m.conversation_id || m.id);
+
+    if(!convs[key]){
+      convs[key] = {
+        key:key, pageId:m.page_id, custId:custId,
+        custName:'',
+        firstSeen:new Date(m.created_at),
+        events:[],            // ลำดับเหตุการณ์ {t, admin}
+        lastCustomerText:''
+      };
+    }
+    const c = convs[key];
+    const t = new Date(m.created_at);
+    if(t < c.firstSeen) c.firstSeen = t;
+    c.events.push({ t:t, admin:admin });
+    if(!admin){
+      if(!c.custName) c.custName = m.sender_name || 'ลูกค้า';
+      c.lastCustomerText = m.message || '(ส่งรูป/ไฟล์)';
+    }
+  }
+
+  // pass 3: คำนวณสถานะของแต่ละบทสนทนา
+  const convList = Object.keys(convs).map(function(k){ return convs[k]; });
+  for(let i = 0; i < convList.length; i++){
+    const c = convList[i];
+    c.events.sort(function(a, b){ return a.t - b.t; });
+
+    // มีข้อความจากลูกค้า "ในช่วงที่เลือก" ไหม
+    let hasMsgInRange = false;
+    for(let j = 0; j < c.events.length; j++){
+      const e = c.events[j];
+      if(!e.admin && e.t >= rFrom && e.t <= rTo){ hasMsgInRange = true; break; }
+    }
+    c.hasMsgInRange = hasMsgInRange;
+
+    // ลูกค้าใหม่ = ทักครั้งแรกในช่วงนี้ (ไม่เคยทักมาก่อนช่วง)
+    c.isNew = c.hasMsgInRange && !priorCustSet[c.key];
+
+    // ----- คำนวณ "เคยค้างนานสุด" ในช่วงที่เลือก -----
+    // เดินไล่เหตุการณ์: ลูกค้าทัก = เริ่มจับเวลา, เพจตอบ = ปิดรอบ
+    let maxWait = 0;
+    let pendingFrom = null;
+    let everOverSLA = false;
+
+    for(let j = 0; j < c.events.length; j++){
+      const e = c.events[j];
+      if(!e.admin){
+        if(pendingFrom === null) pendingFrom = e.t;
+      }else{
+        if(pendingFrom !== null){
+          const segStart = pendingFrom < rFrom ? rFrom : pendingFrom;
+          const segEnd   = e.t > rTo ? rTo : e.t;
+          if(segEnd > segStart){
+            const w = capWait(workingMinutesBetween(segStart, segEnd));
+            if(w > maxWait) maxWait = w;
+            if(w >= SLA_MINUTES) everOverSLA = true;
+          }
+          pendingFrom = null;
+        }
+      }
+    }
+
+    // จบ events แล้วยังมีรอบค้างเปิดอยู่ = ลูกค้าทักแล้วเพจยังไม่ตอบ
+    c.stillWaiting = (pendingFrom !== null);
+    if(c.stillWaiting){
+      const endRef = isToday ? now : rTo;
+      const segStart = pendingFrom < rFrom ? rFrom : pendingFrom;
+      const segEnd   = endRef > rTo ? rTo : endRef;
+      if(segEnd > segStart){
+        const w = capWait(workingMinutesBetween(segStart, segEnd));
+        if(w > maxWait) maxWait = w;
+        if(w >= SLA_MINUTES) everOverSLA = true;
+      }
+      c.curWaitFrom = pendingFrom;
+    }
+
+    c.maxWaitInRange = maxWait;
+    c.everOverSLA = everOverSLA;
+    c.level = waitLevel(maxWait);
+    // ค้างยาว/หลุด = ค้างถึงเพดาน (เกิน 1 วันทำการ)
+    c.isStuck = maxWait >= WAIT_CAP_MINUTES;
+
+    // "ค้าง" สำหรับนับสรุป:
+    //  - ดูวันนี้   → ยังค้างอยู่จริงตอนนี้
+    //  - ดูย้อนหลัง → เคยมีช่วงรอเพจตอบในช่วงนั้น
+    c.countAsWaiting = isToday ? c.stillWaiting : (maxWait > 0);
+  }
+
+  // pass 4: สรุปรายเพจ
+  const pageStats = pages.map(function(p){
+    const pConvs = convList.filter(function(c){
+      return c.pageId === p.id && c.hasMsgInRange;
+    });
+    const waiting = pConvs.filter(function(c){ return c.countAsWaiting; });
+    const overSLA = pConvs.filter(function(c){ return c.everOverSLA; });
+    const stuck   = pConvs.filter(function(c){ return c.isStuck; });
+    const newCust = pConvs.filter(function(c){ return c.isNew; });
+    const repliedCount = pConvs.filter(function(c){ return !c.countAsWaiting; }).length;
+    let maxWait = 0;
+    for(let i = 0; i < pConvs.length; i++){
+      if(pConvs[i].maxWaitInRange > maxWait) maxWait = pConvs[i].maxWaitInRange;
+    }
+
+    let status = 's-ok';
+    if(overSLA.length > 0) status = 's-alert';
+    else if(pConvs.some(function(c){ return c.level === 'a' && c.countAsWaiting; })) status = 's-warn';
+
+    return {
+      page:p,
+      newCount:pConvs.length,
+      repliedCount:repliedCount,
+      waitingCount:waiting.length,
+      overSLACount:overSLA.length,
+      stuckCount:stuck.length,
+      newCustCount:newCust.length,
+      maxWait:maxWait,
+      status:status,
+      waitingList:waiting.sort(function(a, b){
+        return b.maxWaitInRange - a.maxWaitInRange;
+      })
+    };
+  });
+
+  const rank = { 's-alert':0, 's-warn':1, 's-ok':2 };
+  pageStats.sort(function(a, b){
+    if(rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
+    return b.maxWait - a.maxWait;
+  });
+
+  let totalNew = 0, totalReplied = 0, totalOverSLA = 0, totalWaiting = 0;
+  let totalStuck = 0, globalMaxWait = 0;
+  for(let i = 0; i < pageStats.length; i++){
+    const ps = pageStats[i];
+    totalNew += ps.newCount;
+    totalReplied += ps.repliedCount;
+    totalOverSLA += ps.overSLACount;
+    totalWaiting += ps.waitingCount;
+    totalStuck += ps.stuckCount;
+    if(ps.maxWait > globalMaxWait) globalMaxWait = ps.maxWait;
+  }
+
+  return {
+    pageStats:pageStats, totalNew:totalNew, totalReplied:totalReplied,
+    totalOverSLA:totalOverSLA, totalWaiting:totalWaiting, totalStuck:totalStuck,
+    globalMaxWait:globalMaxWait, isToday:isToday
+  };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(data){
+  const pageStats = data.pageStats;
+  const isToday = data.isToday;
+
+  // อัปเดตข้อความบอกช่วงที่กำลังดู
+  document.getElementById('rangeNow').innerHTML =
+    'กำลังดู: <b>' + esc(fmtRangeText(curRange)) + '</b>' +
+    (isToday ? '' : ' — โหมดดูย้อนหลัง: ช่อง "ค้าง" คือ "เคยค้าง" และ "ค้างนานสุด" คือค่าที่แย่ที่สุดในช่วงนั้น');
+
+  if(pageStats.length === 0){
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><div class="kanit" style="font-size:17px;color:var(--navy)">ยังไม่มีเพจที่เปิดใช้งาน</div>' +
+      '<div style="margin-top:6px">ตรวจสอบตาราง fb_pages ว่ามีเพจที่ active = true</div></div>';
+    return;
+  }
+
+  const slaTxt = SLA_MINUTES >= 60 ? (SLA_MINUTES/60) + ' ชม.' : SLA_MINUTES + ' นาที';
+  const periodWord = isToday ? 'วันนี้' : 'ช่วงนี้';
+
+  let html = '';
+
+  /* ----- การ์ดสรุปรวม ----- */
+  html += '<div class="section-label">สรุปรวมทุกเพจ — ' + esc(fmtRangeText(curRange)) + '</div>';
+  html += '<div class="summary">';
+  html += scard('', 'ข้อความใหม่' + periodWord, data.totalNew, pageStats.length + ' เพจ');
+  html += scard('ok', 'ตอบแล้ว', data.totalReplied,
+    data.totalNew > 0 ? Math.round(data.totalReplied/data.totalNew*100) + '% ของ' + periodWord : '—');
+  if(isToday){
+    html += scard(data.totalOverSLA > 0 ? 'alert' : 'ok', 'ค้างเกินเกณฑ์', data.totalOverSLA,
+      'เกิน ' + slaTxt + ' (เวลาทำงาน)');
+  }else{
+    html += scard(data.totalOverSLA > 0 ? 'alert' : 'ok', 'เคยค้างเกินเกณฑ์', data.totalOverSLA,
+      'เกิน ' + slaTxt + ' · ค้างรวม ' + data.totalWaiting + ' ราย');
+  }
+  // การ์ด "ค้างนานสุด" — ถ้ามีบทสนทนาค้างยาว (ถึงเพดาน) บอกจำนวนไว้เตือน
+  let maxWaitSub;
+  if(data.globalMaxWait <= 0){
+    maxWaitSub = 'ไม่มีค้าง';
+  }else if(data.totalStuck > 0){
+    maxWaitSub = 'มีค้างยาว ' + data.totalStuck + ' ราย (เกิน 1 วันทำการ)';
+  }else{
+    maxWaitSub = 'เวลาทำงานสะสม';
+  }
+  html += scard(data.globalMaxWait >= SLA_MINUTES ? 'alert' : (data.globalMaxWait > 0 ? 'warn' : 'ok'),
+    'ค้างนานสุด', data.globalMaxWait > 0 ? fmtWait(data.globalMaxWait) : '—',
+    maxWaitSub);
+  html += '</div>';
+
+  /* ----- รายการเพจ ----- */
+  html += '<div class="section-label">แต่ละเพจ — เรียงตามความเร่งด่วน</div>';
+  html += '<div class="page-list">';
+  for(let i = 0; i < pageStats.length; i++){
+    html += pageCard(pageStats[i], isToday);
+  }
+  html += '</div>';
+
+  /* ----- หมายเหตุท้ายหน้า ----- */
+  html += '<div class="foot-note">';
+  html += '<b>วิธีอ่าน Dashboard นี้</b><br>';
+  html += 'เวลาค้างนับเฉพาะช่วงเวลาทำงาน ' + WORK_START + ':00–' + WORK_END + ':00 น. — ' +
+          'ข้อความที่ลูกค้าทักนอกเวลา จะเริ่มนับเมื่อถึงเวลาเปิดทำการของวันถัดไป &nbsp;·&nbsp; ' +
+          '"ค้าง" คือข้อความล่าสุดในบทสนทนามาจากลูกค้าและเพจยังไม่ตอบ &nbsp;·&nbsp; ' +
+          '"ลูกค้าใหม่" คือคนที่ทักเข้ามาครั้งแรกในช่วงที่เลือก';
+  html += '<br><b>ค้างยาว:</b> บทสนทนาที่ค้างเกิน 1 วันทำการ (' +
+          (WAIT_CAP_MINUTES/60) + ' ชม.ทำงาน) จะหยุดนับเวลาและแสดงเป็น "เกิน 1 วันทำการ" — ' +
+          'ถือเป็นบทสนทนาที่ "หลุด" ไปแล้ว คนละกลุ่มกับลูกค้าที่เพิ่งทักมาและรอตอบ';
+  if(!isToday){
+    html += '<br><b>โหมดดูย้อนหลัง:</b> ช่อง "ค้าง" นับบทสนทนาที่ "เคยมีช่วงรอเพจตอบ" ในช่วงนั้น ' +
+            'และ "ค้างนานสุด" คือเวลารอที่นานที่สุดที่เกิดขึ้นจริง — ใช้ดูว่าวันนั้นทีมตอบเร็วแค่ไหน';
+  }
+  html += '<div class="legend">';
+  html += '<span><i style="background:var(--red)"></i>' +
+          (isToday ? 'ค้างเกินเกณฑ์ ต้องรีบตอบ' : 'เคยค้างเกินเกณฑ์') + '</span>';
+  html += '<span><i style="background:var(--amber)"></i>ใกล้ถึงเกณฑ์</span>';
+  html += '<span><i style="background:var(--green)"></i>ไม่มีค้าง</span>';
+  html += '</div></div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function scard(cls, lbl, val, sub){
+  return '<div class="scard ' + cls + '">' +
+    '<div class="lbl">' + esc(lbl) + '</div>' +
+    '<div class="val">' + esc(val) + '</div>' +
+    '<div class="sub">' + esc(sub) + '</div></div>';
+}
+
+function pageCard(ps, isToday){
+  const p = ps.page;
+  const brand = (p.brand || '').toLowerCase();
+  const brandCls = brand.indexOf('win') >= 0 ? 'winwin' : 'thebuilt';
+  const brandLbl = brand.indexOf('win') >= 0 ? 'Win Win' : 'The Built';
+  const name = p.branch_name || p.name || 'เพจไม่มีชื่อ';
+
+  // คำอธิบายใต้ชื่อเพจ
+  let sub = '';
+  if(isToday){
+    if(ps.overSLACount > 0) sub = 'มี ' + ps.overSLACount + ' รายค้างเกินเกณฑ์';
+    else if(ps.waitingCount > 0) sub = 'ค้างอยู่ ' + ps.waitingCount + ' ราย';
+    else sub = 'ตอบครบ ไม่มีค้าง';
+  }else{
+    if(ps.overSLACount > 0) sub = 'เคยมี ' + ps.overSLACount + ' รายค้างเกินเกณฑ์';
+    else if(ps.waitingCount > 0) sub = 'เคยค้าง ' + ps.waitingCount + ' ราย';
+    else sub = 'ตอบไว ไม่เคยค้าง';
+  }
+  if(ps.stuckCount > 0) sub += ' · ค้างยาว ' + ps.stuckCount + ' ราย';
+  if(ps.newCustCount > 0) sub += ' · ลูกค้าใหม่ ' + ps.newCustCount + ' ราย';
+
+  // pill เวลาค้างนานสุด
+  let pill;
+  if(ps.maxWait >= SLA_MINUTES) pill = '<div class="wait-pill r">' + fmtWait(ps.maxWait) + '</div>';
+  else if(ps.maxWait > 0)       pill = '<div class="wait-pill a">' + fmtWait(ps.maxWait) + '</div>';
+  else                          pill = '<div class="wait-pill none">—</div>';
+
+  const waitCls = ps.waitingCount === 0 ? 'z' : (ps.overSLACount > 0 ? 'r' : 'a');
+  const waitLabel = isToday ? 'ค้าง' : 'เคยค้าง';
+
+  let html = '<div class="pcard ' + ps.status + '" onclick="this.classList.toggle(\'open\')">';
+  html += '<div class="pcard-head">';
+  html += '<div class="pcard-info">';
+  html += '<div class="pcard-name"><span class="brand-tag ' + brandCls + '">' +
+          brandLbl + '</span>' + esc(name) + '</div>';
+  html += '<div class="pcard-sub">' + esc(sub) + '</div>';
+  html += '</div>';
+  html += '<div class="stat-group">';
+  html += '<div class="stat"><div class="n">' + ps.newCount + '</div><div class="t">ข้อความ</div></div>';
+  html += '<div class="stat-div"></div>';
+  html += '<div class="stat"><div class="n g">' + ps.repliedCount + '</div><div class="t">ตอบแล้ว</div></div>';
+  html += '<div class="stat-div"></div>';
+  html += '<div class="stat"><div class="n ' + waitCls + '">' + ps.waitingCount + '</div><div class="t">' + waitLabel + '</div></div>';
+  html += '</div>';
+  html += pill;
+  html += '<div class="chev">›</div>';
+  html += '</div>';
+
+  /* drill-down */
+  html += '<div class="drill">';
+  if(ps.waitingList.length === 0){
+    html += '<div class="drill-empty">' +
+      (isToday ? 'ไม่มีลูกค้าที่รอการตอบกลับ — ทุกบทสนทนาตอบครบแล้ว'
+               : 'ในช่วงนี้ไม่มีบทสนทนาที่ลูกค้าต้องรอเพจตอบ') +
+      '</div>';
+  }else{
+    const dLabel = isToday
+      ? 'ลูกค้าที่รอการตอบกลับ (' + ps.waitingList.length + ' ราย) — เรียงค้างนานสุดอยู่บน'
+      : 'บทสนทนาที่เคยค้างในช่วงนี้ (' + ps.waitingList.length + ' ราย) — เรียงค้างนานสุดอยู่บน';
+    html += '<div class="drill-label">' + dLabel + '</div>';
+    for(let i = 0; i < ps.waitingList.length; i++){
+      const c = ps.waitingList[i];
+      const av = c.isNew ? 'new' : 'old';
+      const tagCls = c.isNew ? 'new' : 'old';
+      const tagTxt = c.isNew ? 'ลูกค้าใหม่' : 'ลูกค้าเก่า';
+      const lvl = c.level;
+      const wCls = lvl === 'r' ? 'r' : (lvl === 'a' ? 'a' : 'ok');
+      html += '<div class="cust-row">';
+      html += '<div class="avatar ' + av + '">' + esc(initials(c.custName)) + '</div>';
+      html += '<div class="cust-info">';
+      html += '<div class="cust-name">' + esc(c.custName || 'ลูกค้า') + '</div>';
+      html += '<div class="cust-msg">' + esc(c.lastCustomerText) + '</div>';
+      html += '</div>';
+      html += '<div class="tag ' + tagCls + '">' + tagTxt + '</div>';
+      html += '<div class="cust-wait ' + wCls + '">' + fmtWait(c.maxWaitInRange) + '</div>';
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function showError(err){
+  const msg = (err && err.message) || String(err);
+  document.getElementById('syncTxt').textContent = 'ซิงค์ไม่สำเร็จ';
+  document.getElementById('content').innerHTML =
+    '<div class="error"><div class="kanit" style="font-size:17px;margin-bottom:12px">' +
+    'ดึงข้อมูลไม่สำเร็จ</div>' +
+    '<div class="error-box">' +
+    '<div style="margin-bottom:8px">ลองตรวจสอบ:</div>' +
+    '<div>• การเชื่อมต่ออินเทอร์เน็ต</div>' +
+    '<div>• ค่า SB_URL / SB_KEY ในไฟล์ตรงกับ project <code>kpn-inbox</code></div>' +
+    '<div>• RLS policy ของตาราง fb_messages / fb_pages อนุญาตให้ anon อ่านได้</div>' +
+    '<div style="margin-top:10px;color:var(--muted)">ข้อความระบบ: <code>' +
+    esc(msg) + '</code></div>' +
+    '</div></div>';
+}
+
+/* ---- เริ่มทำงาน ---- */
+curRange = resolveRange('today');
+loadAll();
+
+/* ============================================================
+   PWA — เพิ่มลงหน้าจอหลักได้ (ทำงานเมื่อเปิดผ่าน https://)
+   ============================================================ */
+(function setupPWA(){
+  /* 1) สร้าง manifest แบบฝังตัว (ไม่ต้องมีไฟล์แยก) */
+  const manifest = {
+    name: 'KPN Inbox Overview',
+    short_name: 'KPN Inbox',
+    description: 'ภาพรวมข้อความเข้าเพจ Facebook — The Built In Company',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#f7f4ec',
+    theme_color: '#1a2744',
+    orientation: 'portrait',
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='220' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E",
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      }
+    ]
+  };
+  try{
+    const blob = new Blob([JSON.stringify(manifest)], { type:'application/manifest+json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = url;
+    document.head.appendChild(link);
+  }catch(e){ /* เบราว์เซอร์เก่าไม่รองรับ ก็ข้ามไป */ }
+
+  /* 2) ลงทะเบียน service worker แบบฝังตัว (cache ไฟล์ตัวเองให้เปิดเร็ว) */
+  if('serviceWorker' in navigator){
+    const swCode = [
+      "const C='kpn-inbox-v1';",
+      "self.addEventListener('install',e=>{self.skipWaiting();});",
+      "self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});",
+      "self.addEventListener('fetch',e=>{",
+      "  const u=e.request.url;",
+      // ข้อมูลสด (Supabase) ไม่ cache — ดึงใหม่เสมอ
+      "  if(u.includes('supabase.co')){return;}",
+      // ไฟล์อื่น: ลองเน็ตก่อน ถ้าไม่ได้ค่อยใช้ cache
+      "  e.respondWith(",
+      "    fetch(e.request).then(r=>{",
+      "      const cp=r.clone();",
+      "      caches.open(C).then(c=>c.put(e.request,cp)).catch(()=>{});",
+      "      return r;",
+      "    }).catch(()=>caches.match(e.request))",
+      "  );",
+      "});"
+    ].join('\n');
+    try{
+      const swBlob = new Blob([swCode], { type:'text/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(function(){ /* เงียบไว้ ไม่ critical */ });
+    }catch(e){ /* ข้าม */ }
+  }
+
+  /* 3) ปุ่มติดตั้ง — โผล่เมื่อเบราว์เซอร์บอกว่าติดตั้งได้ */
+  let deferredPrompt = null;
+  const bar = document.getElementById('installBar');
+  const btnInstall = document.getElementById('btnInstall');
+  const btnClose = document.getElementById('btnInstallClose');
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    // เคยกดปิดไปแล้วในรอบนี้ ไม่ต้องโชว์ซ้ำ
+    if(sessionStorage.getItem('hideInstall') !== '1'){
+      bar.style.display = 'block';
+    }
+  });
+
+  btnInstall.addEventListener('click', async function(){
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    bar.style.display = 'none';
+  });
+
+  btnClose.addEventListener('click', function(){
+    bar.style.display = 'none';
+    sessionStorage.setItem('hideInstall', '1');
+  });
+
+  // ติดตั้งสำเร็จแล้ว ซ่อนแถบ
+  window.addEventListener('appinstalled', function(){
+    bar.style.display = 'none';
+  });
+})();
+</script>
+
+</body>
+</html>
