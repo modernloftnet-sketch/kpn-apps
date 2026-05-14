@@ -2615,6 +2615,30 @@ const supa = {
   get: (table, params='') => supa.req('GET', table, null, params),
   upsert: (table, data) => supa.req('POST', table, Array.isArray(data)?data:[data]),
   del: (table, id) => supa.req('DELETE', table, null, `?id=eq.${id}`),
+  // ── ดึงข้อมูลทั้งหมดแบบแบ่งหน้า (pagination) — ไม่จำกัดจำนวน ──
+  async getAll(table, params='') {
+    const pageSize = 1000;
+    let from = 0;
+    let all = [];
+    while (true) {
+      const to = from + pageSize - 1;
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Range-Unit': 'items',
+          'Range': `${from}-${to}`,
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const rows = await res.json();
+      all = all.concat(rows);
+      if (rows.length < pageSize) break; // หน้าสุดท้ายแล้ว
+      from += pageSize;
+    }
+    return all;
+  },
 };
 // Alias for new systems
 const supaReq = (method, table, body=null, params='') => supa.req(method, table, body, params);
@@ -2730,10 +2754,10 @@ async function loadFromSupabase() {
   try {
     if (!_staticLoaded) await loadStaticData();
     const [docs, purchases, expenses, pos] = await Promise.all([
-      supa.get('kpn_documents', '?select=id,type,number,customer,date,due_date,subtotal,vat,wht,total,discount,vat_rate,note,status,items,branch,salesperson,ref_invoice&order=date.desc&limit=500'),
-      supa.get('kpn_purchases', '?select=id,supplier,description,cat,amount,date,due_date,status,paid_date,ref,note&order=date.desc&limit=300').catch(()=>[]),
-      supa.get('kpn_expenses', '?select=id,description,amount,date,cat,paid_by,method,note&order=date.desc&limit=300').catch(()=>[]),
-      supa.get('kpn_pos', '?order=date.desc&limit=300').catch(()=>[]),
+      supa.getAll('kpn_documents', '?select=id,type,number,customer,date,due_date,subtotal,vat,wht,total,discount,vat_rate,note,status,items,branch,salesperson,ref_invoice&order=date.desc,number.desc'),
+      supa.getAll('kpn_purchases', '?select=id,supplier,description,cat,amount,date,due_date,status,paid_date,ref,note&order=date.desc').catch(()=>[]),
+      supa.getAll('kpn_expenses', '?select=id,description,amount,date,cat,paid_by,method,note&order=date.desc').catch(()=>[]),
+      supa.getAll('kpn_pos', '?order=date.desc').catch(()=>[]),
     ]);
     state.documents = docs.map(d => {
       // customer เป็น jsonb object หรืออาจเป็น customer_id แบบเก่า
