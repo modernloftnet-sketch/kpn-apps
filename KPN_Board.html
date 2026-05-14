@@ -397,6 +397,9 @@ body {
   <div class="header-right">
     <div id="syncBadge">☁️ ซิงค์แล้ว</div>
     <div id="headerRoleBadge" style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgb(255, 243, 205); color: rgb(133, 100, 4); display:none;">👑 Admin</div>
+    <button id="btnFixData" onclick="fixOrphanCards()" title="ซ่อมงานที่สถานะไม่ตรงคอลัมน์" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer;">
+      🔧 ซ่อมข้อมูล
+    </button>
     <button id="btnSettings" onclick="openSettings()" title="จัดการรหัสผ่าน" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; display:none;">
       ⚙️
     </button>
@@ -1289,11 +1292,26 @@ function initBoard() {
 // RENDER CARDS
 // ═══════════════════════════════════════════
 function renderCards() {
-  COLUMNS.forEach(col => {
-    const colCards = cards.filter(c => c.status === col.id);
+  const validIds = COLUMNS.map(col => col.id);
+  // การ์ดที่ status ไม่ตรงกับ column ไหนเลย (เช่น column ถูกลบ/เปลี่ยน id) → ดันเข้า column แรก
+  const orphanCards = cards.filter(c => !validIds.includes(c.status));
+  const firstColId = COLUMNS[0] ? COLUMNS[0].id : null;
+
+  COLUMNS.forEach((col, idx) => {
+    let colCards = cards.filter(c => c.status === col.id);
+    // column แรกรับการ์ดตกหล่นทั้งหมดมาแสดงด้วย
+    if (idx === 0 && orphanCards.length) {
+      colCards = colCards.concat(orphanCards);
+    }
     document.getElementById(`count-${col.id}`).textContent = colCards.length;
     document.getElementById(`body-${col.id}`).innerHTML = colCards.map(c => cardHTML(c)).join('');
   });
+
+  if (orphanCards.length) {
+    console.warn(`⚠️ พบงาน ${orphanCards.length} รายการที่สถานะไม่ตรงกับคอลัมน์ใด — แสดงไว้ในคอลัมน์แรกชั่วคราว`,
+      orphanCards.map(c => ({ title: c.title, status: c.status })));
+    showToast(`⚠️ พบงาน ${orphanCards.length} รายการสถานะไม่ถูกต้อง — กดปุ่ม 🔧 ซ่อมข้อมูล`);
+  }
   updateStats();
 
   // Re-attach drag events
@@ -1540,6 +1558,32 @@ async function loadCards() {
     setSyncStatus('error');
     showToast('⚠️ โหลดข้อมูลไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ');
   }
+}
+
+// ─── ซ่อมงานที่สถานะไม่ตรงคอลัมน์ (status orphan) ───
+// ย้าย status ของงานเหล่านั้นไปเป็นคอลัมน์แรก แล้วบันทึกกลับ Supabase
+async function fixOrphanCards() {
+  const validIds = COLUMNS.map(col => col.id);
+  const orphans = cards.filter(c => !validIds.includes(c.status));
+  if (!orphans.length) return showToast('✅ ไม่พบงานที่สถานะผิด — ข้อมูลปกติดี');
+  const firstColId = COLUMNS[0] && COLUMNS[0].id;
+  if (!firstColId) return showToast('❌ ไม่มีคอลัมน์ในบอร์ด');
+
+  const colName = COLUMNS[0].label;
+  if (!confirm(`พบงาน ${orphans.length} รายการที่สถานะไม่ตรงกับคอลัมน์ใดเลย\n\nจะย้ายทั้งหมดไปไว้ที่คอลัมน์แรก "${colName}" และบันทึกถาวร — ดำเนินการต่อ?`)) return;
+
+  setSyncStatus('syncing');
+  let ok = 0, fail = 0;
+  for (const c of orphans) {
+    try {
+      await supa.patch('kanban_cards', c.id, { status: firstColId });
+      c.status = firstColId;
+      ok++;
+    } catch(e) { fail++; }
+  }
+  setSyncStatus(fail ? 'error' : 'ok');
+  renderCards();
+  showToast(fail ? `⚠️ ซ่อมสำเร็จ ${ok} รายการ, ล้มเหลว ${fail}` : `✅ ซ่อมข้อมูลสำเร็จ ${ok} รายการ`);
 }
 
 // Close on backdrop click
