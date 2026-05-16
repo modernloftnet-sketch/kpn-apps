@@ -824,9 +824,10 @@ function analyze(pages, msgs, priorMsgs){
     };
   });
 
-  const rank = { 's-alert':0, 's-warn':1, 's-ok':2 };
   pageStats.sort(function(a, b){
-    if(rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
+    // เรียงตามจำนวนข้อความมากสุดอยู่บน
+    if(a.newCount !== b.newCount) return b.newCount - a.newCount;
+    // ถ้าเท่ากัน ใช้ค้างนานสุดเป็นตัวตัดสิน
     return b.maxWait - a.maxWait;
   });
 
@@ -901,7 +902,7 @@ function render(data){
   html += '</div>';
 
   /* ----- รายการเพจ ----- */
-  html += '<div class="section-label">แต่ละเพจ — เรียงตามความเร่งด่วน</div>';
+  html += '<div class="section-label">แต่ละเพจ — เรียงตามจำนวนข้อความ</div>';
   html += '<div class="page-list">';
   for(let i = 0; i < pageStats.length; i++){
     html += pageCard(pageStats[i], isToday);
@@ -1075,30 +1076,55 @@ loadAll();
     document.head.appendChild(link);
   }catch(e){ /* เบราว์เซอร์เก่าไม่รองรับ ก็ข้ามไป */ }
 
-  /* 2) ลงทะเบียน service worker แบบฝังตัว (cache ไฟล์ตัวเองให้เปิดเร็ว) */
+  /* 2) ลงทะเบียน service worker แบบฝังตัว
+        กลยุทธ์: network-first สำหรับ HTML (ได้ของใหม่เสมอถ้ามีเน็ต)
+                cache-first สำหรับไฟล์อื่น เช่น font/script CDN */
   if('serviceWorker' in navigator){
     const swCode = [
-      "const C='kpn-inbox-v1';",
+      // เปลี่ยน version ทุกครั้งที่อัปโหลดไฟล์ใหม่ เพื่อให้ cache เก่าถูกล้าง
+      "const C='kpn-inbox-v3';",
       "self.addEventListener('install',e=>{self.skipWaiting();});",
-      "self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});",
+      "self.addEventListener('activate',e=>{",
+      "  e.waitUntil(",
+      "    caches.keys().then(keys=>Promise.all(",
+      "      keys.filter(k=>k!==C).map(k=>caches.delete(k))",
+      "    )).then(()=>clients.claim())",
+      "  );",
+      "});",
       "self.addEventListener('fetch',e=>{",
       "  const u=e.request.url;",
-      // ข้อมูลสด (Supabase) ไม่ cache — ดึงใหม่เสมอ
+      // ข้อมูลสด (Supabase) ไม่แตะเลย ปล่อยให้ browser จัดการ
       "  if(u.includes('supabase.co')){return;}",
-      // ไฟล์อื่น: ลองเน็ตก่อน ถ้าไม่ได้ค่อยใช้ cache
+      // HTML: network-first เสมอ (ดึงใหม่ทุกครั้ง ใช้ cache เฉพาะออฟไลน์)
+      "  const isHTML=e.request.mode==='navigate'||",
+      "    (e.request.headers.get('accept')||'').includes('text/html');",
+      "  if(isHTML){",
+      "    e.respondWith(",
+      "      fetch(e.request).then(r=>{",
+      "        const cp=r.clone();",
+      "        caches.open(C).then(c=>c.put(e.request,cp)).catch(()=>{});",
+      "        return r;",
+      "      }).catch(()=>caches.match(e.request))",
+      "    );",
+      "    return;",
+      "  }",
+      // ไฟล์อื่น (font, lib): cache-first ก็พอ
       "  e.respondWith(",
-      "    fetch(e.request).then(r=>{",
+      "    caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{",
       "      const cp=r.clone();",
       "      caches.open(C).then(c=>c.put(e.request,cp)).catch(()=>{});",
       "      return r;",
-      "    }).catch(()=>caches.match(e.request))",
+      "    }))",
       "  );",
       "});"
     ].join('\n');
     try{
       const swBlob = new Blob([swCode], { type:'text/javascript' });
       const swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(function(){ /* เงียบไว้ ไม่ critical */ });
+      navigator.serviceWorker.register(swUrl).then(function(reg){
+        // เช็คอัปเดตทุกครั้งที่เปิดแอป
+        reg.update().catch(function(){});
+      }).catch(function(){ /* เงียบไว้ ไม่ critical */ });
     }catch(e){ /* ข้าม */ }
   }
 
