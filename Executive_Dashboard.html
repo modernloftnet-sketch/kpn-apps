@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Dashboard — The Built × KPN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f3ef;
+  --panel:#ffffff;
+  --ink:#1a1a1a;
+  --ink2:#4a4a4a;
+  --muted:#8b8680;
+  --line:#e5e1d8;
+  --line2:#efece4;
+  --tb:#1a1a1a;        /* The Built primary */
+  --tb-gold:#f0c040;
+  --ww:#6b0f1a;        /* KPN primary */
+  --ww-gold:#e8c07a;
+  --green:#1a6b3c;
+  --green-bg:#e7f4ec;
+  --red:#b03030;
+  --red-bg:#fbeaea;
+  --orange:#c97a1a;
+  --orange-bg:#fbf1e2;
+  --shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.06);
+  --shadow2:0 4px 12px rgba(0,0,0,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Sarabun',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.app{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ────────────────────────────────────────── */
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:#0e0e0e;color:#d7d3c8;
+  display:flex;flex-direction:column;
+  padding:20px 16px;
+  position:sticky;top:0;height:100vh;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px 22px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.brand .mark{
+  width:36px;height:36px;border-radius:8px;
+  background:linear-gradient(135deg,#f0c040,#e8c07a);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit',sans-serif;font-weight:700;color:#1a1a1a;
+  font-size:18px;letter-spacing:-0.5px;
+}
+.brand h1{
+  font-family:'Kanit',sans-serif;font-weight:600;
+  font-size:15px;color:#fff;letter-spacing:0.5px;
+}
+.brand h1 span{display:block;font-size:11px;color:#8b8680;font-weight:500;margin-top:2px}
+.nav-section{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1.5px;
+  color:#6b6760;padding:18px 10px 8px;font-weight:600;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;
+  font-size:13.5px;cursor:pointer;color:#d7d3c8;
+  transition:all .15s;
+}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+.nav-item.active{background:rgba(240,192,64,0.12);color:#f0c040;font-weight:600}
+.nav-item .ico{width:18px;text-align:center;font-size:14px}
+
+.sync-status{
+  margin-top:auto;padding:10px 12px;
+  font-size:11.5px;color:#8b8680;
+  display:flex;align-items:center;gap:8px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:#888}
+.dot.ok{background:#5dd57e;box-shadow:0 0 6px rgba(93,213,126,0.6)}
+.dot.err{background:#e35454}
+.dot.loading{background:#f0c040;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── MAIN ────────────────────────────────────────────── */
+.main{flex:1;padding:24px 32px 48px;max-width:1400px}
+.topbar{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:24px;
+}
+.topbar h2{
+  font-family:'Kanit',sans-serif;font-weight:600;
+  font-size:24px;color:var(--ink);letter-spacing:-0.3px;
+}
+.topbar h2 + p{font-size:13px;color:var(--muted);margin-top:4px}
+
+.toolbar{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:var(--panel);padding:14px 18px;border-radius:10px;
+  border:1px solid var(--line);margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.toolbar label{font-size:12px;color:var(--muted);font-weight:600;margin-right:4px}
+.toolbar select,.toolbar input{
+  font-family:'Sarabun',sans-serif;font-size:13px;
+  border:1px solid var(--line);border-radius:7px;
+  padding:7px 11px;background:#fff;color:var(--ink);
+  outline:none;cursor:pointer;
+}
+.toolbar select:hover,.toolbar input:hover{border-color:#bbb}
+.toolbar select:focus{border-color:var(--tb)}
+.toolbar .spacer{flex:1}
+.btn{
+  font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;
+  padding:7px 13px;border-radius:7px;border:1px solid var(--line);
+  background:#fff;color:var(--ink);cursor:pointer;transition:all .15s;
+}
+.btn:hover{border-color:var(--ink);transform:translateY(-1px)}
+.btn-dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-dark:hover{background:#000}
+
+/* ── KPI CARDS ────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px 16px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.kpi::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--tb),var(--ww));
+}
+.kpi.income::before{background:var(--green)}
+.kpi.expense::before{background:var(--red)}
+.kpi.purchase::before{background:var(--orange)}
+.kpi.cost::before{background:#7a3e1a}
+.kpi.debt::before{background:#7c2d12}
+.kpi .label{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:0.3px;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.kpi .label .ico{font-size:13px}
+.kpi .value{
+  font-family:'Kanit',sans-serif;font-weight:600;
+  font-size:21px;color:var(--ink);margin-top:6px;letter-spacing:-0.5px;
+  word-break:break-all;
+}
+.kpi .value.green{color:var(--green)}
+.kpi .value.red{color:var(--red)}
+.kpi .value.orange{color:var(--orange)}
+.kpi .sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.kpi .sub.warn{color:var(--red);font-weight:600}
+
+/* ── PANELS ────────────────────────────────────────── */
+.row{display:grid;gap:16px;margin-bottom:20px}
+.row-2{grid-template-columns:1fr 1fr}
+.row-3{grid-template-columns:2fr 1fr}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px 20px;box-shadow:var(--shadow);
+}
+.panel-head{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line2);
+}
+.panel-head h3{
+  font-family:'Kanit',sans-serif;font-weight:600;font-size:15px;
+  color:var(--ink);letter-spacing:-0.2px;
+}
+.panel-head .meta{font-size:11.5px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2)}
+.legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle}
+.legend .sw.tb{background:var(--tb)}
+.legend .sw.ww{background:var(--ww)}
+.legend .sw.tb-l{background:#666}
+.legend .sw.ww-l{background:#c97a85}
+
+.chart-box{position:relative;height:300px}
+.chart-box.tall{height:340px}
+.chart-box.short{height:220px}
+
+/* ── TABLE ────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  text-align:left;font-weight:600;font-size:11.5px;
+  color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;
+  padding:10px 8px;border-bottom:1px solid var(--line);
+}
+tbody td{padding:10px 8px;border-bottom:1px solid var(--line2);color:var(--ink2)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafaf7}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.num.green{color:var(--green);font-weight:600}
+.num.red{color:var(--red);font-weight:600}
+.num.bold{font-weight:700;color:var(--ink)}
+.brand-tag{
+  display:inline-block;font-size:10.5px;font-weight:700;
+  padding:2px 8px;border-radius:10px;letter-spacing:0.5px;
+}
+.brand-tag.tb{background:#1a1a1a;color:#f0c040}
+.brand-tag.ww{background:#6b0f1a;color:#e8c07a}
+.brand-tag.tot{background:#efece4;color:#1a1a1a}
+.pct-pill{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:11.5px;font-weight:600;
+}
+.pct-pill.pos{background:var(--green-bg);color:var(--green)}
+.pct-pill.neg{background:var(--red-bg);color:var(--red)}
+
+/* ── COMPARISON BARS ────────────────────────── */
+.cmp-row{margin-bottom:14px}
+.cmp-row:last-child{margin-bottom:0}
+.cmp-row .lbl{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px;font-size:12.5px;
+}
+.cmp-row .lbl .name{color:var(--ink2);font-weight:600}
+.cmp-row .lbl .val{font-family:'Kanit',sans-serif;font-weight:600;color:var(--ink)}
+.cmp-bar{
+  height:8px;background:var(--line2);border-radius:4px;overflow:hidden;
+}
+.cmp-bar .fill{height:100%;border-radius:4px;transition:width .4s ease}
+.cmp-bar .fill.tb{background:linear-gradient(90deg,#1a1a1a,#3a3a3a)}
+.cmp-bar .fill.ww{background:linear-gradient(90deg,#6b0f1a,#8b1a2a)}
+
+/* ── EMPTY/LOADING ─────────────────────────── */
+.empty{
+  text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;
+}
+.spinner{
+  width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--tb);
+  border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LOGIN OVERLAY ─────────────────────────── */
+.lock-overlay{
+  position:fixed;inset:0;background:#0e0e0e;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+}
+.lock-box{
+  background:#fff;border-radius:14px;padding:36px 40px;width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  text-align:center;
+}
+.lock-box .mark{
+  width:54px;height:54px;border-radius:12px;margin:0 auto 16px;
+  background:linear-gradient(135deg,#f0c040,#e8c07a);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit',sans-serif;font-weight:700;color:#1a1a1a;font-size:24px;
+}
+.lock-box h2{
+  font-family:'Kanit',sans-serif;font-weight:600;font-size:20px;
+  color:var(--ink);margin-bottom:6px;
+}
+.lock-box p{font-size:13px;color:var(--muted);margin-bottom:22px}
+.lock-box input{
+  width:100%;padding:12px 14px;font-size:16px;font-family:'Kanit',sans-serif;
+  border:1.5px solid var(--line);border-radius:9px;
+  text-align:center;letter-spacing:6px;outline:none;
+}
+.lock-box input:focus{border-color:var(--tb)}
+.lock-box .btn-go{
+  margin-top:14px;width:100%;padding:12px;background:var(--ink);color:#fff;
+  border:none;border-radius:9px;font-family:'Sarabun',sans-serif;font-weight:700;
+  font-size:14px;cursor:pointer;
+}
+.lock-box .btn-go:hover{background:#000}
+.lock-box .err{color:var(--red);font-size:12px;margin-top:8px;min-height:16px}
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width:1200px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .kpi .value{font-size:19px}
+}
+@media (max-width:900px){
+  .row-2,.row-3{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .sidebar{display:none}
+  .main{padding:14px 12px 32px}
+  .topbar{flex-direction:column;align-items:flex-start;gap:10px;padding-bottom:14px;margin-bottom:14px}
+  .topbar h2{font-size:19px}
+  .toolbar{padding:10px 12px;gap:8px;border-radius:9px}
+  .toolbar label{font-size:11px}
+  .toolbar select{font-size:13px;padding:6px 9px;flex:1;min-width:0}
+  .toolbar .spacer{display:none}
+  .toolbar .btn{font-size:12px;padding:6px 10px}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .kpi-grid .kpi:nth-child(5){grid-column:span 2}
+  .kpi-grid .kpi:nth-child(5) .value{font-size:20px}
+  .kpi{padding:12px 12px;border-radius:10px}
+  .kpi .label{font-size:10.5px;letter-spacing:0.2px}
+  .kpi .label .ico{font-size:12px}
+  .kpi .value{font-size:17px;margin-top:4px}
+  .kpi .sub{font-size:10px;margin-top:3px}
+  .panel{padding:14px 14px;border-radius:10px}
+  .panel-head{margin-bottom:10px;padding-bottom:8px;flex-wrap:wrap;gap:6px}
+  .panel-head h3{font-size:14px}
+  .panel-head .meta,.panel-head .legend{font-size:10.5px}
+  .legend{gap:8px;flex-wrap:wrap}
+  .chart-box{height:240px}
+  .chart-box.tall{height:280px}
+  .chart-box.short{height:180px}
+  thead th{font-size:10.5px;padding:8px 6px}
+  tbody td{padding:8px 6px;font-size:12px}
+  .brand-tag{font-size:10px;padding:2px 6px}
+  .row{gap:12px;margin-bottom:14px}
+  /* Section divider */
+  [data-brand-row] .brand-tag{font-size:11px !important;padding:3px 9px !important}
+}
+@media (max-width:380px){
+  .kpi .value{font-size:15px}
+  .topbar h2{font-size:17px}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── LOGIN OVERLAY ─────────────────────────────────── -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="mark">E</div>
+    <h2>Executive Dashboard</h2>
+    <p>เปรียบเทียบ The Built × KPN<br>กรุณาใส่รหัสเจ้าของ</p>
+    <input type="password" id="lockPin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="••••••">
+    <button class="btn-go" onclick="tryUnlock()">เข้าสู่ระบบ</button>
+    <div class="err" id="lockErr"></div>
+  </div>
+</div>
+
+<!-- ─── APP ─────────────────────────────────── -->
+<div class="app" id="app" style="display:none">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">E</div>
+      <h1>EXECUTIVE<span>Dashboard · Owner</span></h1>
+    </div>
+    <div class="nav-section">รายงาน</div>
+    <div class="nav-item active"><span class="ico">📊</span>ภาพรวม</div>
+    <div class="nav-item" onclick="alert('เปิดจากแอปต้นทาง: thebuilt-invoice.html')"><span class="ico">📄</span>The Built</div>
+    <div class="nav-item" onclick="alert('เปิดจากแอปต้นทาง: kpn-invoice.html')"><span class="ico">📄</span>KPN</div>
+    <div class="nav-section">ระบบ</div>
+    <div class="nav-item" onclick="reloadAll()"><span class="ico">🔄</span>โหลดข้อมูลใหม่</div>
+    <div class="nav-item" onclick="logout()"><span class="ico">🔒</span>ออกจากระบบ</div>
+
+    <div class="sync-status">
+      <span class="dot" id="syncDot"></span>
+      <span id="syncTxt">รอเชื่อมต่อ</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2>ภาพรวมธุรกิจ</h2>
+        <p id="periodLabel">กำลังโหลด…</p>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);text-align:right">
+        <span class="brand-tag tb">THE BUILT</span> 
+        <span style="margin:0 4px;color:#bbb">×</span>
+        <span class="brand-tag ww">KPN</span>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <label>ปี</label>
+      <select id="filYear"></select>
+      <label>เดือน</label>
+      <select id="filMonth">
+        <option value="0">ทั้งปี</option>
+        <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
+        <option value="3">มีนาคม</option><option value="4">เมษายน</option>
+        <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+        <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
+        <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
+        <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+      </select>
+      <label>แบรนด์</label>
+      <select id="filBrand">
+        <option value="both">ทั้งสองแบรนด์</option>
+        <option value="tb">เฉพาะ The Built</option>
+        <option value="ww">เฉพาะ KPN</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn" onclick="exportCSV()">⬇ ส่งออก CSV</button>
+      <button class="btn btn-dark" onclick="reloadAll()">🔄 รีเฟรช</button>
+    </div>
+
+    <!-- KPI: THE BUILT -->
+    <div data-brand-row="tb" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;margin-top:4px">
+      <span class="brand-tag tb" style="font-size:12px;padding:4px 10px">THE BUILT</span>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)"></div>
+    </div>
+    <div class="kpi-grid" data-brand-row="tb">
+      <div class="kpi income">
+        <div class="label"><span class="ico">📈</span>รายรับ</div>
+        <div class="value green" id="kpiIncomeTB">฿0</div>
+        <div class="sub" id="kpiIncomeTBCount">— ใบ</div>
+      </div>
+      <div class="kpi expense">
+        <div class="label"><span class="ico">📉</span>รายจ่ายรวม</div>
+        <div class="value red" id="kpiExpenseTB">฿0</div>
+        <div class="sub">บิลซื้อ + ค่าใช้จ่าย</div>
+      </div>
+      <div class="kpi purchase">
+        <div class="label"><span class="ico">🛒</span>บิลซื้อ</div>
+        <div class="value orange" id="kpiPurchaseTB">฿0</div>
+        <div class="sub" id="kpiPurchaseTBCount">— รายการ</div>
+      </div>
+      <div class="kpi cost">
+        <div class="label"><span class="ico">🌿</span>ค่าใช้จ่าย</div>
+        <div class="value" id="kpiCostTB">฿0</div>
+        <div class="sub" id="kpiCostTBCount">— รายการ</div>
+      </div>
+      <div class="kpi debt">
+        <div class="label"><span class="ico">💳</span>หนี้สิน</div>
+        <div class="value" id="kpiDebtTB">฿0</div>
+        <div class="sub" id="kpiDebtTBSub">ยอดค้างจ่าย</div>
+      </div>
+    </div>
+
+    <!-- KPI: KPN -->
+    <div data-brand-row="ww" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;margin-top:8px">
+      <span class="brand-tag ww" style="font-size:12px;padding:4px 10px">KPN</span>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)"></div>
+    </div>
+    <div class="kpi-grid" data-brand-row="ww">
+      <div class="kpi income">
+        <div class="label"><span class="ico">📈</span>รายรับ</div>
+        <div class="value green" id="kpiIncomeWW">฿0</div>
+        <div class="sub" id="kpiIncomeWWCount">— ใบ</div>
+      </div>
+      <div class="kpi expense">
+        <div class="label"><span class="ico">📉</span>รายจ่ายรวม</div>
+        <div class="value red" id="kpiExpenseWW">฿0</div>
+        <div class="sub">บิลซื้อ + ค่าใช้จ่าย</div>
+      </div>
+      <div class="kpi purchase">
+        <div class="label"><span class="ico">🛒</span>บิลซื้อ</div>
+        <div class="value orange" id="kpiPurchaseWW">฿0</div>
+        <div class="sub" id="kpiPurchaseWWCount">— รายการ</div>
+      </div>
+      <div class="kpi cost">
+        <div class="label"><span class="ico">🌿</span>ค่าใช้จ่าย</div>
+        <div class="value" id="kpiCostWW">฿0</div>
+        <div class="sub" id="kpiCostWWCount">— รายการ</div>
+      </div>
+      <div class="kpi debt">
+        <div class="label"><span class="ico">💳</span>หนี้สิน</div>
+        <div class="value" id="kpiDebtWW">฿0</div>
+        <div class="sub" id="kpiDebtWWSub">ยอดค้างจ่าย</div>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="row row-3">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>เปรียบเทียบรายเดือน (รายรับ vs รายจ่าย)</h3>
+          <div class="legend">
+            <span><i class="sw tb"></i>TB รายรับ</span>
+            <span><i class="sw ww"></i>KPN รายรับ</span>
+            <span><i class="sw tb-l"></i>TB รายจ่าย</span>
+            <span><i class="sw ww-l"></i>KPN รายจ่าย</span>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartTrend"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>สัดส่วนรายรับ</h3>
+          <div class="meta">ต่อแบรนด์</div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartShare"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Comparison + Profit Trend -->
+    <div class="row row-2">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>เปรียบเทียบประสิทธิภาพ</h3>
+          <div class="meta">ตัวชี้วัดหลัก</div>
+        </div>
+        <div id="cmpBars"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>กำไรสุทธิรายเดือน</h3>
+          <div class="legend">
+            <span><i class="sw tb"></i>The Built</span>
+            <span><i class="sw ww"></i>KPN</span>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="chartProfit"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Monthly Detail Table -->
+    <div class="panel" style="margin-bottom:20px">
+      <div class="panel-head">
+        <h3>ตารางรายเดือน</h3>
+        <div class="meta" id="tableMeta">—</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>เดือน</th>
+              <th>แบรนด์</th>
+              <th class="num">รายรับ</th>
+              <th class="num">บิลซื้อ</th>
+              <th class="num">ค่าใช้จ่าย</th>
+              <th class="num">รายจ่ายรวม</th>
+              <th class="num">กำไร</th>
+              <th class="num">%กำไร</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyTable">
+            <tr><td colspan="8" class="empty">ยังไม่มีข้อมูล</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Status Distribution & Top Categories -->
+    <div class="row row-2">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>สถานะใบกำกับภาษี</h3>
+          <div class="meta">ยอดค้าง vs ชำระแล้ว</div>
+        </div>
+        <div id="invoiceStatus"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>หมวดค่าใช้จ่ายสูงสุด</h3>
+          <div class="meta">Top 8</div>
+        </div>
+        <div class="chart-box"><canvas id="chartCat"></canvas></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://qybntZlfnrcownntzmir.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
+const OWNER_PIN = '16012521';
+
+const BRANDS = {
+  tb: { name:'The Built',  color:'#1a1a1a', colorLight:'rgba(26,26,26,0.55)', gold:'#f0c040',
+        tables:{ docs:'tb_documents', purchases:'tb_purchases', expenses:'tb_expenses' } },
+  ww: { name:'KPN',        color:'#6b0f1a', colorLight:'rgba(201,122,133,0.85)', gold:'#e8c07a',
+        tables:{ docs:'kpn_documents', purchases:'kpn_purchases', expenses:'kpn_expenses' } },
+};
+
+// State
+const data = { tb:{docs:[],purchases:[],expenses:[]}, ww:{docs:[],purchases:[],expenses:[]} };
+let charts = {};
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function tryUnlock(){
+  const pin = document.getElementById('lockPin').value.trim();
+  const err = document.getElementById('lockErr');
+  if (pin === OWNER_PIN){
+    sessionStorage.setItem('exec_unlocked','1');
+    showApp();
+  } else {
+    err.textContent = 'รหัสไม่ถูกต้อง';
+    document.getElementById('lockPin').value = '';
+  }
+}
+function logout(){
+  sessionStorage.removeItem('exec_unlocked');
+  location.reload();
+}
+function showApp(){
+  document.getElementById('lockOverlay').style.display='none';
+  document.getElementById('app').style.display='flex';
+  init();
+}
+// Enter to login
+document.addEventListener('keydown', e=>{
+  if (e.key==='Enter' && document.getElementById('lockOverlay').style.display!=='none') tryUnlock();
+});
+// Auto-unlock if already in session
+if (sessionStorage.getItem('exec_unlocked')==='1') showApp();
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════════
+async function supaGet(table, params=''){
+  const url = `${SUPABASE_URL}/rest/v1/${table}${params}`;
+  const res = await fetch(url, {
+    headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` }
+  });
+  if (!res.ok) throw new Error(`${table} ${res.status}`);
+  return res.json();
+}
+async function supaGetAll(table, params=''){
+  // Paginate ทุก 1000 records (Supabase default cap)
+  const sep = params.includes('?') ? '&' : '?';
+  const all = [];
+  let from = 0;
+  const step = 1000;
+  while (true){
+    const url = `${SUPABASE_URL}/rest/v1/${table}${params}`;
+    const res = await fetch(url, {
+      headers:{
+        apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`,
+        Range:`${from}-${from+step-1}`, 'Range-Unit':'items'
+      }
+    });
+    if (!res.ok) throw new Error(`${table} ${res.status}`);
+    const chunk = await res.json();
+    all.push(...chunk);
+    if (chunk.length < step) break;
+    from += step;
+  }
+  return all;
+}
+
+function setSync(state, msg){
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  dot.className = 'dot ' + (state==='ok'?'ok':state==='err'?'err':'loading');
+  txt.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════
+async function loadBrand(key){
+  const t = BRANDS[key].tables;
+  const docQuery   = '?select=id,type,number,date,total,status,branch,salesperson,items&order=date.desc';
+  const purQuery   = '?select=id,date,amount,cat,description,status,due_date';
+  const expQuery   = '?select=id,date,amount,cat,description';
+  const [docs, purchases, expenses] = await Promise.all([
+    supaGetAll(t.docs, docQuery).catch(e=>{console.warn(key,'docs',e);return[]}),
+    supaGetAll(t.purchases, purQuery).catch(e=>{console.warn(key,'pur',e);return[]}),
+    supaGetAll(t.expenses, expQuery).catch(e=>{console.warn(key,'exp',e);return[]}),
+  ]);
+  data[key] = { docs, purchases, expenses };
+}
+async function reloadAll(){
+  setSync('loading','กำลังโหลดข้อมูล…');
+  try{
+    await Promise.all([loadBrand('tb'), loadBrand('ww')]);
+    populateYearOptions();
+    setSync('ok','เชื่อมต่อสำเร็จ · '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+    render();
+  }catch(e){
+    setSync('err','โหลดล้มเหลว');
+    console.error(e);
+    alert('โหลดข้อมูลล้มเหลว: '+e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════
+function populateYearOptions(){
+  const sel = document.getElementById('filYear');
+  const allDates = [];
+  ['tb','ww'].forEach(k=>{
+    data[k].docs.forEach(d=>d.date && allDates.push(d.date));
+    data[k].purchases.forEach(p=>p.date && allDates.push(p.date));
+    data[k].expenses.forEach(e=>e.date && allDates.push(e.date));
+  });
+  const years = [...new Set(allDates.map(d=>new Date(d).getFullYear()).filter(y=>y>2000&&y<2100))].sort((a,b)=>b-a);
+  const cur = new Date().getFullYear();
+  if (!years.includes(cur)) years.unshift(cur);
+  const prevVal = sel.value;
+  sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if (prevVal && years.includes(+prevVal)) sel.value = prevVal;
+  else sel.value = cur;
+}
+
+// ═══════════════════════════════════════════════════════
+// CALCULATIONS  (ใช้กฎเดียวกับแอปเดิม)
+// ═══════════════════════════════════════════════════════
+//   รายรับ  = invoice ที่ status='paid'  → total
+//   บิลซื้อ  = purchases.amount
+//   ค่าใช้จ่าย = expenses.amount
+//   กำไร   = รายรับ - (บิลซื้อ + ค่าใช้จ่าย)
+// ═══════════════════════════════════════════════════════
+
+function getFilters(){
+  return {
+    year: +document.getElementById('filYear').value || new Date().getFullYear(),
+    month: +document.getElementById('filMonth').value || 0,
+    brand: document.getElementById('filBrand').value || 'both',
+  };
+}
+
+function inPeriod(dateStr, year, month){
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (d.getFullYear() !== year) return false;
+  if (month && d.getMonth()+1 !== month) return false;
+  return true;
+}
+
+function computeBrand(key, year, month){
+  const incDocs = data[key].docs.filter(d => d.type==='invoice' && d.status==='paid' && inPeriod(d.date,year,month));
+  const purs    = data[key].purchases.filter(p => inPeriod(p.date,year,month));
+  const exps    = data[key].expenses.filter(e => inPeriod(e.date,year,month));
+  const income   = incDocs.reduce((s,d)=>s+(+d.total||0),0);
+  const purchase = purs.reduce((s,p)=>s+(+p.amount||0),0);
+  const expense  = exps.reduce((s,e)=>s+(+e.amount||0),0);
+  const expTotal = purchase + expense;
+  const profit   = income - expTotal;
+  const margin   = income>0 ? profit/income*100 : 0;
+  // ── หนี้สิน: snapshot ปัจจุบัน — บิลซื้อทั้งหมดที่ยังไม่ได้จ่าย (ไม่กรองตามเดือน) ──
+  const unpaidAll = data[key].purchases.filter(p => p.status==='unpaid');
+  const debtTotal = unpaidAll.reduce((s,p)=>s+(+p.amount||0),0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const overdue = unpaidAll.filter(p => p.due_date && new Date(p.due_date) < today);
+  const overdueAmt = overdue.reduce((s,p)=>s+(+p.amount||0),0);
+  return { incDocs, purs, exps, income, purchase, expense, expTotal, profit, margin,
+           debtTotal, debtCount: unpaidAll.length, overdueAmt, overdueCount: overdue.length };
+}
+
+function computeMonthly(key, year){
+  const by = {};
+  for (let m=1;m<=12;m++) by[m]={income:0,purchase:0,expense:0};
+  data[key].docs.forEach(d=>{
+    if (d.type==='invoice' && d.status==='paid' && d.date){
+      const dt = new Date(d.date);
+      if (dt.getFullYear()===year) by[dt.getMonth()+1].income += +d.total||0;
+    }
+  });
+  data[key].purchases.forEach(p=>{
+    if (p.date){ const dt = new Date(p.date); if (dt.getFullYear()===year) by[dt.getMonth()+1].purchase += +p.amount||0; }
+  });
+  data[key].expenses.forEach(e=>{
+    if (e.date){ const dt = new Date(e.date); if (dt.getFullYear()===year) by[dt.getMonth()+1].expense += +e.amount||0; }
+  });
+  return by;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+const fmt = n => '฿' + Math.round(+n||0).toLocaleString('th-TH');
+const fmtP = n => (n>=0?'+':'') + n.toFixed(1) + '%';
+
+function render(){
+  const f = getFilters();
+  const mNames=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const periodTxt = f.month ? `${mNames[f.month]} ${f.year}` : `ทั้งปี ${f.year}`;
+  document.getElementById('periodLabel').textContent = `ข้อมูลช่วง · ${periodTxt}`;
+  document.getElementById('tableMeta').textContent = periodTxt + ' · กฎเดียวกับแอปต้นทาง';
+
+  const tb = computeBrand('tb', f.year, f.month);
+  const ww = computeBrand('ww', f.year, f.month);
+
+  // ── KPI: แยกแบรนด์ — ไม่รวมตัวเลขข้ามแบรนด์ ──
+  // ซ่อน/แสดงแถว KPI ตามฟิลเตอร์
+  const tbRows = document.querySelectorAll('[data-brand-row="tb"]');
+  const wwRows = document.querySelectorAll('[data-brand-row="ww"]');
+  tbRows.forEach(el => el.style.display = (f.brand==='ww') ? 'none' : '');
+  wwRows.forEach(el => el.style.display = (f.brand==='tb') ? 'none' : '');
+
+  // The Built
+  document.getElementById('kpiIncomeTB').textContent  = fmt(tb.income);
+  document.getElementById('kpiIncomeTBCount').textContent = `จาก ${tb.incDocs.length.toLocaleString('th-TH')} ใบ`;
+  document.getElementById('kpiExpenseTB').textContent = fmt(tb.expTotal);
+  document.getElementById('kpiPurchaseTB').textContent = fmt(tb.purchase);
+  document.getElementById('kpiPurchaseTBCount').textContent = `${tb.purs.length.toLocaleString('th-TH')} รายการ`;
+  document.getElementById('kpiCostTB').textContent = fmt(tb.expense);
+  document.getElementById('kpiCostTBCount').textContent = `${tb.exps.length.toLocaleString('th-TH')} รายการ`;
+  document.getElementById('kpiDebtTB').textContent = fmt(tb.debtTotal);
+  const debtTBSub = document.getElementById('kpiDebtTBSub');
+  if (tb.overdueCount > 0){
+    debtTBSub.className = 'sub warn';
+    debtTBSub.textContent = `เกินกำหนด ${fmt(tb.overdueAmt)} · ${tb.debtCount} บิล`;
+  } else {
+    debtTBSub.className = 'sub';
+    debtTBSub.textContent = `${tb.debtCount.toLocaleString('th-TH')} บิลค้างจ่าย`;
+  }
+
+  // KPN
+  document.getElementById('kpiIncomeWW').textContent  = fmt(ww.income);
+  document.getElementById('kpiIncomeWWCount').textContent = `จาก ${ww.incDocs.length.toLocaleString('th-TH')} ใบ`;
+  document.getElementById('kpiExpenseWW').textContent = fmt(ww.expTotal);
+  document.getElementById('kpiPurchaseWW').textContent = fmt(ww.purchase);
+  document.getElementById('kpiPurchaseWWCount').textContent = `${ww.purs.length.toLocaleString('th-TH')} รายการ`;
+  document.getElementById('kpiCostWW').textContent = fmt(ww.expense);
+  document.getElementById('kpiCostWWCount').textContent = `${ww.exps.length.toLocaleString('th-TH')} รายการ`;
+  document.getElementById('kpiDebtWW').textContent = fmt(ww.debtTotal);
+  const debtWWSub = document.getElementById('kpiDebtWWSub');
+  if (ww.overdueCount > 0){
+    debtWWSub.className = 'sub warn';
+    debtWWSub.textContent = `เกินกำหนด ${fmt(ww.overdueAmt)} · ${ww.debtCount} บิล`;
+  } else {
+    debtWWSub.className = 'sub';
+    debtWWSub.textContent = `${ww.debtCount.toLocaleString('th-TH')} บิลค้างจ่าย`;
+  }
+
+  // ── Trend Chart (รายเดือนทั้งปี — ไม่ขึ้นกับ filter month) ──
+  const tbMon = computeMonthly('tb', f.year);
+  const wwMon = computeMonthly('ww', f.year);
+  const labels = mNames.slice(1);
+  const tbInc = labels.map((_,i)=>tbMon[i+1].income);
+  const wwInc = labels.map((_,i)=>wwMon[i+1].income);
+  const tbExp = labels.map((_,i)=>tbMon[i+1].purchase+tbMon[i+1].expense);
+  const wwExp = labels.map((_,i)=>wwMon[i+1].purchase+wwMon[i+1].expense);
+  const tbPro = labels.map((_,i)=>tbInc[i]-tbExp[i]);
+  const wwPro = labels.map((_,i)=>wwInc[i]-wwExp[i]);
+
+  drawTrend(labels, tbInc, wwInc, tbExp, wwExp, f.brand);
+  drawShare(tb.income, ww.income, f.brand);
+  drawProfit(labels, tbPro, wwPro, f.brand);
+  drawComparison(tb, ww);
+  drawMonthlyTable(labels, tbMon, wwMon, f);
+  drawInvoiceStatus(f);
+  drawCatChart(f);
+}
+
+// ── CHART: Trend (รายรับ vs รายจ่าย รายเดือน) ──
+function drawTrend(labels, tbInc, wwInc, tbExp, wwExp, brand){
+  if (charts.trend) charts.trend.destroy();
+  const ctx = document.getElementById('chartTrend');
+  const showTB = brand!=='ww';
+  const showWW = brand!=='tb';
+  const datasets = [];
+  if (showTB) datasets.push(
+    { label:'TB รายรับ', data:tbInc, backgroundColor:BRANDS.tb.color, borderColor:BRANDS.tb.color, borderWidth:0, borderRadius:3, stack:'tb', barPercentage:0.85, categoryPercentage:0.7 },
+    { label:'TB รายจ่าย', data:tbExp.map(v=>-v), backgroundColor:'rgba(26,26,26,0.45)', borderWidth:0, borderRadius:3, stack:'tb', barPercentage:0.85, categoryPercentage:0.7 },
+  );
+  if (showWW) datasets.push(
+    { label:'KPN รายรับ', data:wwInc, backgroundColor:BRANDS.ww.color, borderWidth:0, borderRadius:3, stack:'ww', barPercentage:0.85, categoryPercentage:0.7 },
+    { label:'KPN รายจ่าย', data:wwExp.map(v=>-v), backgroundColor:'rgba(201,122,133,0.65)', borderWidth:0, borderRadius:3, stack:'ww', barPercentage:0.85, categoryPercentage:0.7 },
+  );
+  charts.trend = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:(ctx)=>{
+              const v = Math.abs(ctx.parsed.y);
+              return `${ctx.dataset.label}: ฿${v.toLocaleString('th-TH')}`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:11}}},
+        y:{
+          grid:{color:'#efece4'},
+          ticks:{
+            font:{family:'Sarabun',size:11},
+            callback:v=>{
+              const abs = Math.abs(v);
+              if (abs>=1e6) return '฿'+(abs/1e6).toFixed(1)+'M';
+              if (abs>=1e3) return '฿'+(abs/1e3).toFixed(0)+'K';
+              return '฿'+abs;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── CHART: Share (donut) ──
+function drawShare(tbInc, wwInc, brand){
+  if (charts.share) charts.share.destroy();
+  const ctx = document.getElementById('chartShare');
+  let labels, values, colors;
+  if (brand==='tb'){ labels=['The Built']; values=[tbInc]; colors=[BRANDS.tb.color]; }
+  else if (brand==='ww'){ labels=['KPN']; values=[wwInc]; colors=[BRANDS.ww.color]; }
+  else { labels=['The Built','KPN']; values=[tbInc,wwInc]; colors=[BRANDS.tb.color,BRANDS.ww.color]; }
+  charts.share = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:3, borderColor:'#fff' }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{
+        legend:{position:'bottom',labels:{font:{family:'Sarabun',size:12},padding:14,boxWidth:12}},
+        tooltip:{
+          callbacks:{
+            label:c=>{
+              const total = values.reduce((a,b)=>a+b,0);
+              const pct = total>0 ? (c.parsed/total*100).toFixed(1) : '0.0';
+              return `${c.label}: ฿${c.parsed.toLocaleString('th-TH')} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── CHART: Profit Trend (line) ──
+function drawProfit(labels, tbPro, wwPro, brand){
+  if (charts.profit) charts.profit.destroy();
+  const ctx = document.getElementById('chartProfit');
+  const datasets = [];
+  if (brand!=='ww') datasets.push({
+    label:'The Built', data:tbPro,
+    borderColor:BRANDS.tb.color, backgroundColor:'rgba(26,26,26,0.06)',
+    fill:true, tension:0.35, borderWidth:2.5, pointRadius:3, pointBackgroundColor:BRANDS.tb.color,
+  });
+  if (brand!=='tb') datasets.push({
+    label:'KPN', data:wwPro,
+    borderColor:BRANDS.ww.color, backgroundColor:'rgba(107,15,26,0.06)',
+    fill:true, tension:0.35, borderWidth:2.5, pointRadius:3, pointBackgroundColor:BRANDS.ww.color,
+  });
+  charts.profit = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ฿${c.parsed.y.toLocaleString('th-TH')}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:11}}},
+        y:{
+          grid:{color:'#efece4'},
+          ticks:{
+            font:{family:'Sarabun',size:11},
+            callback:v=>{
+              const abs=Math.abs(v);
+              if (abs>=1e6) return (v<0?'-':'')+'฿'+(abs/1e6).toFixed(1)+'M';
+              if (abs>=1e3) return (v<0?'-':'')+'฿'+(abs/1e3).toFixed(0)+'K';
+              return (v<0?'-':'')+'฿'+abs;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Comparison Bars ──
+function drawComparison(tb, ww){
+  const metrics = [
+    { lbl:'รายรับ', tbV:tb.income, wwV:ww.income },
+    { lbl:'รายจ่าย', tbV:tb.expTotal, wwV:ww.expTotal },
+    { lbl:'กำไรสุทธิ', tbV:tb.profit, wwV:ww.profit },
+    { lbl:'จำนวนใบกำกับฯ ที่ชำระแล้ว', tbV:tb.incDocs.length, wwV:ww.incDocs.length, raw:true },
+    { lbl:'อัตรากำไร (%)', tbV:tb.margin, wwV:ww.margin, isPct:true },
+  ];
+  const html = metrics.map(m=>{
+    const tbAbs = Math.abs(m.tbV); const wwAbs = Math.abs(m.wwV);
+    const max = Math.max(tbAbs, wwAbs, 1);
+    const tbPct = (tbAbs/max)*100;
+    const wwPct = (wwAbs/max)*100;
+    const fmtV = v => m.isPct ? v.toFixed(1)+'%' : (m.raw ? Math.round(v).toLocaleString('th-TH') : fmt(v));
+    return `
+      <div class="cmp-row">
+        <div class="lbl"><span class="name">${m.lbl}</span></div>
+        <div class="lbl" style="margin-bottom:4px"><span class="name" style="font-size:11px"><span class="brand-tag tb">TB</span></span><span class="val">${fmtV(m.tbV)}</span></div>
+        <div class="cmp-bar"><div class="fill tb" style="width:${tbPct}%"></div></div>
+        <div class="lbl" style="margin-top:8px;margin-bottom:4px"><span class="name" style="font-size:11px"><span class="brand-tag ww">KPN</span></span><span class="val">${fmtV(m.wwV)}</span></div>
+        <div class="cmp-bar"><div class="fill ww" style="width:${wwPct}%"></div></div>
+      </div>
+    `;
+  }).join('<hr style="border:none;border-top:1px solid #f2efe8;margin:14px 0">');
+  document.getElementById('cmpBars').innerHTML = html;
+}
+
+// ── Monthly Table ──
+function drawMonthlyTable(labels, tbMon, wwMon, f){
+  const tbody = document.getElementById('monthlyTable');
+  const rows = [];
+  const totals = { tb:{i:0,p:0,e:0,t:0}, ww:{i:0,p:0,e:0,t:0} };
+
+  labels.forEach((m,i)=>{
+    if (f.month && i+1!==f.month) return;
+    const tb = tbMon[i+1]; const ww = wwMon[i+1];
+    const tbT = tb.purchase + tb.expense;
+    const wwT = ww.purchase + ww.expense;
+    const tbProfit = tb.income - tbT;
+    const wwProfit = ww.income - wwT;
+    const tbPct = tb.income>0 ? tbProfit/tb.income*100 : 0;
+    const wwPct = ww.income>0 ? wwProfit/ww.income*100 : 0;
+    totals.tb.i += tb.income; totals.tb.p += tb.purchase; totals.tb.e += tb.expense; totals.tb.t += tbT;
+    totals.ww.i += ww.income; totals.ww.p += ww.purchase; totals.ww.e += ww.expense; totals.ww.t += wwT;
+
+    if (f.brand!=='ww') rows.push(`
+      <tr>
+        <td><strong>${m} ${f.year}</strong></td>
+        <td><span class="brand-tag tb">TB</span></td>
+        <td class="num green">${fmt(tb.income)}</td>
+        <td class="num">${fmt(tb.purchase)}</td>
+        <td class="num">${fmt(tb.expense)}</td>
+        <td class="num red">${fmt(tbT)}</td>
+        <td class="num bold" style="color:${tbProfit>=0?'var(--green)':'var(--red)'}">${fmt(tbProfit)}</td>
+        <td class="num"><span class="pct-pill ${tbPct>=0?'pos':'neg'}">${tbPct.toFixed(1)}%</span></td>
+      </tr>
+    `);
+    if (f.brand!=='tb') rows.push(`
+      <tr>
+        <td>${f.brand==='ww'?'<strong>'+m+' '+f.year+'</strong>':''}</td>
+        <td><span class="brand-tag ww">KPN</span></td>
+        <td class="num green">${fmt(ww.income)}</td>
+        <td class="num">${fmt(ww.purchase)}</td>
+        <td class="num">${fmt(ww.expense)}</td>
+        <td class="num red">${fmt(wwT)}</td>
+        <td class="num bold" style="color:${wwProfit>=0?'var(--green)':'var(--red)'}">${fmt(wwProfit)}</td>
+        <td class="num"><span class="pct-pill ${wwPct>=0?'pos':'neg'}">${wwPct.toFixed(1)}%</span></td>
+      </tr>
+    `);
+  });
+
+  // Total row
+  const tbProfitTotal = totals.tb.i - totals.tb.t;
+  const wwProfitTotal = totals.ww.i - totals.ww.t;
+  const tbPctTotal = totals.tb.i>0 ? tbProfitTotal/totals.tb.i*100 : 0;
+  const wwPctTotal = totals.ww.i>0 ? wwProfitTotal/totals.ww.i*100 : 0;
+  if (f.brand!=='ww') rows.push(`
+    <tr style="background:#fafaf5;font-weight:700">
+      <td><strong>รวม</strong></td>
+      <td><span class="brand-tag tb">TB</span></td>
+      <td class="num green bold">${fmt(totals.tb.i)}</td>
+      <td class="num bold">${fmt(totals.tb.p)}</td>
+      <td class="num bold">${fmt(totals.tb.e)}</td>
+      <td class="num red bold">${fmt(totals.tb.t)}</td>
+      <td class="num bold" style="color:${tbProfitTotal>=0?'var(--green)':'var(--red)'}">${fmt(tbProfitTotal)}</td>
+      <td class="num"><span class="pct-pill ${tbPctTotal>=0?'pos':'neg'}">${tbPctTotal.toFixed(1)}%</span></td>
+    </tr>
+  `);
+  if (f.brand!=='tb') rows.push(`
+    <tr style="background:#fafaf5;font-weight:700">
+      <td>${f.brand==='ww'?'<strong>รวม</strong>':''}</td>
+      <td><span class="brand-tag ww">KPN</span></td>
+      <td class="num green bold">${fmt(totals.ww.i)}</td>
+      <td class="num bold">${fmt(totals.ww.p)}</td>
+      <td class="num bold">${fmt(totals.ww.e)}</td>
+      <td class="num red bold">${fmt(totals.ww.t)}</td>
+      <td class="num bold" style="color:${wwProfitTotal>=0?'var(--green)':'var(--red)'}">${fmt(wwProfitTotal)}</td>
+      <td class="num"><span class="pct-pill ${wwPctTotal>=0?'pos':'neg'}">${wwPctTotal.toFixed(1)}%</span></td>
+    </tr>
+  `);
+  // (ไม่มีแถวรวมข้ามแบรนด์ — แยกของใครของมัน)
+  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="8" class="empty">ไม่มีข้อมูล</td></tr>';
+}
+
+// ── Invoice Status ──
+function drawInvoiceStatus(f){
+  const calcStatus = (key) => {
+    const docs = data[key].docs.filter(d => d.type==='invoice' && inPeriod(d.date,f.year,f.month));
+    const out = { paid:0, pending:0, overdue:0 };
+    docs.forEach(d=>{
+      if (d.status==='paid') out.paid += +d.total||0;
+      else if (d.status==='overdue') out.overdue += +d.total||0;
+      else out.pending += +d.total||0;
+    });
+    return out;
+  };
+  const tb = calcStatus('tb'); const ww = calcStatus('ww');
+  const brands = [];
+  if (f.brand!=='ww') brands.push({ name:'The Built', tag:'tb', d:tb });
+  if (f.brand!=='tb') brands.push({ name:'KPN', tag:'ww', d:ww });
+
+  const html = brands.map(b=>{
+    const total = b.d.paid + b.d.pending + b.d.overdue;
+    const seg = (v,cls,lbl)=>{
+      const pct = total>0 ? (v/total*100) : 0;
+      return `<div style="flex:${pct||0.01};background:var(--${cls});height:100%" title="${lbl} ${fmt(v)}"></div>`;
+    };
+    return `
+      <div style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="brand-tag ${b.tag}">${b.name}</span>
+          <span style="font-size:12px;color:var(--muted)">รวม ${fmt(total)}</span>
+        </div>
+        <div style="display:flex;height:24px;border-radius:6px;overflow:hidden;background:#f5f3ef;border:1px solid var(--line2)">
+          ${total>0 ? seg(b.d.paid,'green','ชำระแล้ว') + seg(b.d.pending,'orange','รอชำระ') + seg(b.d.overdue,'red','เกินกำหนด')
+                   : '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px">ไม่มีข้อมูล</div>'}
+        </div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:12px">
+          <span><i style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:5px"></i>ชำระ ${fmt(b.d.paid)}</span>
+          <span><i style="display:inline-block;width:10px;height:10px;background:var(--orange);border-radius:2px;margin-right:5px"></i>รอชำระ ${fmt(b.d.pending)}</span>
+          <span><i style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;margin-right:5px"></i>เกินกำหนด ${fmt(b.d.overdue)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('invoiceStatus').innerHTML = html || '<div class="empty">ไม่มีข้อมูล</div>';
+}
+
+// ── Top Expense Categories ──
+function drawCatChart(f){
+  if (charts.cat) charts.cat.destroy();
+  const cats = {};
+  ['tb','ww'].forEach(key=>{
+    if ((f.brand==='tb' && key==='ww') || (f.brand==='ww' && key==='tb')) return;
+    data[key].purchases.forEach(p=>{
+      if (!inPeriod(p.date,f.year,f.month)) return;
+      const c = (p.cat||'อื่นๆ') + ' · บิลซื้อ';
+      cats[c] = (cats[c]||0) + (+p.amount||0);
+    });
+    data[key].expenses.forEach(e=>{
+      if (!inPeriod(e.date,f.year,f.month)) return;
+      const c = (e.cat||'อื่นๆ') + ' · ค่าใช้จ่าย';
+      cats[c] = (cats[c]||0) + (+e.amount||0);
+    });
+  });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const labels = sorted.map(x=>x[0]);
+  const values = sorted.map(x=>x[1]);
+  const colors = labels.map((l,i)=>{
+    const palette = ['#1a1a1a','#6b0f1a','#c97a1a','#1a6b3c','#8b1a2a','#3a3a3a','#b03030','#4a4a4a'];
+    return palette[i % palette.length];
+  });
+  charts.cat = new Chart(document.getElementById('chartCat'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:4, borderWidth:0 }] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>'฿'+c.parsed.x.toLocaleString('th-TH')}}
+      },
+      scales:{
+        x:{grid:{color:'#efece4'},ticks:{font:{family:'Sarabun',size:11},callback:v=>{
+          if (v>=1e6) return '฿'+(v/1e6).toFixed(1)+'M';
+          if (v>=1e3) return '฿'+(v/1e3).toFixed(0)+'K';
+          return '฿'+v;
+        }}},
+        y:{grid:{display:false},ticks:{font:{family:'Sarabun',size:11.5}}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════
+function exportCSV(){
+  const f = getFilters();
+  const mNames=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const tbMon = computeMonthly('tb', f.year);
+  const wwMon = computeMonthly('ww', f.year);
+  const lines = ['เดือน,แบรนด์,รายรับ,บิลซื้อ,ค่าใช้จ่าย,รายจ่ายรวม,กำไร,%กำไร'];
+  for (let i=1;i<=12;i++){
+    if (f.month && i!==f.month) continue;
+    [['tb','The Built',tbMon[i]],['ww','KPN',wwMon[i]]].forEach(([k,name,d])=>{
+      if (f.brand!=='both' && f.brand!==k) return;
+      const t = d.purchase + d.expense;
+      const p = d.income - t;
+      const pct = d.income>0 ? (p/d.income*100).toFixed(1) : '0.0';
+      lines.push(`${mNames[i]} ${f.year},${name},${d.income},${d.purchase},${d.expense},${t},${p},${pct}%`);
+    });
+  }
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Executive_Dashboard_${f.year}${f.month?'_'+mNames[f.month]:''}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init(){
+  document.getElementById('filYear').addEventListener('change', render);
+  document.getElementById('filMonth').addEventListener('change', render);
+  document.getElementById('filBrand').addEventListener('change', render);
+  await reloadAll();
+}
+</script>
+
+</body>
+</html>
