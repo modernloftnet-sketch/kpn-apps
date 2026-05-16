@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<title>Install Reports — รายงานติดตั้ง</title>
+
+<!-- PWA -->
+<meta name="theme-color" content="#1a2744">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Install Reports">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='180' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EIR%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='180' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EIR%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#1a2744; --navy-light:#2a3a5c; --gold:#c9a84a; --gold-soft:#e0c878;
+  --cream:#f7f4ec; --cream-dark:#ebe6d8;
+  --ink:#1a2026; --muted:#6b7280; --hint:#9aa1ad;
+  --line:#e3ddd0; --white:#ffffff;
+  --red:#c0392b; --red-bg:#fbecea;
+  --amber:#b8860b; --amber-bg:#fbf2da;
+  --green:#1e7d4f; --green-bg:#e6f3ec;
+  --shadow:0 1px 3px rgba(26,39,68,.06),0 1px 2px rgba(26,39,68,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--ink);
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-bottom:48px;
+}
+h1,.kanit{font-family:'Kanit',sans-serif;font-weight:500;}
+
+header{
+  background:var(--navy);color:var(--cream);
+  padding:18px 24px;position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(26,39,68,.18);
+}
+.head-row{
+  max-width:1280px;margin:0 auto;display:flex;
+  align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:8px;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit',sans-serif;font-weight:600;color:var(--navy);font-size:15px;
+}
+.brand-txt h1{font-size:18px;color:var(--cream);letter-spacing:.2px;}
+.brand-txt p{font-size:12px;color:var(--gold-soft);font-weight:300;}
+.head-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.sync{font-size:12.5px;color:#aeb6c6;display:flex;align-items:center;gap:7px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);
+  box-shadow:0 0 0 0 rgba(201,168,74,.6);animation:pulse 2.4s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,168,74,.5);}
+  70%{box-shadow:0 0 0 8px rgba(201,168,74,0);}100%{box-shadow:0 0 0 0 rgba(201,168,74,0);}}
+.btn-refresh{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--navy-light);color:var(--cream);border:1px solid #3d4f72;
+  padding:7px 14px;border-radius:7px;cursor:pointer;transition:.15s;
+}
+.btn-refresh:hover{background:#34466a;border-color:var(--gold);}
+.btn-refresh:disabled{opacity:.5;cursor:wait;}
+
+.wrap{max-width:1280px;margin:0 auto;padding:24px;}
+
+.range-bar{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;
+}
+.range-bar .rb-label{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);
+}
+.range-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.rbtn{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--cream);color:var(--navy);border:1px solid var(--line);
+  padding:6px 14px;border-radius:7px;cursor:pointer;transition:.13s;
+}
+.rbtn:hover{border-color:var(--gold);background:var(--white);}
+.rbtn.active{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+.range-custom{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;}
+.range-custom input[type=date]{
+  font-family:'Sarabun',sans-serif;font-size:13px;
+  border:1px solid var(--line);border-radius:7px;padding:5px 9px;
+  color:var(--ink);background:var(--white);cursor:pointer;
+}
+.range-custom span{font-size:12.5px;color:var(--hint);}
+.btn-apply{
+  font-family:'Kanit',sans-serif;font-size:13px;font-weight:400;
+  background:var(--gold);color:var(--navy);border:1px solid var(--gold);
+  padding:6px 16px;border-radius:7px;cursor:pointer;
+}
+.range-now{width:100%;font-size:12px;color:var(--hint);margin-top:2px;}
+.range-now b{color:var(--navy);font-family:'Kanit',sans-serif;font-weight:500;}
+
+.filter-bar{
+  display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;
+}
+.filter-bar .fb-label{
+  font-family:'Kanit',sans-serif;font-size:12.5px;font-weight:500;color:var(--muted);
+}
+.fbtn{
+  font-family:'Kanit',sans-serif;font-size:12.5px;font-weight:400;
+  background:var(--white);color:var(--ink);border:1px solid var(--line);
+  padding:5px 12px;border-radius:7px;cursor:pointer;transition:.13s;
+}
+.fbtn:hover{border-color:var(--gold);}
+.fbtn.active{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+.fbtn .count{
+  display:inline-block;margin-left:6px;padding:0 6px;
+  background:rgba(0,0,0,.08);border-radius:4px;font-size:11px;
+}
+.fbtn.active .count{background:rgba(255,255,255,.2);}
+.search-box{
+  flex:1;min-width:180px;max-width:280px;margin-left:auto;
+  padding:6px 12px;font-size:13px;font-family:'Sarabun',sans-serif;
+  border:1px solid var(--line);border-radius:7px;background:var(--white);
+}
+.search-box:focus{outline:none;border-color:var(--gold);}
+
+/* TABLE (PC) */
+.table-wrap{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+table.rpt{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.rpt thead{background:var(--cream-dark);}
+table.rpt th{
+  font-family:'Kanit',sans-serif;font-size:12.5px;font-weight:500;color:var(--muted);
+  text-align:left;padding:11px 12px;letter-spacing:.2px;
+  border-bottom:1px solid var(--line);white-space:nowrap;
+}
+table.rpt td{
+  padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;
+}
+table.rpt tbody tr:last-child td{border-bottom:none;}
+table.rpt tbody tr{transition:background .1s;}
+table.rpt tbody tr:hover{background:var(--cream);}
+
+table.rpt td.lb-cell{position:relative;padding-left:14px;}
+table.rpt td.lb-cell::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+}
+table.rpt tr.s-done td.lb-cell::before{background:var(--green);}
+table.rpt tr.s-undone td.lb-cell::before{background:var(--red);}
+table.rpt tr.s-rework td.lb-cell::before{background:var(--amber);}
+table.rpt tr.s-unknown td.lb-cell::before{background:var(--hint);}
+
+.col-date{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums;}
+.col-team{font-family:'Kanit',sans-serif;font-weight:500;color:var(--navy);}
+.col-members{color:var(--muted);font-size:12.5px;max-width:140px;}
+.col-customer{font-weight:500;}
+.col-province{white-space:nowrap;color:var(--muted);}
+.col-work{white-space:nowrap;}
+.col-reason{font-size:12.5px;color:var(--muted);max-width:240px;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ===== Expandable row (PC) ===== */
+table.rpt tbody tr.main-row{cursor:pointer;}
+table.rpt tbody tr.main-row .expand-mark{
+  display:inline-block;margin-right:4px;color:var(--hint);
+  transition:transform .15s;font-size:10px;
+}
+table.rpt tbody tr.main-row.expanded .expand-mark{transform:rotate(90deg);}
+table.rpt tbody tr.detail-row{display:none;}
+table.rpt tbody tr.detail-row.show{display:table-row;}
+table.rpt tbody tr.detail-row td{
+  background:var(--cream);padding:14px 18px;
+  border-bottom:1px solid var(--line);
+}
+.detail-box{
+  display:grid;grid-template-columns:auto 1fr;gap:8px 16px;
+  font-size:13px;line-height:1.6;
+}
+.detail-box .dk{
+  color:var(--hint);font-family:'Kanit',sans-serif;font-weight:500;
+  font-size:12.5px;white-space:nowrap;padding-top:1px;
+}
+.detail-box .dv{color:var(--ink);}
+.detail-box .dv.full{white-space:pre-wrap;word-break:break-word;}
+.detail-box .dv.raw{
+  background:var(--white);padding:10px 12px;border-radius:7px;
+  border:1px solid var(--line);font-size:12.5px;color:var(--muted);
+  white-space:pre-wrap;word-break:break-word;line-height:1.55;
+}
+
+.status-pill{
+  display:inline-block;font-family:'Kanit',sans-serif;font-size:11.5px;font-weight:500;
+  padding:3px 10px;border-radius:5px;white-space:nowrap;
+}
+.status-pill.ok{background:var(--green-bg);color:var(--green);}
+.status-pill.un{background:var(--red-bg);color:var(--red);}
+.status-pill.re{background:var(--amber-bg);color:var(--amber);}
+.status-pill.no{background:var(--cream-dark);color:var(--muted);}
+
+/* CARDS (mobile only) */
+.card-list{display:none;}
+.rcard{
+  background:var(--white);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px;
+  border-left:4px solid var(--green);
+}
+.rcard.s-undone{border-left-color:var(--red);}
+.rcard.s-rework{border-left-color:var(--amber);}
+.rcard.s-unknown{border-left-color:var(--hint);}
+.rcard-row1{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;margin-bottom:6px;
+}
+.rcard-customer{
+  font-family:'Kanit',sans-serif;font-weight:500;font-size:15px;color:var(--navy);
+  flex:1;min-width:0;line-height:1.35;
+}
+.rcard-customer .prov{color:var(--hint);font-weight:400;font-size:13px;}
+.rcard-meta{
+  display:grid;grid-template-columns:auto 1fr;gap:4px 10px;
+  font-size:12.5px;color:var(--muted);margin-top:6px;
+}
+.rcard-meta .k{color:var(--hint);}
+.rcard-meta .v{color:var(--ink);}
+.rcard-meta .v.kanit{font-family:'Kanit',sans-serif;font-weight:500;color:var(--navy);}
+.rcard-reason{
+  font-size:12.5px;color:var(--ink);background:var(--cream);
+  padding:8px 12px;border-radius:7px;margin-top:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rcard-reason b{font-family:'Kanit',sans-serif;font-weight:500;color:var(--amber);}
+
+/* ===== Expandable card (mobile) ===== */
+.rcard{cursor:pointer;}
+.rcard-expand{
+  display:none;margin-top:10px;padding-top:10px;
+  border-top:1px dashed var(--line);font-size:12.5px;
+}
+.rcard.expanded .rcard-expand{display:block;}
+.rcard.expanded .rcard-reason{
+  white-space:pre-wrap;overflow:visible;text-overflow:clip;
+}
+.rcard-expand .ek{
+  color:var(--hint);font-family:'Kanit',sans-serif;font-weight:500;
+  font-size:11.5px;margin-top:6px;
+}
+.rcard-expand .ek:first-child{margin-top:0;}
+.rcard-expand .ev{color:var(--ink);margin-top:2px;}
+.rcard-expand .ev.raw{
+  background:var(--cream);padding:8px 10px;border-radius:6px;
+  color:var(--muted);white-space:pre-wrap;word-break:break-word;
+  font-size:12px;line-height:1.55;
+}
+.expand-hint{
+  text-align:center;font-size:11px;color:var(--hint);margin-top:8px;
+  font-family:'Kanit',sans-serif;
+}
+.rcard.expanded .expand-hint{display:none;}
+
+.loading,.error,.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.loading .spin{
+  width:34px;height:34px;border:3px solid var(--cream-dark);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:rot .8s linear infinite;margin:0 auto 16px;
+}
+@keyframes rot{to{transform:rotate(360deg);}}
+.error{color:var(--red);}
+.error-box{
+  background:var(--red-bg);border:1px solid #e8c4bf;border-radius:10px;
+  padding:16px 20px;max-width:560px;margin:0 auto;text-align:left;
+}
+.error-box code{
+  font-family:monospace;font-size:12px;background:rgba(0,0,0,.05);
+  padding:2px 5px;border-radius:3px;word-break:break-all;
+}
+
+.foot-note{
+  margin-top:24px;padding:14px 18px;background:var(--white);
+  border:1px solid var(--line);border-radius:10px;
+  font-size:12px;color:var(--muted);line-height:1.7;
+}
+.foot-note b{color:var(--navy);font-family:'Kanit',sans-serif;font-weight:500;}
+
+@media(max-width:900px){
+  .table-wrap{display:none;}
+  .card-list{display:block;}
+  body{padding-bottom:32px;}
+  header{padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));}
+  .brand-mark{width:34px;height:34px;}
+  .brand-txt h1{font-size:16px;}
+  .brand-txt p{font-size:11px;}
+  .head-meta{gap:10px;width:100%;justify-content:space-between;}
+  .wrap{padding:16px;}
+  .range-bar{padding:12px;gap:8px;}
+  .range-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .rbtn{padding:9px 8px;text-align:center;}
+  .range-custom{margin-left:0;width:100%;gap:6px;}
+  .range-custom input[type=date]{flex:1;min-width:0;padding:8px;}
+  .search-box{margin-left:0;max-width:100%;width:100%;}
+  .filter-bar{gap:6px;}
+  .fbtn{padding:7px 11px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div class="brand">
+      <div class="brand-mark">IR</div>
+      <div class="brand-txt">
+        <h1>Install Reports</h1>
+        <p>รายงานติดตั้ง · The Built In Company</p>
+      </div>
+    </div>
+    <div class="head-meta">
+      <div class="sync"><span class="dot"></span><span id="syncTxt">กำลังโหลด…</span></div>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadAll()">รีเฟรช</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="range-bar">
+    <span class="rb-label">ช่วงเวลา</span>
+    <div class="range-btns" id="rangeBtns">
+      <button class="rbtn active" data-range="today">วันนี้</button>
+      <button class="rbtn" data-range="yesterday">เมื่อวาน</button>
+      <button class="rbtn" data-range="7d">7 วันล่าสุด</button>
+      <button class="rbtn" data-range="month">เดือนนี้</button>
+    </div>
+    <div class="range-custom">
+      <input type="date" id="dateFrom">
+      <span>ถึง</span>
+      <input type="date" id="dateTo">
+      <button class="btn-apply" onclick="applyCustomRange()">ดูช่วงนี้</button>
+    </div>
+    <div class="range-now" id="rangeNow"></div>
+  </div>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spin"></div>
+      <div class="kanit">กำลังดึงข้อมูลรายงาน…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://kgjymqajwkhymqcofkhn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE';
+const PAGE_SIZE = 1000;
+const FETCH_LIMIT = 10000;
+const AUTO_REFRESH = 5;
+
+const sb = supabase.createClient(SB_URL, SB_KEY);
+let curRange = { type:'today', from:null, to:null };
+let curStatusFilter = 'all';
+let curSearch = '';
+let allRows = [];
+let autoTimer = null;
+
+function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function endOfDay(d){ const x=new Date(d); x.setHours(23,59,59,999); return x; }
+function resolveRange(type){
+  const now = new Date();
+  if(type==='today') return {type, from:startOfDay(now), to:endOfDay(now)};
+  if(type==='yesterday'){
+    const y=new Date(now); y.setDate(y.getDate()-1);
+    return {type, from:startOfDay(y), to:endOfDay(y)};
+  }
+  if(type==='7d'){
+    const s=new Date(now); s.setDate(s.getDate()-6);
+    return {type, from:startOfDay(s), to:endOfDay(now)};
+  }
+  if(type==='month'){
+    const s=new Date(now.getFullYear(), now.getMonth(), 1);
+    return {type, from:startOfDay(s), to:endOfDay(now)};
+  }
+  return {type:'today', from:startOfDay(now), to:endOfDay(now)};
+}
+function fmtDate(d){ return d.toLocaleDateString('th-TH',{day:'numeric',month:'short'}); }
+function fmtRangeText(r){
+  if(r.type==='today') return 'วันนี้ ('+fmtDate(r.from)+')';
+  if(r.type==='yesterday') return 'เมื่อวาน ('+fmtDate(r.from)+')';
+  const same = startOfDay(r.from).getTime()===startOfDay(r.to).getTime();
+  return same ? fmtDate(r.from) : (fmtDate(r.from)+' – '+fmtDate(r.to));
+}
+function fmtDateShort(s){
+  if(!s) return '—';
+  try{
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+  }catch(e){ return s; }
+}
+function esc(s){
+  return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toDateStr(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'),
+        day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function statusClass(s){
+  if(s==='จบงาน') return 's-done';
+  if(s==='ไม่จบงาน') return 's-undone';
+  if(s==='มีงานแก้ไข') return 's-rework';
+  return 's-unknown';
+}
+function statusPillClass(s){
+  if(s==='จบงาน') return 'ok';
+  if(s==='ไม่จบงาน') return 'un';
+  if(s==='มีงานแก้ไข') return 're';
+  return 'no';
+}
+function statusText(s){ return s || 'ไม่ระบุ'; }
+
+function truncate(s, n){
+  if(!s) return '';
+  s = String(s);
+  if(s.length <= n) return s;
+  return s.slice(0, n).trim() + '…';
+}
+
+document.getElementById('rangeBtns').addEventListener('click', function(e){
+  const btn = e.target.closest('.rbtn');
+  if(!btn) return;
+  document.querySelectorAll('.rbtn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  curRange = resolveRange(btn.dataset.range);
+  loadAll();
+});
+function applyCustomRange(){
+  const fv = document.getElementById('dateFrom').value;
+  const tv = document.getElementById('dateTo').value;
+  if(!fv || !tv){ alert('กรุณาเลือกทั้งวันเริ่มต้นและวันสิ้นสุด'); return; }
+  let from = new Date(fv+'T00:00:00'), to = new Date(tv+'T23:59:59');
+  if(from > to){ const tmp=from; from=startOfDay(to); to=endOfDay(tmp); }
+  document.querySelectorAll('.rbtn').forEach(function(b){b.classList.remove('active');});
+  curRange = {type:'custom', from:from, to:to};
+  loadAll();
+}
+
+async function loadAll(){
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true;
+  document.getElementById('syncTxt').textContent = 'กำลังซิงค์…';
+  try{
+    let all=[]; let offset=0;
+    while(offset < FETCH_LIMIT){
+      const res = await sb.from('install_reports').select('*')
+        .gte('report_date', toDateStr(curRange.from))
+        .lte('report_date', toDateStr(curRange.to))
+        .order('report_date',{ascending:false})
+        .order('created_at',{ascending:false})
+        .range(offset, offset+PAGE_SIZE-1);
+      if(res.error) throw res.error;
+      const batch = res.data || [];
+      all = all.concat(batch);
+      document.getElementById('syncTxt').textContent = 'กำลังโหลด… ' + all.length + ' รายงาน';
+      if(batch.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
+
+    // เก็บ report ที่ AI แยกวันที่ไม่ได้ (report_date เป็น null) แต่ created_at อยู่ในช่วงด้วย
+    const fromISO = curRange.from.toISOString();
+    const toISO   = curRange.to.toISOString();
+    const nullRes = await sb.from('install_reports').select('*')
+      .is('report_date', null)
+      .gte('created_at', fromISO)
+      .lte('created_at', toISO)
+      .order('created_at',{ascending:false})
+      .limit(PAGE_SIZE);
+    if(nullRes.data && nullRes.data.length){
+      all = all.concat(nullRes.data);
+    }
+
+    allRows = all;
+    render();
+
+    const now = new Date();
+    let msg = 'อัปเดต ' + now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) + ' น. · ' + all.length + ' รายงาน';
+    if(curRange.type !== 'today') msg += ' · ดูย้อนหลัง';
+    document.getElementById('syncTxt').textContent = msg;
+
+    if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+    if(curRange.type === 'today'){
+      autoTimer = setInterval(loadAll, AUTO_REFRESH*60*1000);
+    }
+  }catch(err){
+    showError(err);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function render(){
+  document.getElementById('rangeNow').innerHTML =
+    'กำลังดู: <b>' + esc(fmtRangeText(curRange)) + '</b>';
+
+  if(allRows.length === 0){
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><div class="kanit" style="font-size:17px;color:var(--navy);margin-bottom:6px">ยังไม่มีรายงานในช่วงนี้</div>' +
+      '<div>ลองให้ช่างโพสต์รายงานในกลุ่ม Telegram แล้วรีเฟรชอีกครั้ง</div></div>';
+    return;
+  }
+
+  const counts = {all:allRows.length, 'จบงาน':0, 'ไม่จบงาน':0, 'มีงานแก้ไข':0, 'ไม่ระบุ':0};
+  allRows.forEach(function(r){
+    const s = r.status || 'ไม่ระบุ';
+    if(counts[s] !== undefined) counts[s]++;
+  });
+
+  let rows = allRows.slice();
+  if(curStatusFilter !== 'all'){
+    rows = rows.filter(function(r){ return (r.status||'ไม่ระบุ') === curStatusFilter; });
+  }
+  if(curSearch){
+    const q = curSearch.toLowerCase().trim();
+    rows = rows.filter(function(r){
+      return [r.customer_name, r.province, r.work_type, r.team_leader,
+              r.team_members, r.reason, r.raw_text]
+        .filter(Boolean).some(function(v){ return String(v).toLowerCase().includes(q); });
+    });
+  }
+
+  let html = '';
+
+  html += '<div class="filter-bar">';
+  html += '<span class="fb-label">สถานะ:</span>';
+  html += fbtn('all', 'ทั้งหมด', counts.all);
+  html += fbtn('จบงาน', 'จบงาน', counts['จบงาน']);
+  html += fbtn('ไม่จบงาน', 'ไม่จบงาน', counts['ไม่จบงาน']);
+  html += fbtn('มีงานแก้ไข', 'มีงานแก้ไข', counts['มีงานแก้ไข']);
+  if(counts['ไม่ระบุ'] > 0){
+    html += fbtn('ไม่ระบุ', 'ไม่ระบุ', counts['ไม่ระบุ']);
+  }
+  html += '<input class="search-box" type="text" id="searchInput" placeholder="ค้นหา ลูกค้า / จังหวัด / งาน…" value="' + esc(curSearch) + '">';
+  html += '</div>';
+
+  if(rows.length === 0){
+    html += '<div class="empty"><div class="kanit" style="font-size:15px;color:var(--navy)">ไม่พบรายงานตามที่กรอง</div>' +
+            '<div style="font-size:13px;margin-top:4px">ลองเปลี่ยนสถานะ หรือคำค้น</div></div>';
+  }else{
+    // TABLE (PC)
+    html += '<div class="table-wrap"><table class="rpt">';
+    html += '<thead><tr>';
+    html += '<th>วันที่</th><th>ทีมช่าง</th><th>สมาชิก</th>';
+    html += '<th>ลูกค้า</th><th>จังหวัด</th><th>งาน</th>';
+    html += '<th>สถานะ</th><th>เหตุผล</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(r, idx){
+      const sCls = statusClass(r.status);
+      const pCls = statusPillClass(r.status);
+      const reasonShort = truncate(r.reason, 50);
+      const reasonFull = r.reason || '';
+      const hasMore = reasonFull.length > 50 || r.raw_text;
+
+      html += '<tr class="main-row ' + sCls + '" data-idx="' + idx + '">';
+      html += '<td class="lb-cell col-date">';
+      html += '<span class="expand-mark">▶</span>' + esc(fmtDateShort(r.report_date));
+      html += '</td>';
+      html += '<td class="col-team">' + esc(r.team_leader || '—') + '</td>';
+      html += '<td class="col-members">' + esc(r.team_members || '—') + '</td>';
+      html += '<td class="col-customer">' + esc(r.customer_name || '—') + '</td>';
+      html += '<td class="col-province">' + esc(r.province || '—') + '</td>';
+      html += '<td class="col-work">' + esc(r.work_type || '—') + '</td>';
+      html += '<td><span class="status-pill ' + pCls + '">' + esc(statusText(r.status)) + '</span></td>';
+      html += '<td class="col-reason" title="' + esc(reasonFull) + '">' + esc(reasonShort || '—') + '</td>';
+      html += '</tr>';
+
+      // แถวรายละเอียด (ซ่อนไว้ก่อน คลิกแล้วโผล่)
+      html += '<tr class="detail-row" data-idx="' + idx + '"><td colspan="8">';
+      html += '<div class="detail-box">';
+      if(r.time_in || r.time_out){
+        html += '<div class="dk">เวลา</div><div class="dv">' +
+                esc(r.time_in || '?') + ' – ' + esc(r.time_out || '?') + ' น.</div>';
+      }
+      if(reasonFull){
+        html += '<div class="dk">เหตุผล (เต็ม)</div><div class="dv full">' + esc(reasonFull) + '</div>';
+      }
+      if(r.raw_text){
+        html += '<div class="dk">ข้อความต้นฉบับ</div><div class="dv raw">' + esc(r.raw_text) + '</div>';
+      }
+      html += '</div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // CARDS (mobile)
+    html += '<div class="card-list">';
+    rows.forEach(function(r, idx){
+      const sCls = statusClass(r.status);
+      const pCls = statusPillClass(r.status);
+      const reasonShort = truncate(r.reason, 50);
+      const reasonFull = r.reason || '';
+      const hasExpand = reasonFull.length > 50 || r.raw_text || r.time_in || r.time_out;
+
+      html += '<div class="rcard ' + sCls + '" data-idx="' + idx + '">';
+      html += '<div class="rcard-row1">';
+      html += '<div class="rcard-customer">' + esc(r.customer_name || '(ไม่ระบุชื่อ)');
+      if(r.province) html += ' <span class="prov">· ' + esc(r.province) + '</span>';
+      html += '</div>';
+      html += '<span class="status-pill ' + pCls + '">' + esc(statusText(r.status)) + '</span>';
+      html += '</div>';
+      html += '<div class="rcard-meta">';
+      html += '<div class="k">วันที่</div><div class="v">' + esc(fmtDateShort(r.report_date)) + '</div>';
+      if(r.work_type){
+        html += '<div class="k">งาน</div><div class="v kanit">' + esc(r.work_type) + '</div>';
+      }
+      if(r.team_leader){
+        html += '<div class="k">ทีมช่าง</div><div class="v kanit">' + esc(r.team_leader) + '</div>';
+      }
+      if(r.team_members){
+        html += '<div class="k">สมาชิก</div><div class="v">' + esc(r.team_members) + '</div>';
+      }
+      html += '</div>';
+      if(reasonFull){
+        // หดเก็บไว้ — เมื่อคลิกการ์ดจะกาง (CSS เปลี่ยน white-space:pre-wrap)
+        html += '<div class="rcard-reason"><b>เหตุผล:</b> ' + esc(reasonShort) + '</div>';
+      }
+      // ส่วนรายละเอียดเพิ่มเติม (ซ่อนก่อน)
+      if(hasExpand){
+        html += '<div class="rcard-expand">';
+        if(r.time_in || r.time_out){
+          html += '<div class="ek">เวลา</div>';
+          html += '<div class="ev">' + esc(r.time_in || '?') + ' – ' + esc(r.time_out || '?') + ' น.</div>';
+        }
+        if(reasonFull.length > 50){
+          html += '<div class="ek">เหตุผล (เต็ม)</div>';
+          html += '<div class="ev" style="white-space:pre-wrap">' + esc(reasonFull) + '</div>';
+        }
+        if(r.raw_text){
+          html += '<div class="ek">ข้อความต้นฉบับ</div>';
+          html += '<div class="ev raw">' + esc(r.raw_text) + '</div>';
+        }
+        html += '</div>';
+        html += '<div class="expand-hint">▾ แตะเพื่อดูรายละเอียด</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="foot-note">';
+  html += '<b>วิธีอ่าน Dashboard นี้</b><br>';
+  html += 'ข้อมูลมาจากกลุ่ม Telegram "รายงานติดตั้งTB" ที่ Bot อ่านและ AI แยกฟิลด์ &nbsp;·&nbsp; ' +
+          'เรียงวันที่ล่าสุดอยู่บน &nbsp;·&nbsp; ' +
+          'คลิกแถว (PC) หรือแตะการ์ด (มือถือ) เพื่อดูเหตุผลเต็มและข้อความต้นฉบับ &nbsp;·&nbsp; ' +
+          'แถบสีซ้าย: เขียว = จบงาน, แดง = ไม่จบงาน, เหลือง = มีงานแก้ไข, เทา = ไม่ระบุ';
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+
+  document.querySelectorAll('.fbtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      curStatusFilter = b.dataset.status;
+      render();
+    });
+  });
+
+  // คลิกแถวในตาราง (PC) → เปิด/ปิด detail row
+  document.querySelectorAll('table.rpt tr.main-row').forEach(function(tr){
+    tr.addEventListener('click', function(){
+      const idx = tr.dataset.idx;
+      const detail = document.querySelector('table.rpt tr.detail-row[data-idx="' + idx + '"]');
+      // ถ้าไม่มี detail row (ไม่มีข้อมูลให้กาง) ก็ไม่ต้องทำอะไร
+      if(!detail) return;
+      const isOpen = tr.classList.contains('expanded');
+      if(isOpen){
+        tr.classList.remove('expanded');
+        detail.classList.remove('show');
+      }else{
+        tr.classList.add('expanded');
+        detail.classList.add('show');
+      }
+    });
+  });
+
+  // คลิกการ์ด (มือถือ) → เปิด/ปิด expand
+  document.querySelectorAll('.rcard').forEach(function(card){
+    card.addEventListener('click', function(){
+      card.classList.toggle('expanded');
+    });
+  });
+
+  const si = document.getElementById('searchInput');
+  if(si){
+    si.addEventListener('input', function(e){
+      curSearch = e.target.value;
+      clearTimeout(window._searchT);
+      window._searchT = setTimeout(function(){
+        const cursor = si.selectionStart;
+        render();
+        const newSi = document.getElementById('searchInput');
+        if(newSi){ newSi.focus(); try{newSi.setSelectionRange(cursor,cursor);}catch(e){} }
+      }, 150);
+    });
+  }
+}
+
+function fbtn(status, label, count){
+  const active = curStatusFilter === status ? ' active' : '';
+  return '<button class="fbtn' + active + '" data-status="' + esc(status) + '">' +
+         esc(label) + '<span class="count">' + count + '</span></button>';
+}
+
+function showError(err){
+  const msg = (err && err.message) || String(err);
+  document.getElementById('syncTxt').textContent = 'ซิงค์ไม่สำเร็จ';
+  document.getElementById('content').innerHTML =
+    '<div class="error"><div class="kanit" style="font-size:17px;margin-bottom:12px">ดึงข้อมูลไม่สำเร็จ</div>' +
+    '<div class="error-box">' +
+    '<div style="margin-bottom:8px">ลองตรวจสอบ:</div>' +
+    '<div>• ตาราง install_reports สร้างใน Supabase แล้วหรือยัง</div>' +
+    '<div>• RLS policy อนุญาตให้ anon อ่านได้</div>' +
+    '<div style="margin-top:10px;color:var(--muted)">ข้อความระบบ: <code>'+esc(msg)+'</code></div>' +
+    '</div></div>';
+}
+
+/* PWA */
+(function setupPWA(){
+  const manifest = {
+    name: 'Install Reports', short_name: 'Install Reports',
+    description: 'รายงานติดตั้ง — The Built In Company',
+    start_url: '.', display: 'standalone',
+    background_color: '#f7f4ec', theme_color: '#1a2744',
+    orientation: 'portrait',
+    icons: [{
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%231a2744'/%3E%3Crect x='112' y='112' width='288' height='288' rx='56' fill='%23c9a84a'/%3E%3Ctext x='256' y='340' font-family='Arial,sans-serif' font-size='180' font-weight='bold' fill='%231a2744' text-anchor='middle'%3EIR%3C/text%3E%3C/svg%3E",
+      sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable'
+    }]
+  };
+  try{
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    const link = document.createElement('link');
+    link.rel='manifest'; link.href=URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  }catch(e){}
+
+  if('serviceWorker' in navigator){
+    const swCode = [
+      "const C='install-reports-v2';",
+      "self.addEventListener('install',e=>{self.skipWaiting();});",
+      "self.addEventListener('activate',e=>{",
+      "  e.waitUntil(caches.keys().then(keys=>Promise.all(",
+      "    keys.filter(k=>k!==C).map(k=>caches.delete(k))",
+      "  )).then(()=>clients.claim()));",
+      "});",
+      "self.addEventListener('fetch',e=>{",
+      "  const u=e.request.url;",
+      "  if(u.includes('supabase.co')){return;}",
+      "  const isHTML=e.request.mode==='navigate'||",
+      "    (e.request.headers.get('accept')||'').includes('text/html');",
+      "  if(isHTML){",
+      "    e.respondWith(fetch(e.request).then(r=>{",
+      "      const cp=r.clone();",
+      "      caches.open(C).then(c=>c.put(e.request,cp)).catch(()=>{});",
+      "      return r;",
+      "    }).catch(()=>caches.match(e.request)));",
+      "    return;",
+      "  }",
+      "  e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{",
+      "    const cp=r.clone();",
+      "    caches.open(C).then(c=>c.put(e.request,cp)).catch(()=>{});",
+      "    return r;",
+      "  })));",
+      "});"
+    ].join('\n');
+    try{
+      const swBlob = new Blob([swCode], {type:'text/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob)).then(function(reg){
+        reg.update().catch(function(){});
+      }).catch(function(){});
+    }catch(e){}
+  }
+})();
+
+curRange = resolveRange('today');
+loadAll();
+</script>
+
+</body>
+</html>
