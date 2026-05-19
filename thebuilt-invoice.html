@@ -2719,10 +2719,10 @@ async function loadFromSupabase() {
   try {
     if (!_staticLoaded) await loadStaticData();
     const [docs, purchases, expenses, pos] = await Promise.all([
-      supa.get('tb_documents', '?select=id,type,number,customer,date,due_date,subtotal,vat,wht,total,discount,vat_rate,note,status,items,branch,salesperson,ref_invoice&order=date.desc&limit=500'),
-      supa.get('tb_purchases', '?select=id,supplier,description,cat,amount,date,due_date,status,paid_date,ref,note&order=date.desc&limit=300').catch(()=>[]),
-      supa.get('tb_expenses', '?select=id,description,amount,date,cat,paid_by,method,note&order=date.desc&limit=300').catch(()=>[]),
-      supa.get('tb_pos', '?order=date.desc&limit=300').catch(()=>[]),
+      supa.get('tb_documents', '?select=id,type,number,customer,date,due_date,subtotal,vat,wht,total,discount,vat_rate,note,status,items,branch,salesperson,ref_invoice&order=date.desc&limit=2000'),
+      supa.get('tb_purchases', '?select=id,supplier,description,cat,amount,date,due_date,status,paid_date,ref,note&order=date.desc&limit=2000').catch(()=>[]),
+      supa.get('tb_expenses', '?select=id,description,amount,date,cat,paid_by,method,note&order=date.desc&limit=2000').catch(()=>[]),
+      supa.get('tb_pos', '?order=date.desc&limit=2000').catch(()=>[]),
     ]);
     state.documents = docs.map(d => {
       // customer เป็น jsonb object หรืออาจเป็น customer_id แบบเก่า
