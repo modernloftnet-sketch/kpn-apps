@@ -206,6 +206,38 @@ table.rpt tr.s-done:hover{opacity:1;}
 .photo-more-badge:hover{background:var(--navy-light);}
 .no-photo{color:var(--hint);font-size:11.5px;font-style:italic;}
 
+/* Video thumbnail in row */
+.video-mini{
+  width:34px;height:34px;border-radius:5px;border:1px solid var(--navy);
+  background:var(--navy);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold);font-size:14px;
+  transition:.13s;flex-shrink:0;position:relative;
+}
+.video-mini:hover{transform:scale(1.15);box-shadow:0 2px 8px rgba(26,39,68,.25);}
+.video-mini::after{
+  content:'';position:absolute;bottom:2px;right:2px;
+  width:6px;height:6px;border-radius:50%;background:var(--red);
+}
+
+/* Video player in detail row */
+.detail-videos{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;
+}
+.detail-video-box{
+  display:flex;flex-direction:column;gap:4px;
+}
+.detail-video-box video{
+  width:240px;max-width:100%;border-radius:6px;
+  border:1px solid var(--line);background:#000;
+}
+.video-too-large-note{
+  background:var(--amber-bg);color:var(--amber);
+  padding:8px 12px;border-radius:6px;font-size:12.5px;
+  border:1px solid #e6d4a5;display:inline-block;
+}
+.video-too-large-note b{font-family:'Kanit',sans-serif;font-weight:500;}
+
 /* Status pill + button */
 .status-pill{
   display:inline-block;font-family:'Kanit',sans-serif;font-size:11.5px;font-weight:500;
@@ -642,6 +674,7 @@ function render(){
   const pendingCount = counts.pending;
   const doneCount = counts.done;
   const totalPhotos = allRows.reduce(function(s,r){ return s + (r.photo_count || (r.photos||[]).length || 0); }, 0);
+  const totalVideos = allRows.reduce(function(s,r){ return s + ((r.videos||[]).length) + (r.videos_too_large || 0); }, 0);
 
   // Filter rows
   let rows = allRows.slice();
@@ -663,7 +696,7 @@ function render(){
   html += '<div class="kpi"><div class="k-label">รายงานทั้งหมด</div><div class="k-val">'+totalReports+'</div><div class="k-sub">ครั้ง</div></div>';
   html += '<div class="kpi amber"><div class="k-label">รอดำเนินการ</div><div class="k-val">'+pendingCount+'</div><div class="k-sub">รายการ</div></div>';
   html += '<div class="kpi green"><div class="k-label">ดำเนินการแล้ว</div><div class="k-val">'+doneCount+'</div><div class="k-sub">รายการ</div></div>';
-  html += '<div class="kpi gold"><div class="k-label">รูปทั้งหมด</div><div class="k-val">'+totalPhotos+'</div><div class="k-sub">ใบ</div></div>';
+  html += '<div class="kpi gold"><div class="k-label">รูป + วิดีโอ</div><div class="k-val">'+(totalPhotos + totalVideos)+'</div><div class="k-sub">' + totalPhotos + ' รูป · ' + totalVideos + ' วิดีโอ</div></div>';
   html += '</div>';
 
   // Filter bar
@@ -715,7 +748,11 @@ function render(){
 
       // Photos cell
       html += '<td class="col-photos">';
-      if(nPhotos === 0){
+      const videos = r.videos || [];
+      const nVideos = videos.length;
+      const videosTooLarge = r.videos_too_large || 0;
+      
+      if(nPhotos === 0 && nVideos === 0 && videosTooLarge === 0){
         html += '<span class="no-photo">—</span>';
       } else {
         html += '<div class="photo-cell-wrap">';
@@ -726,6 +763,13 @@ function render(){
         }
         if(nPhotos > 3){
           html += '<span class="photo-more-badge" onclick="event.stopPropagation();openLightbox(' + idx + ',3)">+' + (nPhotos-3) + '</span>';
+        }
+        // Video icons
+        for(let i=0; i<nVideos; i++){
+          html += '<div class="video-mini" title="คลิกที่แถวเพื่อดูวิดีโอ">🎬</div>';
+        }
+        if(videosTooLarge > 0){
+          html += '<div class="video-mini" style="background:var(--amber);color:white" title="วิดีโอ ' + videosTooLarge + ' ไฟล์ใหญ่เกิน — ดูใน Telegram">⚠</div>';
         }
         html += '</div>';
       }
@@ -766,6 +810,18 @@ function render(){
         }
         html += '</div></div>';
       }
+      if(nVideos > 0){
+        html += '<div class="dk">วิดีโอ (' + nVideos + ')</div><div class="dv"><div class="detail-videos">';
+        for(let i=0; i<nVideos; i++){
+          html += '<div class="detail-video-box"><video controls preload="metadata" src="' + esc(videos[i]) + '"></video></div>';
+        }
+        html += '</div></div>';
+      }
+      if(videosTooLarge > 0){
+        html += '<div class="dk">วิดีโอใหญ่เกิน</div><div class="dv"><div class="video-too-large-note">' +
+                '⚠ มีวิดีโอ <b>' + videosTooLarge + ' ไฟล์</b> ที่ใหญ่เกิน 20 MB — เปิดใน Telegram โดยตรง' +
+                '</div></div>';
+      }
       html += '</div></td></tr>';
     });
     html += '</tbody></table></div>';
@@ -800,6 +856,18 @@ function render(){
                   ' onclick="openLightbox(' + idx + ',' + i + ')"></div>';
         }
         html += '</div>';
+      }
+      const mVideos = r.videos || [];
+      const mVideosTooLarge = r.videos_too_large || 0;
+      if(mVideos.length > 0){
+        html += '<div style="margin-top:8px">';
+        for(let i=0; i<mVideos.length; i++){
+          html += '<video controls preload="metadata" src="' + esc(mVideos[i]) + '" style="width:100%;max-width:320px;border-radius:6px;border:1px solid var(--line);background:#000;margin-bottom:4px"></video>';
+        }
+        html += '</div>';
+      }
+      if(mVideosTooLarge > 0){
+        html += '<div class="video-too-large-note" style="margin-top:8px">⚠ มีวิดีโอ <b>' + mVideosTooLarge + ' ไฟล์</b> ใหญ่เกิน 20 MB — ดูใน Telegram</div>';
       }
       // Mobile card footer: status button + completed date + delete
       html += '<div class="mcard-footer">';
@@ -928,12 +996,22 @@ async function deleteReport(id){
     const photos = row.photos || [];
     if(photos.length > 0){
       const paths = photos.map(function(url){
-        // ดึง path จาก URL: .../object/public/mending-photos/2026/05/19/xxx.jpg → 2026/05/19/xxx.jpg
         const m = url.match(/\/mending-photos\/(.+)$/);
         return m ? m[1] : null;
       }).filter(Boolean);
       if(paths.length > 0){
         await sb.storage.from('mending-photos').remove(paths);
+      }
+    }
+    // ลบวิดีโอใน Storage
+    const vids = row.videos || [];
+    if(vids.length > 0){
+      const vpaths = vids.map(function(url){
+        const m = url.match(/\/mending-videos\/(.+)$/);
+        return m ? m[1] : null;
+      }).filter(Boolean);
+      if(vpaths.length > 0){
+        await sb.storage.from('mending-videos').remove(vpaths);
       }
     }
 
@@ -1036,7 +1114,7 @@ function showError(err){
 
   if('serviceWorker' in navigator){
     const swCode = [
-      "const C='mending-reports-v3';",
+      "const C='mending-reports-v4';",
       "self.addEventListener('install',e=>{self.skipWaiting();});",
       "self.addEventListener('activate',e=>{",
       "  e.waitUntil(caches.keys().then(keys=>Promise.all(",
