@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>งานของฉัน — The Built</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f2747;
+    --navy-light:#1c3c64;
+    --navy-deep:#0a1c33;
+    --gold:#d4af37;
+    --gold-soft:#e6c869;
+    --cream:#faf7f0;
+    --paper:#ffffff;
+    --ink:#1a2536;
+    --muted:#7c889b;
+    --line:#e6e9ef;
+    --green:#2e9e6b;
+    --red:#d65a5a;
+    --shadow:0 10px 40px rgba(15,39,71,.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Sarabun',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(212,175,55,.08), transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(15,39,71,.06), transparent 45%),
+      var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 60px}
+
+  /* Header */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:24px;flex-wrap:wrap;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:50px;height:50px;border-radius:14px;
+    background:linear-gradient(135deg,var(--navy),var(--navy-light));
+    display:grid;place-items:center;color:var(--gold);
+    font-family:'Kanit';font-weight:700;font-size:22px;
+    box-shadow:0 6px 18px rgba(15,39,71,.25);
+    border:1.5px solid rgba(212,175,55,.4);
+  }
+  .brand h1{font-family:'Kanit';font-weight:600;font-size:22px;color:var(--navy);line-height:1}
+  .brand .sub{font-size:13px;color:var(--muted);margin-top:3px}
+  .clock{text-align:right;font-family:'Kanit'}
+  .clock .time{font-size:26px;font-weight:600;color:var(--navy);line-height:1}
+  .clock .date{font-size:13px;color:var(--muted);margin-top:2px}
+
+  /* Auth bar */
+  .authbar{
+    display:flex;align-items:center;gap:10px;
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:14px;padding:10px 14px;margin-bottom:20px;
+    box-shadow:var(--shadow);flex-wrap:wrap;
+  }
+  .authbar .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);flex:1}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+  .dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(46,158,107,.18)}
+  .btn{
+    font-family:'Kanit';font-weight:500;font-size:14px;
+    border:none;border-radius:10px;padding:9px 16px;cursor:pointer;
+    transition:.18s;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,39,71,.3)}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:var(--navy-deep)}
+  .btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(212,175,55,.4)}
+  .btn-ghost{background:transparent;color:var(--muted);padding:9px 12px}
+  .btn-ghost:hover{color:var(--navy);background:rgba(15,39,71,.05)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+  /* List selector */
+  .lists{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .chip{
+    font-family:'Kanit';font-size:13.5px;font-weight:500;
+    padding:7px 15px;border-radius:20px;cursor:pointer;
+    background:var(--paper);border:1px solid var(--line);color:var(--muted);
+    transition:.16s;
+  }
+  .chip:hover{border-color:var(--gold)}
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+  /* Add box */
+  .addbox{
+    display:flex;gap:10px;margin-bottom:20px;
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:14px;padding:8px;box-shadow:var(--shadow);
+  }
+  .addbox input{
+    flex:1;border:none;outline:none;font-family:'Sarabun';font-size:15px;
+    padding:8px 12px;background:transparent;color:var(--ink);
+  }
+  .addbox input::placeholder{color:var(--muted)}
+
+  /* Task card */
+  .card{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(15,39,71,.02),transparent);
+  }
+  .card-head .ttl{font-family:'Kanit';font-weight:600;color:var(--navy);font-size:16px}
+  .card-head .cnt{font-size:13px;color:var(--muted)}
+
+  ul.tasks{list-style:none}
+  li.task{
+    display:flex;align-items:flex-start;gap:13px;
+    padding:14px 18px;border-bottom:1px solid var(--line);
+    transition:background .15s;animation:fade .3s ease;
+  }
+  li.task:last-child{border-bottom:none}
+  li.task:hover{background:rgba(212,175,55,.04)}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .check{
+    width:22px;height:22px;border-radius:50%;flex:none;margin-top:1px;
+    border:2px solid var(--line);cursor:pointer;transition:.16s;
+    display:grid;place-items:center;
+  }
+  .check:hover{border-color:var(--gold)}
+  .check.done{background:var(--green);border-color:var(--green)}
+  .check.done::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
+
+  .task-body{flex:1;min-width:0}
+  .task-title{font-size:15px;line-height:1.4;word-break:break-word}
+  .task-notes{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .task-due{
+    display:inline-block;margin-top:5px;font-size:12px;font-family:'Kanit';
+    color:var(--navy-light);background:rgba(15,39,71,.06);
+    padding:2px 9px;border-radius:8px;
+  }
+  .task-due.over{color:var(--red);background:rgba(214,90,90,.1)}
+  li.task.completed .task-title{text-decoration:line-through;color:var(--muted)}
+
+  .del{
+    opacity:0;border:none;background:transparent;cursor:pointer;
+    color:var(--muted);font-size:18px;padding:4px 8px;border-radius:8px;
+    transition:.15s;flex:none;
+  }
+  li.task:hover .del{opacity:1}
+  .del:hover{color:var(--red);background:rgba(214,90,90,.1)}
+
+  /* States */
+  .empty,.welcome{text-align:center;padding:50px 24px;color:var(--muted)}
+  .empty .em,.welcome .em{font-size:42px;margin-bottom:12px}
+  .welcome h2{font-family:'Kanit';color:var(--navy);font-weight:600;margin-bottom:8px;font-size:20px}
+  .welcome p{font-size:14.5px;line-height:1.6;max-width:380px;margin:0 auto 20px}
+  .toggle-done{font-size:13px;color:var(--muted);cursor:pointer;font-family:'Kanit';user-select:none}
+  .toggle-done:hover{color:var(--navy)}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--navy);color:#fff;padding:12px 22px;border-radius:12px;
+    font-family:'Kanit';font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.3);
+    transition:.3s;z-index:99;opacity:0;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;display:inline-block}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .footer{text-align:center;margin-top:28px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">TB</div>
+      <div>
+        <h1>งานของฉัน</h1>
+        <div class="sub">Google Tasks · The Built</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="time" id="clk">--:--</div>
+      <div class="date" id="dt">—</div>
+    </div>
+  </header>
+
+  <div class="authbar">
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusTxt">ยังไม่ได้เชื่อมต่อ</span>
+    </div>
+    <button class="btn btn-ghost" id="refreshBtn" onclick="loadTasks()" style="display:none">🔄 รีเฟรช</button>
+    <button class="btn btn-gold" id="loginBtn" onclick="signIn()">เชื่อมต่อ Google Tasks</button>
+    <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">ออกจากระบบ</button>
+  </div>
+
+  <div id="content">
+    <div class="welcome">
+      <div class="em">📋</div>
+      <h2>ยินดีต้อนรับ เพื่อน!</h2>
+      <p>กดปุ่ม <b>"เชื่อมต่อ Google Tasks"</b> ด้านบน เพื่อดึงรายการงานของคุณมาแสดงที่นี่ ติ๊กเสร็จแล้วจะ sync กลับไปที่มือถือทันที</p>
+    </div>
+  </div>
+
+  <div class="footer">เปิดคอมเมื่อไหร่ ก็เห็นงานทันที · ติ๊กเสร็จ sync กับมือถืออัตโนมัติ</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* ===== CONFIG ===== */
+const CLIENT_ID = '579023286528-07bdvgpfltajnkio6rlie9jvsq9tfion.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/tasks';
+const TOKEN_KEY = 'gtasks_token';
+const TOKEN_EXP = 'gtasks_token_exp';
+
+let tokenClient, accessToken = null;
+let taskLists = [], currentListId = null, showCompleted = false;
+
+/* ===== CLOCK ===== */
+function tick(){
+  const n=new Date();
+  document.getElementById('clk').textContent=
+    n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dt').textContent=
+    n.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long'});
+}
+tick();setInterval(tick,1000*30);
+
+/* ===== TOAST ===== */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ===== AUTH ===== */
+window.onload=()=>{
+  const wait=setInterval(()=>{
+    if(window.google&&google.accounts&&google.accounts.oauth2){
+      clearInterval(wait);initAuth();
+    }
+  },200);
+};
+
+function initAuth(){
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES,
+    callback:(resp)=>{
+      if(resp.error){toast('เชื่อมต่อไม่สำเร็จ: '+resp.error);return;}
+      accessToken=resp.access_token;
+      const exp=Date.now()+(resp.expires_in*1000);
+      localStorage.setItem(TOKEN_KEY,accessToken);
+      localStorage.setItem(TOKEN_EXP,exp);
+      onSignedIn();
+    }
+  });
+  // try restore saved token
+  const saved=localStorage.getItem(TOKEN_KEY);
+  const exp=parseInt(localStorage.getItem(TOKEN_EXP)||'0');
+  if(saved && Date.now()<exp-60000){
+    accessToken=saved;onSignedIn(true);
+  }
+}
+
+function signIn(){
+  if(!tokenClient){toast('กำลังโหลด... ลองอีกครั้ง');return;}
+  tokenClient.requestAccessToken({prompt:accessToken?'':'consent'});
+}
+function signOut(){
+  if(accessToken) google.accounts.oauth2.revoke(accessToken,()=>{});
+  accessToken=null;
+  localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP);
+  taskLists=[];currentListId=null;
+  document.getElementById('dot').classList.remove('on');
+  document.getElementById('statusTxt').textContent='ยังไม่ได้เชื่อมต่อ';
+  document.getElementById('loginBtn').style.display='';
+  document.getElementById('logoutBtn').style.display='none';
+  document.getElementById('refreshBtn').style.display='none';
+  document.getElementById('content').innerHTML=
+    '<div class="welcome"><div class="em">📋</div><h2>ออกจากระบบแล้ว</h2><p>กดเชื่อมต่ออีกครั้งเพื่อดูงานของคุณ</p></div>';
+}
+
+function onSignedIn(silent){
+  document.getElementById('dot').classList.add('on');
+  document.getElementById('statusTxt').textContent='เชื่อมต่อแล้ว';
+  document.getElementById('loginBtn').style.display='none';
+  document.getElementById('logoutBtn').style.display='';
+  document.getElementById('refreshBtn').style.display='';
+  if(!silent) toast('เชื่อมต่อสำเร็จ! 🎉');
+  loadLists();
+}
+
+/* ===== API HELPER ===== */
+async function api(path,opts={}){
+  const res=await fetch('https://tasks.googleapis.com/tasks/v1'+path,{
+    ...opts,
+    headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json',...(opts.headers||{})}
+  });
+  if(res.status===401){
+    toast('เซสชันหมดอายุ กำลังเชื่อมใหม่...');
+    accessToken=null;localStorage.removeItem(TOKEN_KEY);
+    tokenClient.requestAccessToken({prompt:''});
+    throw new Error('reauth');
+  }
+  if(!res.ok) throw new Error('API '+res.status);
+  if(res.status===204) return null;
+  return res.json();
+}
+
+/* ===== LISTS ===== */
+async function loadLists(){
+  try{
+    const data=await api('/users/@me/lists');
+    taskLists=data.items||[];
+    if(taskLists.length){
+      if(!currentListId||!taskLists.find(l=>l.id===currentListId))
+        currentListId=taskLists[0].id;
+      loadTasks();
+    }else{
+      document.getElementById('content').innerHTML=
+        '<div class="empty"><div class="em">📭</div><div>ยังไม่มีรายการงาน</div></div>';
+    }
+  }catch(e){if(e.message!=='reauth')toast('โหลดรายการไม่สำเร็จ');}
+}
+
+/* ===== TASKS ===== */
+async function loadTasks(){
+  if(!currentListId)return;
+  const rb=document.getElementById('refreshBtn');
+  rb.innerHTML='<span class="spin"></span>';
+  try{
+    const data=await api(`/lists/${currentListId}/tasks?showCompleted=true&showHidden=true&maxResults=100`);
+    render(data.items||[]);
+  }catch(e){if(e.message!=='reauth')toast('โหลดงานไม่สำเร็จ');}
+  rb.innerHTML='🔄 รีเฟรช';
+}
+
+function render(tasks){
+  // sort: incomplete first, by due date then position
+  const active=tasks.filter(t=>t.status!=='completed');
+  const done=tasks.filter(t=>t.status==='completed');
+  active.sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||(a.position||'').localeCompare(b.position||''));
+  done.sort((a,b)=>(b.completed||'').localeCompare(a.completed||''));
+
+  const listChips=taskLists.map(l=>
+    `<div class="chip ${l.id===currentListId?'active':''}" onclick="switchList('${l.id}')">${esc(l.title)}</div>`
+  ).join('');
+
+  let html=`<div class="lists">${listChips}</div>`;
+  html+=`<div class="addbox">
+    <input id="newTask" placeholder="เพิ่มงานใหม่... แล้วกด Enter" onkeydown="if(event.key==='Enter')addTask()">
+    <button class="btn btn-primary" onclick="addTask()">➕ เพิ่ม</button>
+  </div>`;
+
+  html+=`<div class="card">
+    <div class="card-head">
+      <span class="ttl">รายการงาน</span>
+      <span class="cnt">${active.length} งานที่ต้องทำ</span>
+    </div><ul class="tasks">`;
+
+  if(!active.length && !done.length){
+    html+=`</ul><div class="empty"><div class="em">🎉</div><div>ไม่มีงานค้าง สบายเลย!</div></div>`;
+  }else{
+    html+=active.map(t=>taskRow(t)).join('');
+    if(done.length){
+      html+=`<li style="padding:12px 18px;border-bottom:1px solid var(--line)">
+        <span class="toggle-done" onclick="toggleDone()">
+          ${showCompleted?'▾':'▸'} งานที่เสร็จแล้ว (${done.length})
+        </span></li>`;
+      if(showCompleted) html+=done.map(t=>taskRow(t)).join('');
+    }
+    html+='</ul>';
+  }
+  html+='</div>';
+  document.getElementById('content').innerHTML=html;
+}
+
+function taskRow(t){
+  const done=t.status==='completed';
+  let dueHtml='';
+  if(t.due){
+    const d=new Date(t.due);
+    const over=!done && d<new Date(new Date().toDateString());
+    dueHtml=`<span class="task-due ${over?'over':''}">📅 ${d.toLocaleDateString('th-TH',{day:'numeric',month:'short'})}</span>`;
+  }
+  return `<li class="task ${done?'completed':''}">
+    <div class="check ${done?'done':''}" onclick="toggleTask('${t.id}','${done?'needsAction':'completed'}')"></div>
+    <div class="task-body">
+      <div class="task-title">${esc(t.title||'(ไม่มีชื่อ)')}</div>
+      ${t.notes?`<div class="task-notes">${esc(t.notes)}</div>`:''}
+      ${dueHtml}
+    </div>
+    <button class="del" onclick="delTask('${t.id}')">🗑️</button>
+  </li>`;
+}
+
+function switchList(id){currentListId=id;loadTasks();}
+function toggleDone(){showCompleted=!showCompleted;loadTasks();}
+
+async function addTask(){
+  const inp=document.getElementById('newTask');
+  const title=inp.value.trim();
+  if(!title)return;
+  inp.value='';
+  try{
+    await api(`/lists/${currentListId}/tasks`,{method:'POST',body:JSON.stringify({title})});
+    toast('เพิ่มงานแล้ว ✓');loadTasks();
+  }catch(e){if(e.message!=='reauth')toast('เพิ่มไม่สำเร็จ');}
+}
+
+async function toggleTask(id,newStatus){
+  try{
+    const body={status:newStatus};
+    if(newStatus==='needsAction') body.completed=null;
+    await api(`/lists/${currentListId}/tasks/${id}`,{method:'PATCH',body:JSON.stringify(body)});
+    toast(newStatus==='completed'?'เสร็จแล้ว! 🎉':'นำกลับมาทำต่อ');
+    loadTasks();
+  }catch(e){if(e.message!=='reauth')toast('อัพเดตไม่สำเร็จ');}
+}
+
+async function delTask(id){
+  if(!confirm('ลบงานนี้?'))return;
+  try{
+    await api(`/lists/${currentListId}/tasks/${id}`,{method:'DELETE'});
+    toast('ลบแล้ว');loadTasks();
+  }catch(e){if(e.message!=='reauth')toast('ลบไม่สำเร็จ');}
+}
+
+/* ===== AUTO REFRESH ===== */
+setInterval(()=>{if(accessToken&&currentListId)loadTasks();},5*60*1000);
+
+function esc(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+</script>
+</body>
+</html>
