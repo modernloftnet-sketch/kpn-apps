@@ -220,6 +220,7 @@ const CLIENT_ID = '579023286528-07bdvgpfltajnkio6rlie9jvsq9tfion.apps.googleuser
 const SCOPES = 'https://www.googleapis.com/auth/tasks';
 const TOKEN_KEY = 'gtasks_token';
 const TOKEN_EXP = 'gtasks_token_exp';
+const EVER_KEY  = 'gtasks_ever_connected';
 
 let tokenClient, accessToken = null;
 let taskLists = [], currentListId = null, showCompleted = false;
@@ -256,19 +257,38 @@ function initAuth(){
     client_id:CLIENT_ID,
     scope:SCOPES,
     callback:(resp)=>{
-      if(resp.error){toast('เชื่อมต่อไม่สำเร็จ: '+resp.error);return;}
+      if(resp.error){
+        // silent refresh (prompt:none) ล้มเหลว -> ให้ผู้ใช้กดเชื่อมต่อเอง
+        if(resp.error==='interaction_required'||resp.error==='login_required'||resp.error==='consent_required'){
+          document.getElementById('statusTxt').textContent='ยังไม่ได้เชื่อมต่อ';
+          document.getElementById('loginBtn').style.display='';
+          toast('กรุณากดเชื่อมต่ออีกครั้ง');
+        }else{
+          document.getElementById('statusTxt').textContent='ยังไม่ได้เชื่อมต่อ';
+          document.getElementById('loginBtn').style.display='';
+          toast('เชื่อมต่อไม่สำเร็จ: '+resp.error);
+        }
+        return;
+      }
       accessToken=resp.access_token;
       const exp=Date.now()+(resp.expires_in*1000);
       localStorage.setItem(TOKEN_KEY,accessToken);
       localStorage.setItem(TOKEN_EXP,exp);
+      localStorage.setItem(EVER_KEY,'1');
       onSignedIn();
     }
   });
   // try restore saved token
   const saved=localStorage.getItem(TOKEN_KEY);
   const exp=parseInt(localStorage.getItem(TOKEN_EXP)||'0');
+  const everConnected=localStorage.getItem(EVER_KEY)==='1';
   if(saved && Date.now()<exp-60000){
+    // token ยังไม่หมดอายุ ใช้ได้เลย
     accessToken=saved;onSignedIn(true);
+  }else if(everConnected){
+    // เคยเชื่อมต่อแล้ว แต่ token หมดอายุ -> ขอใหม่แบบเงียบ (ไม่ต้องกดอะไร)
+    document.getElementById('statusTxt').textContent='กำลังเชื่อมต่อใหม่...';
+    tokenClient.requestAccessToken({prompt:'none'});
   }
 }
 
@@ -279,7 +299,7 @@ function signIn(){
 function signOut(){
   if(accessToken) google.accounts.oauth2.revoke(accessToken,()=>{});
   accessToken=null;
-  localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP);
+  localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP);localStorage.removeItem(EVER_KEY);
   taskLists=[];currentListId=null;
   document.getElementById('dot').classList.remove('on');
   document.getElementById('statusTxt').textContent='ยังไม่ได้เชื่อมต่อ';
@@ -307,9 +327,8 @@ async function api(path,opts={}){
     headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json',...(opts.headers||{})}
   });
   if(res.status===401){
-    toast('เซสชันหมดอายุ กำลังเชื่อมใหม่...');
-    accessToken=null;localStorage.removeItem(TOKEN_KEY);
-    tokenClient.requestAccessToken({prompt:''});
+    accessToken=null;localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP);
+    tokenClient.requestAccessToken({prompt:'none'});
     throw new Error('reauth');
   }
   if(!res.ok) throw new Error('API '+res.status);
