@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แดชบอร์ดน้ำมัน — The Built Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#13294b; --navy2:#1d3a63; --gold:#c8a24a; --gold2:#e0c074;
+  --cream:#f7f3e9; --cream2:#efe8d6; --ink:#1a2236; --muted:#6b7384;
+  --line:#e3dcc8; --red:#c0392b; --green:#1d7a52; --white:#fff;
+  --shadow:0 4px 20px rgba(19,41,75,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--ink);line-height:1.5}
+h1,h2,h3,.kanit{font-family:'Kanit',sans-serif}
+
+#gate{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000}
+.gate-box{background:var(--cream);padding:40px 36px;border-radius:18px;text-align:center;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.gate-box h2{color:var(--navy);font-weight:600;margin-bottom:6px}
+.gate-box p{color:var(--muted);font-size:14px;margin-bottom:22px}
+.gate-box input{width:100%;padding:14px;font-size:22px;text-align:center;letter-spacing:8px;border:2px solid var(--line);border-radius:10px;font-family:'Kanit';background:var(--white)}
+.gate-box input:focus{outline:none;border-color:var(--gold)}
+.gate-box button{width:100%;margin-top:14px;padding:13px;background:var(--navy);color:var(--gold2);border:none;border-radius:10px;font-family:'Kanit';font-size:16px;font-weight:500;cursor:pointer;transition:.2s}
+.gate-box button:hover{background:var(--navy2)}
+.gate-err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+.gate-logo{width:54px;height:54px;background:var(--gold);border-radius:14px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+
+header{background:var(--navy);color:var(--cream);padding:18px 26px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:13px}
+.brand .logo{width:44px;height:44px;background:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.brand h1{font-size:20px;font-weight:600;letter-spacing:.3px}
+.brand .sub{font-size:12px;color:var(--gold2);font-weight:300}
+.refresh{background:rgba(255,255,255,.1);color:var(--cream);border:1px solid rgba(255,255,255,.2);padding:8px 16px;border-radius:9px;font-family:'Kanit';cursor:pointer;font-size:14px;transition:.2s}
+.refresh:hover{background:rgba(255,255,255,.2)}
+
+.wrap{max-width:1280px;margin:0 auto;padding:24px 22px 60px}
+
+.filters{background:var(--white);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:22px;border:1px solid var(--line)}
+.ffield{display:flex;flex-direction:column;gap:5px}
+.ffield label{font-size:12px;color:var(--muted);font-weight:600;font-family:'Kanit'}
+.ffield select,.ffield input{padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:'Sarabun';font-size:14px;background:var(--white);min-width:130px}
+.ffield select:focus,.ffield input:focus{outline:none;border-color:var(--gold)}
+.preset-row{display:flex;gap:7px}
+.preset{padding:9px 14px;border:1.5px solid var(--line);background:var(--white);border-radius:9px;cursor:pointer;font-family:'Kanit';font-size:13px;color:var(--ink);transition:.15s}
+.preset:hover{border-color:var(--gold)}
+.preset.active{background:var(--navy);color:var(--gold2);border-color:var(--navy)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--white);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--line);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold)}
+.kpi .label{font-size:13px;color:var(--muted);font-family:'Kanit';font-weight:500;margin-bottom:7px}
+.kpi .val{font-size:26px;font-family:'Kanit';font-weight:600;color:var(--navy);line-height:1.1}
+.kpi .unit{font-size:14px;color:var(--muted);font-weight:400}
+.kpi .meta{font-size:12px;color:var(--muted);margin-top:5px}
+
+.panel{background:var(--white);border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:22px}
+.panel h2{font-size:17px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.panel .desc{font-size:13px;color:var(--muted);margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.chart-box{position:relative;height:300px}
+
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead th{background:var(--navy);color:var(--cream);padding:12px 14px;text-align:left;font-family:'Kanit';font-weight:500;font-size:13px;white-space:nowrap;cursor:pointer}
+thead th.num{text-align:right}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--cream)}
+tbody tr:last-child td{border-bottom:none}
+.plate{font-family:'Kanit';font-weight:600;color:var(--navy)}
+.driver{font-size:12px;color:var(--muted)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Kanit'}
+.badge.ok{background:#e6f4ec;color:var(--green)}
+.badge.warn{background:#fbe9e7;color:var(--red)}
+.badge.unknown{background:#fdf3d8;color:#946c00}
+.badge.amount{background:#fde8d4;color:#b35900}
+.badge.t4{background:#e8eef7;color:var(--navy)}
+.badge.t6{background:#f2e9d8;color:#7a5a14}
+.eff-good{color:var(--green);font-weight:600}
+.eff-bad{color:var(--red);font-weight:600}
+.empty{text-align:center;padding:40px;color:var(--muted);font-family:'Kanit'}
+.loading{text-align:center;padding:60px;color:var(--muted);font-family:'Kanit';font-size:16px}
+.spin{display:inline-block;width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle;margin-right:10px}
+@keyframes s{to{transform:rotate(360deg)}}
+
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:540px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi .val{font-size:22px}.ffield select,.ffield input{min-width:110px}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">⛽</div>
+    <h2 class="kanit">แดชบอร์ดน้ำมัน</h2>
+    <p>The Built Fleet · ใส่ PIN เพื่อเข้าใช้งาน</p>
+    <input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <button onclick="checkPin()">เข้าสู่ระบบ</button>
+    <div class="gate-err" id="pinErr"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <div class="brand">
+    <div class="logo">⛽</div>
+    <div>
+      <h1>แดชบอร์ดน้ำมัน</h1>
+      <div class="sub">The Built Fleet · ระบบวิเคราะห์การเติมน้ำมันรถ</div>
+    </div>
+  </div>
+  <button class="refresh" onclick="loadData()">🔄 รีเฟรชข้อมูล</button>
+</header>
+
+<div class="wrap">
+  <div class="filters">
+    <div class="preset-row">
+      <button class="preset active" data-range="thismonth" onclick="setPreset(this)">เดือนนี้</button>
+      <button class="preset" data-range="lastmonth" onclick="setPreset(this)">เดือนที่แล้ว</button>
+      <button class="preset" data-range="all" onclick="setPreset(this)">ทั้งหมด</button>
+    </div>
+    <div class="ffield"><label>จากวันที่</label><input type="date" id="dateFrom" onchange="clearPreset();applyFilter()"></div>
+    <div class="ffield"><label>ถึงวันที่</label><input type="date" id="dateTo" onchange="clearPreset();applyFilter()"></div>
+    <div class="ffield"><label>ประเภทรถ</label>
+      <select id="typeFilter" onchange="applyFilter()">
+        <option value="">— ทุกประเภท —</option>
+        <option value="4ล้อ">รถ 4 ล้อ</option>
+        <option value="6ล้อ">รถ 6 ล้อ</option>
+      </select>
+    </div>
+    <div class="ffield"><label>จังหวัด</label>
+      <select id="branchFilter" onchange="applyFilter()"><option value="">— ทุกจังหวัด —</option></select>
+    </div>
+    <div class="ffield"><label>เลือกรถ</label>
+      <select id="plateFilter" onchange="applyFilter()"><option value="">— รถทุกคัน —</option></select>
+    </div>
+  </div>
+
+  <div id="alertBar" style="display:none;background:#fde8d4;border:1px solid #f0c89a;border-radius:12px;padding:13px 18px;margin-bottom:18px;color:#b35900;font-family:'Kanit';font-size:14px"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">ค่าน้ำมันรวม</div><div class="val" id="kTotal">—</div><div class="meta">บาท</div></div>
+    <div class="kpi"><div class="label">จำนวนครั้งที่เติม</div><div class="val" id="kCount">—</div><div class="meta">ครั้ง</div></div>
+    <div class="kpi"><div class="label">รถที่เติม</div><div class="val" id="kVehicles">—</div><div class="meta">คัน</div></div>
+    <div class="kpi"><div class="label">อัตราสิ้นเปลืองเฉลี่ย</div><div class="val" id="kEff">—</div><div class="meta">กม./ลิตร</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>ค่าน้ำมันรายคัน</h2>
+    <div class="desc">เปรียบเทียบยอดเงินค่าน้ำมันของรถแต่ละคันในช่วงที่เลือก</div>
+    <div class="chart-box"><canvas id="chartByVehicle"></canvas></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>อัตราสิ้นเปลืองรายคัน</h2>
+      <div class="desc">กม./ลิตร — เขียว=ประหยัด แดง=กินน้ำมัน</div>
+      <div class="chart-box"><canvas id="chartEff"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>ค่าน้ำมันรายวัน</h2>
+      <div class="desc">แนวโน้มค่าใช้จ่ายตามวันที่</div>
+      <div class="chart-box"><canvas id="chartDaily"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>สรุปรายคัน</h2>
+    <div class="desc">รวมยอดและเฉลี่ยของรถแต่ละคัน · คลิกหัวข้อเพื่อเรียงลำดับ</div>
+    <div class="tbl-wrap">
+      <table id="summaryTable">
+        <thead><tr>
+          <th data-k="plate">ทะเบียน / คนขับ</th>
+          <th data-k="type">ประเภท</th>
+          <th class="num" data-k="count">ครั้ง</th>
+          <th class="num" data-k="total">รวมเงิน (บาท)</th>
+          <th class="num" data-k="liters">รวมลิตร</th>
+          <th class="num" data-k="dist">ระยะทาง (กม.)</th>
+          <th class="num" data-k="eff">เฉลี่ย กม./ล.</th>
+          <th class="num" data-k="cpk">บาท/กม.</th>
+        </tr></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>รายการเติมน้ำมันทั้งหมด</h2>
+    <div class="desc">บันทึกทุกครั้งที่เติม เรียงจากใหม่ไปเก่า</div>
+    <div class="tbl-wrap">
+      <table id="logTable">
+        <thead><tr>
+          <th>วันที่</th><th>ทะเบียน / คนขับ</th><th>ชนิด</th>
+          <th class="num">ลิตร</th><th class="num">เงิน</th><th class="num">เลขไมล์</th>
+          <th class="num">กม./ล.</th><th>ผู้แจ้ง</th><th>สถานะ</th>
+        </tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="loadArea"></div>
+</div>
+</div>
+
+<script>
+// ============================================================
+//  ⚙️ ตั้งค่า — แก้ให้ตรงกับ project kpn-inbox
+// ============================================================
+const SUPABASE_URL = "https://kgjymqajwkhymqcofkhn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE";
+const DASHBOARD_PIN = "1234";   // ⬅️ เปลี่ยน PIN ตรงนี้
+// ============================================================
+
+let allRows = [];      // logs
+let vehicleMap = {};   // license_plate -> {type, nickname, branch}
+let charts = {};
+
+if (sessionStorage.getItem("fuel_auth") === "ok") showApp();
+function checkPin(){
+  if (document.getElementById("pinInput").value === DASHBOARD_PIN){
+    sessionStorage.setItem("fuel_auth","ok"); showApp();
+  } else {
+    document.getElementById("pinErr").textContent = "PIN ไม่ถูกต้อง ลองอีกครั้ง";
+    document.getElementById("pinInput").value = "";
+  }
+}
+document.getElementById("pinInput").addEventListener("keydown",e=>{ if(e.key==="Enter") checkPin(); });
+function showApp(){
+  document.getElementById("gate").style.display="none";
+  document.getElementById("app").style.display="block";
+  loadData();
+}
+
+async function sbFetch(path){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`,
+    { headers:{ apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}` } });
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+async function loadData(){
+  document.getElementById("loadArea").innerHTML =
+    '<div class="loading"><span class="spin"></span>กำลังโหลดข้อมูล...</div>';
+  try{
+    const [logs, vehicles] = await Promise.all([
+      sbFetch("vehicle_fuel_logs?select=*&order=fueled_at.desc"),
+      sbFetch("vehicles?select=*")
+    ]);
+    allRows = logs;
+    vehicleMap = {};
+    vehicles.forEach(v=>{ vehicleMap[v.license_plate]={type:v.vehicle_type,nickname:v.nickname,branch:v.branch}; });
+    document.getElementById("loadArea").innerHTML = "";
+    buildFilterOptions(vehicles);
+    applyFilter();
+  }catch(e){
+    document.getElementById("loadArea").innerHTML =
+      `<div class="loading" style="color:var(--red)">❌ โหลดข้อมูลไม่สำเร็จ: ${e.message}<br><span style="font-size:13px">ตรวจสอบ ANON KEY ในไฟล์ หรือ RLS ของตาราง</span></div>`;
+  }
+}
+
+function vinfo(plate){ return vehicleMap[plate] || {type:"",nickname:"",branch:""}; }
+
+function buildFilterOptions(vehicles){
+  const plates=vehicles.map(v=>v.license_plate).sort();
+  document.getElementById("plateFilter").innerHTML='<option value="">— รถทุกคัน —</option>'+
+    plates.map(p=>{const v=vehicleMap[p];return `<option value="${p}">${p}${v.nickname?" · "+v.nickname:""}</option>`;}).join("");
+  const branches=[...new Set(vehicles.map(v=>v.branch).filter(Boolean))].sort();
+  document.getElementById("branchFilter").innerHTML='<option value="">— ทุกจังหวัด —</option>'+
+    branches.map(b=>`<option value="${b}">${b}</option>`).join("");
+}
+
+function setPreset(btn){
+  document.querySelectorAll(".preset").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("dateFrom").value=""; document.getElementById("dateTo").value="";
+  applyFilter();
+}
+function clearPreset(){ document.querySelectorAll(".preset").forEach(b=>b.classList.remove("active")); }
+
+function getDateRange(){
+  const fromI=document.getElementById("dateFrom").value, toI=document.getElementById("dateTo").value;
+  if(fromI||toI) return { from:fromI?new Date(fromI+"T00:00:00"):null, to:toI?new Date(toI+"T23:59:59"):null };
+  const active=document.querySelector(".preset.active");
+  const range=active?active.dataset.range:"thismonth";
+  const now=new Date();
+  if(range==="thismonth") return { from:new Date(now.getFullYear(),now.getMonth(),1), to:new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59) };
+  if(range==="lastmonth") return { from:new Date(now.getFullYear(),now.getMonth()-1,1), to:new Date(now.getFullYear(),now.getMonth(),0,23,59,59) };
+  return { from:null, to:null };
+}
+
+function applyFilter(){
+  const {from,to}=getDateRange();
+  const plate=document.getElementById("plateFilter").value;
+  const type=document.getElementById("typeFilter").value;
+  const branch=document.getElementById("branchFilter").value;
+  let rows=allRows.filter(r=>{
+    const d=r.fueled_at?new Date(r.fueled_at):null;
+    if(from&&(!d||d<from))return false;
+    if(to&&(!d||d>to))return false;
+    if(plate&&r.license_plate!==plate)return false;
+    const v=vinfo(r.license_plate);
+    if(type&&v.type!==type)return false;
+    if(branch&&v.branch!==branch)return false;
+    return true;
+  });
+  renderKPIs(rows); renderCharts(rows); renderSummary(rows); renderLog(rows); renderAlert(rows);
+}
+
+function renderAlert(rows){
+  const mismatch=rows.filter(r=>r.status==='amount_mismatch').length;
+  const unknown=rows.filter(r=>r.status==='unknown_plate').length;
+  const bar=document.getElementById("alertBar");
+  const parts=[];
+  if(mismatch)parts.push(`💰 ยอดเงินน่าสงสัย ${mismatch} ใบ`);
+  if(unknown)parts.push(`🚫 ทะเบียนไม่ตรง ${unknown} ใบ`);
+  if(parts.length){
+    bar.style.display="block";
+    bar.innerHTML=`⚠️ มีรายการที่ควรตรวจสอบ — ${parts.join(" · ")} (ดูในตารางด้านล่าง)`;
+  } else {
+    bar.style.display="none";
+  }
+}
+
+function fmt(n,d=0){ return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+function renderKPIs(rows){
+  const total=rows.reduce((s,r)=>s+Number(r.total_amount||0),0);
+  const vehicles=new Set(rows.map(r=>r.license_plate)).size;
+  const effRows=rows.filter(r=>r.km_per_liter>0);
+  const avgEff=effRows.length? effRows.reduce((s,r)=>s+Number(r.km_per_liter),0)/effRows.length : 0;
+  document.getElementById("kTotal").innerHTML=fmt(total)+' <span class="unit">บาท</span>';
+  document.getElementById("kCount").innerHTML=fmt(rows.length)+' <span class="unit">ครั้ง</span>';
+  document.getElementById("kVehicles").innerHTML=fmt(vehicles)+' <span class="unit">คัน</span>';
+  document.getElementById("kEff").innerHTML=avgEff?fmt(avgEff,2)+' <span class="unit">กม./ล.</span>':'—';
+}
+
+function groupBy(rows,key,valFn){const m={};rows.forEach(r=>{const k=r[key];if(!k)return;m[k]=(m[k]||0)+valFn(r);});return m;}
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function labelOf(plate){const v=vinfo(plate);return v.nickname?`${plate}\n${v.nickname}`:plate;}
+
+function renderCharts(rows){
+  const byV=groupBy(rows,"license_plate",r=>Number(r.total_amount||0));
+  const vEntries=Object.entries(byV).sort((a,b)=>b[1]-a[1]);
+  destroyChart("byVehicle");
+  charts.byVehicle=new Chart(document.getElementById("chartByVehicle"),{
+    type:"bar",
+    data:{ labels:vEntries.map(e=>labelOf(e[0])),
+      datasets:[{ label:"ค่าน้ำมัน (บาท)", data:vEntries.map(e=>e[1]), backgroundColor:"#13294b", borderRadius:5 }] },
+    options:chartOpts("บาท")
+  });
+
+  const effSum={},effCnt={};
+  rows.filter(r=>r.km_per_liter>0).forEach(r=>{
+    effSum[r.license_plate]=(effSum[r.license_plate]||0)+Number(r.km_per_liter);
+    effCnt[r.license_plate]=(effCnt[r.license_plate]||0)+1;
+  });
+  const effEntries=Object.keys(effSum).map(p=>[p,effSum[p]/effCnt[p]]).sort((a,b)=>b[1]-a[1]);
+  destroyChart("eff");
+  charts.eff=new Chart(document.getElementById("chartEff"),{
+    type:"bar",
+    data:{ labels:effEntries.map(e=>labelOf(e[0])),
+      datasets:[{ label:"กม./ลิตร", data:effEntries.map(e=>e[1].toFixed(2)),
+        backgroundColor:effEntries.map(e=>e[1]>=8?"#1d7a52":"#c0392b"), borderRadius:5 }] },
+    options:chartOpts("กม./ล.")
+  });
+
+  const byDay={};
+  rows.forEach(r=>{ if(!r.fueled_at)return; const d=r.fueled_at.slice(0,10); byDay[d]=(byDay[d]||0)+Number(r.total_amount||0); });
+  const dayEntries=Object.entries(byDay).sort((a,b)=>a[0].localeCompare(b[0]));
+  destroyChart("daily");
+  charts.daily=new Chart(document.getElementById("chartDaily"),{
+    type:"line",
+    data:{ labels:dayEntries.map(e=>e[0].slice(5)),
+      datasets:[{ label:"ค่าน้ำมัน (บาท)", data:dayEntries.map(e=>e[1]),
+        borderColor:"#c8a24a", backgroundColor:"rgba(200,162,74,.15)", fill:true, tension:.3, pointRadius:4, pointBackgroundColor:"#13294b" }] },
+    options:chartOpts("บาท")
+  });
+}
+function chartOpts(unit){
+  return { responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ${Number(c.raw).toLocaleString()} ${unit}` } } },
+    scales:{ y:{ beginAtZero:true, ticks:{font:{family:'Sarabun'}} }, x:{ ticks:{font:{family:'Sarabun',size:11},maxRotation:0} } } };
+}
+
+let sortKey="total", sortDir=-1;
+function renderSummary(rows){
+  const m={};
+  rows.forEach(r=>{
+    const p=r.license_plate; if(!p)return;
+    if(!m[p])m[p]={plate:p,count:0,total:0,liters:0,dist:0,effSum:0,effCnt:0,cpkSum:0,cpkCnt:0};
+    const o=m[p];
+    o.count++; o.total+=Number(r.total_amount||0); o.liters+=Number(r.liters||0); o.dist+=Number(r.distance_km||0);
+    if(r.km_per_liter>0){o.effSum+=Number(r.km_per_liter);o.effCnt++;}
+    if(r.cost_per_km>0){o.cpkSum+=Number(r.cost_per_km);o.cpkCnt++;}
+  });
+  let arr=Object.values(m).map(o=>({...o,avgEff:o.effCnt?o.effSum/o.effCnt:0,avgCpk:o.cpkCnt?o.cpkSum/o.cpkCnt:0,type:vinfo(o.plate).type}));
+  const keyMap={plate:"plate",type:"type",count:"count",total:"total",liters:"liters",dist:"dist",eff:"avgEff",cpk:"avgCpk"};
+  arr.sort((a,b)=>{
+    const k=keyMap[sortKey];
+    if(k==="plate"||k==="type")return sortDir*String(a[k]||"").localeCompare(String(b[k]||""));
+    return sortDir*((a[k]||0)-(b[k]||0));
+  });
+  const body=document.getElementById("summaryBody");
+  if(!arr.length){ body.innerHTML='<tr><td colspan="8" class="empty">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>'; return; }
+  body.innerHTML=arr.map(o=>{
+    const v=vinfo(o.plate);
+    const tb=v.type==="6ล้อ"?'<span class="badge t6">6 ล้อ</span>':v.type==="4ล้อ"?'<span class="badge t4">4 ล้อ</span>':'—';
+    return `<tr>
+      <td><div class="plate">${o.plate}</div><div class="driver">${v.nickname||""}${v.branch?" · "+v.branch:""}</div></td>
+      <td>${tb}</td>
+      <td class="num">${o.count}</td>
+      <td class="num">${fmt(o.total)}</td>
+      <td class="num">${fmt(o.liters,2)}</td>
+      <td class="num">${o.dist?fmt(o.dist):'—'}</td>
+      <td class="num ${o.avgEff?(o.avgEff>=8?'eff-good':'eff-bad'):''}">${o.avgEff?fmt(o.avgEff,2):'—'}</td>
+      <td class="num">${o.avgCpk?fmt(o.avgCpk,2):'—'}</td>
+    </tr>`;
+  }).join("");
+}
+document.querySelectorAll("#summaryTable thead th").forEach(th=>{
+  th.onclick=()=>{ const k=th.dataset.k; if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} applyFilter(); };
+});
+
+function renderLog(rows){
+  const body=document.getElementById("logBody");
+  if(!rows.length){ body.innerHTML='<tr><td colspan="9" class="empty">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>'; return; }
+  body.innerHTML=rows.map(r=>{
+    const d=r.fueled_at?new Date(r.fueled_at):null;
+    const ds=d?d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'—';
+    const v=vinfo(r.license_plate);
+    let badge='<span class="badge ok">บันทึกแล้ว</span>';
+    if(r.status==='no_odometer')badge='<span class="badge warn">ไม่มีเลขไมล์</span>';
+    if(r.status==='unknown_plate')badge='<span class="badge unknown">ทะเบียนไม่ตรง</span>';
+    if(r.status==='amount_mismatch')badge='<span class="badge amount">ยอดเงินน่าสงสัย</span>';
+    return `<tr>
+      <td>${ds}</td>
+      <td><div class="plate">${r.license_plate||'—'}</div><div class="driver">${v.nickname||""}</div></td>
+      <td>${r.fuel_type||'—'}</td>
+      <td class="num">${r.liters?fmt(r.liters,2):'—'}</td>
+      <td class="num">${fmt(r.total_amount)}</td>
+      <td class="num">${r.odometer_km?fmt(r.odometer_km):'—'}</td>
+      <td class="num">${r.km_per_liter?fmt(r.km_per_liter,2):'—'}</td>
+      <td>${r.telegram_user||'—'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join("");
+}
+</script>
+</body>
+</html>
