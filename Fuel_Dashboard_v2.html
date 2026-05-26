@@ -160,6 +160,7 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 
   <div class="page active" id="pageFuel">
+  <div id="dueAlertFuel" style="display:none;background:#fbe9e7;border:1px solid #f0c0bb;border-radius:12px;padding:14px 18px;margin-bottom:20px;color:#b3261e;font-family:'Kanit';font-size:14px;cursor:pointer" onclick="switchPage('maint')"></div>
   <div class="filters">
     <div class="preset-row">
       <button class="preset active" data-range="thismonth" onclick="setPreset(this)">เดือนนี้</button>
@@ -711,26 +712,65 @@ function renderMaint(){
 function renderDueAlert(){
   const today=new Date(); today.setHours(0,0,0,0);
   const soon=[];
+
+  // หาเลขไมล์ล่าสุดของรถแต่ละคัน จากตารางน้ำมัน
+  const latestOdo={};
+  allRows.forEach(r=>{
+    if(!r.odometer_km) return;
+    const p=r.license_plate;
+    if(!latestOdo[p] || Number(r.odometer_km)>latestOdo[p]) latestOdo[p]=Number(r.odometer_km);
+  });
+
   maintRows.forEach(m=>{
-    if(!m.due_date) return;
-    const due=new Date(m.due_date); due.setHours(0,0,0,0);
-    const days=Math.round((due-today)/86400000);
-    if(days<=30){
-      const v=vinfo(m.license_plate);
-      soon.push({plate:m.license_plate, nick:v.nickname, cat:m.category, days, due});
+    const v=vinfo(m.license_plate);
+    // แบบที่ 1: เตือนตามวันที่
+    if(m.due_date){
+      const due=new Date(m.due_date); due.setHours(0,0,0,0);
+      const days=Math.round((due-today)/86400000);
+      if(days<=30){
+        soon.push({type:'date', plate:m.license_plate, nick:v.nickname, cat:m.category, days, due});
+      }
+    }
+    // แบบที่ 2: เตือนตามเลขไมล์ (เหลือ ≤ 1,500 กม.)
+    if(m.due_odometer){
+      const cur=latestOdo[m.license_plate];
+      if(cur){
+        const remain=Number(m.due_odometer)-cur;
+        if(remain<=1500){  // ใกล้ถึงหรือเลยแล้ว
+          soon.push({type:'odo', plate:m.license_plate, nick:v.nickname, cat:m.category, remain, dueOdo:Number(m.due_odometer), cur});
+        }
+      }
     }
   });
+
   const bar=document.getElementById("dueAlert");
-  if(!soon.length){ bar.style.display="none"; return; }
-  soon.sort((a,b)=>a.days-b.days);
+  const barFuel=document.getElementById("dueAlertFuel");
+  if(!soon.length){ bar.style.display="none"; barFuel.style.display="none"; return; }
+
+  // เรียง: เลยกำหนดก่อน แล้วใกล้สุด
+  soon.sort((a,b)=>{
+    const av=a.type==='date'?a.days:(a.remain/10);
+    const bv=b.type==='date'?b.days:(b.remain/10);
+    return av-bv;
+  });
+
   const items=soon.map(s=>{
     const label=`${s.plate}${s.nick?" ("+s.nick+")":""} · ${s.cat}`;
-    if(s.days<0) return `🔴 ${label} — เลยกำหนด ${-s.days} วันแล้ว`;
-    if(s.days===0) return `🔴 ${label} — ครบกำหนดวันนี้`;
-    return `🟠 ${label} — อีก ${s.days} วัน`;
+    if(s.type==='date'){
+      if(s.days<0) return `🔴 ${label} — เลยกำหนด ${-s.days} วันแล้ว`;
+      if(s.days===0) return `🔴 ${label} — ครบกำหนดวันนี้`;
+      return `🟠 ${label} — อีก ${s.days} วัน`;
+    } else {
+      if(s.remain<=0) return `🔴 ${label} — เลยเลขไมล์ ${Math.abs(s.remain).toLocaleString()} กม. แล้ว (ตั้งไว้ ${s.dueOdo.toLocaleString()})`;
+      return `🟠 ${label} — อีก ~${s.remain.toLocaleString()} กม. (ปัจจุบัน ${s.cur.toLocaleString()} / ครบ ${s.dueOdo.toLocaleString()})`;
+    }
   });
+  const html=`<b>⏰ ใกล้ครบกำหนด (${soon.length} รายการ)</b><br>`+items.join("<br>");
   bar.style.display="block";
-  bar.innerHTML=`<b>⏰ ใกล้ครบกำหนด (${soon.length} รายการ)</b><br>`+items.join("<br>");
+  bar.innerHTML=html;
+  // แถบที่หน้าน้ำมัน เพิ่มข้อความให้กดดู
+  barFuel.style.display="block";
+  barFuel.innerHTML=html+`<br><span style="font-size:12px;text-decoration:underline">แตะเพื่อดูในแท็บซ่อมบำรุง</span>`;
 }
 
 </script>
