@@ -222,7 +222,7 @@ const TOKEN_KEY = 'gtasks_token';
 const TOKEN_EXP = 'gtasks_token_exp';
 const EVER_KEY  = 'gtasks_ever_connected';
 
-let tokenClient, accessToken = null;
+let tokenClient, accessToken = null, silentTimer = null;
 let taskLists = [], currentListId = null, showCompleted = false;
 
 /* ===== CLOCK ===== */
@@ -257,10 +257,11 @@ function initAuth(){
     client_id:CLIENT_ID,
     scope:SCOPES,
     callback:(resp)=>{
+      clearTimeout(silentTimer);
       if(resp.error){
-        // silent refresh (prompt:none) ล้มเหลว -> ให้ผู้ใช้กดเชื่อมต่อเอง
+        // silent refresh (prompt:none) ล้มเหลว -> ให้ผู้ใช้กดเชื่อมต่อเอง (ครั้งเดียว ไม่ต้อง consent ใหม่)
         if(resp.error==='interaction_required'||resp.error==='login_required'||resp.error==='consent_required'){
-          document.getElementById('statusTxt').textContent='ยังไม่ได้เชื่อมต่อ';
+          document.getElementById('statusTxt').textContent='เซสชันหมดอายุ — กดเชื่อมต่ออีกครั้ง';
           document.getElementById('loginBtn').style.display='';
           toast('กรุณากดเชื่อมต่ออีกครั้ง');
         }else{
@@ -288,13 +289,20 @@ function initAuth(){
   }else if(everConnected){
     // เคยเชื่อมต่อแล้ว แต่ token หมดอายุ -> ขอใหม่แบบเงียบ (ไม่ต้องกดอะไร)
     document.getElementById('statusTxt').textContent='กำลังเชื่อมต่อใหม่...';
+    // กันค้าง: ถ้าเงียบๆ ไม่สำเร็จใน 7 วินาที -> โชว์ปุ่มให้กดเชื่อมต่อเอง
+    silentTimer=setTimeout(()=>{
+      document.getElementById('statusTxt').textContent='เซสชันหมดอายุ — กดเชื่อมต่ออีกครั้ง';
+      document.getElementById('loginBtn').style.display='';
+    },7000);
     tokenClient.requestAccessToken({prompt:'none'});
   }
 }
 
 function signIn(){
   if(!tokenClient){toast('กำลังโหลด... ลองอีกครั้ง');return;}
-  tokenClient.requestAccessToken({prompt:accessToken?'':'consent'});
+  const everConnected=localStorage.getItem(EVER_KEY)==='1';
+  // เคยเชื่อมแล้ว -> ใช้สิทธิ์เดิม (prompt ว่าง = ไม่ต้องกด consent ใหม่ทุกครั้ง)
+  tokenClient.requestAccessToken({prompt: everConnected ? '' : 'consent'});
 }
 function signOut(){
   if(accessToken) google.accounts.oauth2.revoke(accessToken,()=>{});
