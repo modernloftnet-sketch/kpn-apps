@@ -88,6 +88,33 @@ tbody tr:last-child td{border-bottom:none}
 .badge.amount{background:#fde8d4;color:#b35900}
 .badge.t4{background:#e8eef7;color:var(--navy)}
 .badge.t6{background:#f2e9d8;color:#7a5a14}
+.badge.manual{background:#e8eef7;color:var(--navy)}
+/* ===== ปุ่มแก้ไข + Modal แก้ไขรายการ ===== */
+.edit-btn{margin-left:8px;border:1px solid var(--line);background:var(--white);border-radius:8px;padding:3px 8px;cursor:pointer;font-size:13px;font-family:'Kanit';color:var(--navy);transition:.15s;vertical-align:middle}
+.edit-btn:hover{background:var(--cream);border-color:var(--gold)}
+.overlay{position:fixed;inset:0;background:rgba(19,41,75,.55);display:none;align-items:center;justify-content:center;z-index:1100;padding:16px}
+.overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.modal-head{background:var(--navy);color:var(--cream);padding:16px 22px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0}
+.modal-head h3{font-weight:600;font-size:17px}
+.modal-head .x{background:transparent;border:none;color:var(--gold2);font-size:26px;cursor:pointer;line-height:1}
+.modal-body{padding:20px 22px}
+.modal-body .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.efield{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.efield label{font-size:13px;color:var(--muted);font-weight:600;font-family:'Kanit'}
+.efield input,.efield select{padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:'Sarabun';font-size:15px;background:var(--white)}
+.efield input:focus,.efield select:focus{outline:none;border-color:var(--gold)}
+.kml-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
+.kml-row .efield{flex:1;margin-bottom:0}
+.btn-recalc{padding:10px 12px;border:1.5px solid var(--line);background:var(--cream);border-radius:9px;font-family:'Kanit';font-size:13px;cursor:pointer;white-space:nowrap;color:var(--navy)}
+.btn-recalc:hover{border-color:var(--gold)}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.modal-msg{flex:1;font-size:13px;font-family:'Kanit'}
+.btn-cancel{padding:11px 20px;border:1.5px solid var(--line);background:var(--white);border-radius:10px;font-family:'Kanit';font-size:15px;cursor:pointer;color:var(--muted)}
+.btn-save{padding:11px 24px;border:none;background:var(--navy);color:var(--gold2);border-radius:10px;font-family:'Kanit';font-size:15px;font-weight:500;cursor:pointer}
+.btn-save:hover{background:var(--navy2)}
+.btn-save:disabled{opacity:.5;cursor:default}
+@media(max-width:520px){.modal-body .grid2{grid-template-columns:1fr}}
 .eff-good{color:var(--green);font-weight:600}
 .eff-bad{color:var(--red);font-weight:600}
 .empty{text-align:center;padding:40px;color:var(--muted);font-family:'Kanit'}
@@ -553,6 +580,7 @@ function renderLog(rows){
     if(r.status==='no_odometer')badge='<span class="badge warn">ไม่มีเลขไมล์</span>';
     if(r.status==='unknown_plate')badge='<span class="badge unknown">ทะเบียนไม่ตรง</span>';
     if(r.status==='amount_mismatch')badge='<span class="badge amount">ยอดเงินน่าสงสัย</span>';
+    if(r.status==='manual')badge='<span class="badge manual">✔️ แก้ไขแล้ว</span>';
     return `<tr>
       <td>${ds}</td>
       <td><div class="plate">${r.license_plate||'—'}</div><div class="driver">${v.nickname||""}</div></td>
@@ -562,7 +590,7 @@ function renderLog(rows){
       <td class="num">${r.odometer_km?fmt(r.odometer_km):'—'}</td>
       <td class="num">${r.km_per_liter?fmt(r.km_per_liter,2):'—'}</td>
       <td>${r.telegram_user||'—'}</td>
-      <td>${badge}</td>
+      <td>${badge}<button class="edit-btn" title="แก้ไขรายการ" onclick="openEdit('${r.id}')">✏️</button></td>
     </tr>`;
   }).join("");
 }
@@ -773,6 +801,185 @@ function renderDueAlert(){
   barFuel.innerHTML=html+`<br><span style="font-size:12px;text-decoration:underline">แตะเพื่อดูในแท็บซ่อมบำรุง</span>`;
 }
 
+</script>
+<!-- ===== Modal แก้ไขรายการเติมน้ำมัน ===== -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ แก้ไขรายการเติมน้ำมัน</h3>
+      <button class="x" onclick="closeEdit()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eId">
+      <div class="efield">
+        <label>วันที่ / เวลา</label>
+        <input type="datetime-local" id="eDate">
+      </div>
+      <div class="grid2">
+        <div class="efield">
+          <label>ทะเบียน</label>
+          <input type="text" id="ePlate" list="plateList" placeholder="เช่น งฉ-5729">
+          <datalist id="plateList"></datalist>
+        </div>
+        <div class="efield">
+          <label>ชนิดน้ำมัน</label>
+          <input type="text" id="eFuel" list="fuelList" placeholder="เช่น ดีเซล">
+          <datalist id="fuelList"></datalist>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="efield">
+          <label>ลิตร</label>
+          <input type="number" step="0.01" id="eLiters">
+        </div>
+        <div class="efield">
+          <label>เงิน (บาท)</label>
+          <input type="number" step="0.01" id="eAmount">
+        </div>
+      </div>
+      <div class="efield">
+        <label>เลขไมล์ (กม.)</label>
+        <input type="number" step="1" id="eOdo">
+      </div>
+      <div class="kml-row">
+        <div class="efield">
+          <label>กม./ลิตร</label>
+          <input type="number" step="0.01" id="eKml" placeholder="เว้นว่างได้">
+        </div>
+        <button class="btn-recalc" onclick="recalcKml()">↻ คำนวณจากเลขไมล์ก่อนหน้า</button>
+      </div>
+      <div class="grid2">
+        <div class="efield">
+          <label>ผู้แจ้ง</label>
+          <input type="text" id="eUser">
+        </div>
+        <div class="efield">
+          <label>สถานะ</label>
+          <select id="eStatus">
+            <option value="manual">✔️ แก้ไขแล้ว (ตรวจสอบโดยพนักงาน)</option>
+            <option value="ok">บันทึกแล้ว (ปกติ)</option>
+            <option value="no_odometer">ไม่มีเลขไมล์</option>
+            <option value="unknown_plate">ทะเบียนไม่ตรง</option>
+            <option value="amount_mismatch">ยอดเงินน่าสงสัย</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="modal-msg" id="eMsg"></span>
+      <button class="btn-cancel" onclick="closeEdit()">ยกเลิก</button>
+      <button class="btn-save" id="eSaveBtn" onclick="saveEdit()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  แก้ไขรายการเติมน้ำมัน (ให้พนักงานแก้รายการที่ AI อ่านผิด)
+// ============================================================
+let editOrigDate = "";   // เก็บค่าวันเวลาเดิม ไว้เช็คว่าถูกแก้ไหม (กันปัญหา timezone)
+
+function toLocalInput(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(isNaN(d)) return "";
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function openEdit(id){
+  const r = allRows.find(x => String(x.id) === String(id));
+  if(!r){ alert("ไม่พบรายการนี้ ลองรีเฟรชหน้า"); return; }
+
+  // เติมรายชื่อรถที่รู้จักใน datalist (ไว้เลือกเวลาแก้ทะเบียน)
+  const plates = [...new Set(vehiclesList.map(v=>v.license_plate))].sort();
+  document.getElementById("plateList").innerHTML =
+    plates.map(p=>{const v=vehicleMap[p]; return `<option value="${p}">${v&&v.nickname?v.nickname:""}</option>`;}).join("");
+  // เติมชนิดน้ำมันที่เคยมีในระบบ
+  const fuels = [...new Set(allRows.map(x=>x.fuel_type).filter(Boolean))].sort();
+  document.getElementById("fuelList").innerHTML = fuels.map(f=>`<option value="${f}"></option>`).join("");
+
+  document.getElementById("eId").value    = r.id;
+  editOrigDate = toLocalInput(r.fueled_at);
+  document.getElementById("eDate").value   = editOrigDate;
+  document.getElementById("ePlate").value  = r.license_plate || "";
+  document.getElementById("eFuel").value   = r.fuel_type || "";
+  document.getElementById("eLiters").value = (r.liters ?? "");
+  document.getElementById("eAmount").value = (r.total_amount ?? "");
+  document.getElementById("eOdo").value    = (r.odometer_km ?? "");
+  document.getElementById("eKml").value    = (r.km_per_liter ?? "");
+  document.getElementById("eUser").value   = r.telegram_user || "";
+  // คงสถานะเดิมไว้ให้เห็นว่ารายการนี้ถูก flag เรื่องอะไร แล้วพนักงานค่อยเปลี่ยนเป็น "แก้ไขแล้ว"
+  const known = ["manual","ok","no_odometer","unknown_plate","amount_mismatch"];
+  document.getElementById("eStatus").value = known.includes(r.status) ? r.status : "ok";
+
+  document.getElementById("eMsg").textContent = "";
+  document.getElementById("eSaveBtn").disabled = false;
+  document.getElementById("editOverlay").classList.add("show");
+}
+
+function closeEdit(){ document.getElementById("editOverlay").classList.remove("show"); }
+
+// คำนวณ กม./ลิตร จากการเติมครั้งก่อนของทะเบียนเดียวกัน
+function recalcKml(){
+  const msg = document.getElementById("eMsg");
+  const plate  = document.getElementById("ePlate").value.trim();
+  const odo    = parseFloat(document.getElementById("eOdo").value);
+  const liters = parseFloat(document.getElementById("eLiters").value);
+  const curId  = document.getElementById("eId").value;
+  const curDate= new Date(document.getElementById("eDate").value);
+  if(!plate || !odo || !liters){ msg.style.color="var(--red)"; msg.textContent="ต้องมีทะเบียน เลขไมล์ และลิตร ก่อนคำนวณ"; return; }
+  const prev = allRows
+    .filter(x => x.license_plate===plate && String(x.id)!==String(curId) && x.odometer_km>0 && x.fueled_at && new Date(x.fueled_at) < curDate)
+    .sort((a,b)=> new Date(b.fueled_at) - new Date(a.fueled_at))[0];
+  if(!prev){ msg.style.color="var(--muted)"; msg.textContent="ไม่พบการเติมครั้งก่อนของทะเบียนนี้ — กรอก กม./ลิตร เองได้"; return; }
+  const dist = odo - Number(prev.odometer_km);
+  if(dist<=0){ msg.style.color="var(--red)"; msg.textContent=`เลขไมล์น้อยกว่าครั้งก่อน (${fmt(prev.odometer_km)} กม.) — ตรวจสอบอีกครั้ง`; return; }
+  document.getElementById("eKml").value = (dist/liters).toFixed(2);
+  msg.style.color="var(--green)"; msg.textContent=`ครั้งก่อน ${fmt(prev.odometer_km)} กม. → วิ่ง ${fmt(dist)} กม.`;
+}
+
+async function saveEdit(){
+  const id  = document.getElementById("eId").value;
+  const msg = document.getElementById("eMsg");
+  const btn = document.getElementById("eSaveBtn");
+  const plate = document.getElementById("ePlate").value.trim();
+  if(!plate){ msg.style.color="var(--red)"; msg.textContent="⚠️ กรุณากรอกทะเบียน"; return; }
+
+  const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+  const body = {
+    license_plate: plate,
+    fuel_type:     document.getElementById("eFuel").value.trim() || null,
+    liters:        num(document.getElementById("eLiters").value),
+    total_amount:  num(document.getElementById("eAmount").value),
+    odometer_km:   num(document.getElementById("eOdo").value),
+    km_per_liter:  num(document.getElementById("eKml").value),
+    telegram_user: document.getElementById("eUser").value.trim() || null,
+    status:        document.getElementById("eStatus").value
+  };
+  // ส่ง fueled_at เฉพาะตอนที่แก้วันเวลาจริงๆ (กันค่าเวลาเพี้ยนจาก timezone)
+  const dnow = document.getElementById("eDate").value;
+  if(dnow && dnow !== editOrigDate){ body.fueled_at = new Date(dnow).toISOString(); }
+
+  msg.style.color="var(--muted)"; msg.textContent="กำลังบันทึก..."; btn.disabled=true;
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/vehicle_fuel_logs?id=eq.${id}`,{
+      method:"PATCH",
+      headers:{ apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type":"application/json", Prefer:"return=representation" },
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){ const t=await r.text(); throw new Error("HTTP "+r.status+" "+t); }
+    const updated = await r.json();
+    if(!updated || !updated.length) throw new Error("เซิร์ฟเวอร์ไม่ยืนยันการบันทึก (อาจติด RLS — ดูหมายเหตุท้ายข้อความ)");
+    msg.style.color="var(--green)"; msg.textContent="✅ บันทึกแล้ว";
+    allRows = await sbFetch("vehicle_fuel_logs?select=*&order=fueled_at.desc");
+    applyFilter();
+    setTimeout(closeEdit, 700);
+  }catch(e){
+    msg.style.color="var(--red)"; msg.textContent="❌ บันทึกไม่สำเร็จ: "+e.message; btn.disabled=false;
+  }
+}
 </script>
 </body>
 </html>
