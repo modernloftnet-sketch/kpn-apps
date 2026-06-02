@@ -1251,8 +1251,17 @@ document.addEventListener('click', e => {
 async function loadJobs() {
   setSyncStatus('syncing');
   try {
-    const data = await supa.get('cal_jobs', '?order=date,time');
-    jobs = data;
+    // ดึงทีละ 1000 แถว วนจนครบทุกแถว (กันเพดาน max-rows ของ Supabase)
+    let all = [];
+    let from = 0;
+    while (true) {
+      const batch = await supa.get('cal_jobs', `?order=date,time,id&limit=1000&offset=${from}`);
+      if (!batch.length) break;
+      all = all.concat(batch);
+      from += batch.length;
+      if (batch.length < 1000) break;   // หน้าสุดท้ายแล้ว
+    }
+    jobs = all;
     setSyncStatus('ok');
     renderCalendar();
     updateStats();
