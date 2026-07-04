@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อนุมัติบิลซื้อ — The Built In</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1a1a1a;--navy2:#2d2d2d;--gold:#f0c040;--gold2:#f5d47a;--cream:#faf7f2;--cream2:#f2ede4;--white:#fff;--gray:#8a8a9a;--lgray:#e8e8f0;--text:#1a1a2e;--green:#1a6b3c;--lgreen:#e8f5ee;--red:#8b1a1a;--lred:#fdf0f0;--amber:#8a5a00;--lamber:#fff6e0;--blue:#1a4b8b;--border:#d4cfc6;--shadow:0 4px 24px rgba(15,39,68,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);padding:20px;max-width:1200px;margin:0 auto;}
+.head{background:var(--navy);color:var(--white);border-radius:14px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.head .brand{color:var(--gold);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;}
+.head h1{font-size:20px;font-weight:700;margin-top:3px;}
+.head .cnt{background:var(--gold);color:var(--navy);font-weight:700;border-radius:20px;padding:6px 16px;font-size:14px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card h2{font-size:15px;color:var(--navy);font-weight:700;margin-bottom:14px;}
+.f label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:4px;}
+.f input,.f select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--cream);}
+.f input:focus,.f select:focus{outline:none;border-color:var(--gold);}
+.f.low input,.f.low select{background:var(--lamber);border-color:#e8c56a;}
+.btn{padding:10px 18px;border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-go{background:var(--gold);color:var(--navy);}.btn-go:hover{background:var(--gold2);}
+.btn-ok{background:var(--green);color:#fff;}
+.btn-no{background:#fff;color:var(--red);border:1px solid #e0b4b4;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.muted{font-size:12px;color:var(--gray);margin-top:8px;line-height:1.6;}
+.err{background:var(--lred);border:1px solid #e8b4b4;color:var(--red);border-radius:9px;padding:11px 14px;font-size:13px;margin-top:10px;}
+.ok{background:var(--lgreen);border:1px solid #a8d5bb;color:var(--green);border-radius:9px;padding:10px 14px;font-size:13px;}
+.hidden{display:none;}
+.review{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;}
+@media(max-width:820px){.review{grid-template-columns:1fr;}}
+.imgbox{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--cream2);min-height:200px;display:flex;align-items:center;justify-content:center;}
+.imgbox img{width:100%;height:auto;cursor:zoom-in;display:block;}
+.imgbox iframe{width:100%;height:520px;border:0;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pill{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.pill button{flex:1;padding:9px;border:none;background:var(--cream);font-family:inherit;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;}
+.pill button.paid.on{background:var(--green);color:#fff;}
+.pill button.unpaid.on{background:var(--amber);color:#fff;}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:6px;}
+.badge.ok{background:var(--lgreen);color:var(--green);}
+.badge.bad{background:var(--lred);color:var(--red);}
+.vwarn{background:var(--lred);border:1px solid #e8b4b4;color:var(--red);border-radius:8px;padding:8px 12px;font-size:13px;margin:10px 0;font-weight:600;}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;align-items:center;}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+.zoom img{max-width:95%;max-height:95%;}
+</style>
+</head>
+<body>
+
+<div id="pinGate" style="position:fixed;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;z-index:100;">
+  <div style="background:#fff;border-radius:16px;padding:34px 30px;width:320px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4);">
+    <div style="color:#f0c040;font-weight:700;font-size:12px;letter-spacing:2px;">THE BUILT IN · จัดซื้อ</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin:6px 0 18px;">🔒 อนุมัติบิลซื้อ</div>
+    <input id="pinInput" type="password" inputmode="numeric" placeholder="ใส่ PIN" onkeydown="if(event.key==='Enter')checkPin()"
+      style="width:100%;padding:12px;border:1px solid #d4cfc6;border-radius:10px;font-family:inherit;font-size:18px;text-align:center;letter-spacing:4px;background:#faf7f2;">
+    <div id="pinErr" style="color:#8b1a1a;font-size:13px;height:18px;margin:8px 0;"></div>
+    <button onclick="checkPin()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f0c040;color:#1a1a1a;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">เข้าสู่ระบบ</button>
+  </div>
+</div>
+<script>
+const PINS={'16012521':'Owner','123456':'Admin'};
+function checkPin(){
+  const v=document.getElementById('pinInput').value.trim();
+  if(PINS[v]){document.getElementById('pinGate').style.display='none';
+    if(typeof connect==='function')connect();
+  } else {document.getElementById('pinErr').textContent='PIN ไม่ถูกต้อง';document.getElementById('pinInput').value='';}
+}
+setTimeout(()=>{var e=document.getElementById('pinInput');if(e)e.focus();},100);
+</script>
+
+<div class="head">
+  <div><div class="brand">The Built In · จัดซื้อ</div><h1>🧾 อนุมัติบิลซื้อ (AI อ่านมาให้)</h1></div>
+  <div class="cnt hidden" id="cnt">0 ใบรอตรวจ</div>
+</div>
+
+<div class="card hidden" id="connCard">
+  <h2>🔌 เชื่อมต่อ</h2>
+  <div class="grid" style="margin-bottom:12px">
+    <div class="f"><label>kpn-inbox URL</label><input id="inUrl" value="https://kgjymqajwkhymqcofkhn.supabase.co"></div>
+    <div class="f"><label>kpn-inbox anon key (วางเอง)</label><input id="inKey" value="sb_publishable_jfL6yrLhd8ct8uiK7bRLpg_e2RDPO31"></div>
+    <div class="f"><label>kpn-house URL</label><input id="hoUrl" value="https://qybntzlfnrcownntzmir.supabase.co"></div>
+    <div class="f"><label>kpn-house key</label><input id="hoKey" value="sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4"></div>
+  </div>
+  <button class="btn btn-go" id="connBtn" onclick="connect()">โหลดบิลที่รอตรวจ</button>
+  <div class="muted">อ่านบิลจาก <b>purchase_inbox</b> (kpn-inbox, status=extracted) · เขียนเข้า <b>tb_purchases</b> (kpn-house) เมื่ออนุมัติ · AI ไม่เขียนเอง</div>
+  <div id="connErr"></div>
+</div>
+
+<div id="queue"></div>
+<div class="card hidden" id="emptyCard"><h2>✅ ไม่มีบิลรอตรวจ</h2><div class="muted">บิลใหม่จะโผล่มาที่นี่หลัง AI อ่านเสร็จ (ทุก 2 นาที) — กด "โหลดบิลที่รอตรวจ" อีกครั้งเพื่อรีเฟรช</div></div>
+
+<div class="zoom" id="zoom" onclick="this.style.display='none'"><img id="zoomImg"></div>
+
+<script>
+const CATS=["ไม้","ฟิตติ้ง","บรรจุภัณฑ์","สี","ค่างานเหล็ก","ค่าซ่อมบำรุงเครื่องจักร","ค่าซ่อมบำรุงรถยนต์","ค่าไฟฟ้า-ประปา-เน็ต","ค่าเช่าอาคาร","ค่าเช่ารถ","ค่าน้ำมันรถ","เงินเดือน-เบี้ยเลี้ยง-โอที","เงินเดือนผู้บริหาร","ค่าคอมฯ","ค่าโฆษณา","ภาษี-ประกันสังคม","ค่าทำบัญชี","ค่าขนส่ง","ดอกเบี้ย","ค่าระบบไอที","ลงทุน","อื่นๆ"];
+let IN={}, HO={}, ROWS=[];
+const fmt=n=>(n==null||n==='')?'':Number(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s==null?'':s).replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+try{const k=localStorage.getItem('purch_in_key');if(k)document.getElementById('inKey').value=k;}catch(e){}
+
+async function connect(){
+  IN={url:document.getElementById('inUrl').value.trim().replace(/\/$/,''),key:document.getElementById('inKey').value.trim()};
+  HO={url:document.getElementById('hoUrl').value.trim().replace(/\/$/,''),key:document.getElementById('hoKey').value.trim()};
+  const err=document.getElementById('connErr');err.innerHTML='';
+  if(!IN.key){err.innerHTML='<div class="err">กรุณาวาง anon key ของ kpn-inbox</div>';return;}
+  const btn=document.getElementById('connBtn');btn.disabled=true;btn.textContent='กำลังโหลด...';
+  try{
+    const rp=await fetch(`${IN.url}/rest/v1/purchase_inbox?status=eq.extracted&order=created_at.asc`,{headers:{apikey:IN.key,Authorization:`Bearer ${IN.key}`}});
+    if(!rp.ok)throw new Error(await rp.text());
+    ROWS=await rp.json();
+    try{localStorage.setItem('purch_in_key',IN.key);}catch(e){}
+    document.getElementById('connCard').classList.add('hidden');
+    render();
+  }catch(e){err.innerHTML=`<div class="err">โหลดไม่สำเร็จ: ${e.message}</div>`;btn.disabled=false;btn.textContent='โหลดบิลที่รอตรวจ';}
+}
+
+function conf(row,field){try{const c=row.ai_confidence||{};return c[field]!=null?c[field]:1;}catch(e){return 1;}}
+function lowCls(row,field){return conf(row,field)<0.85?'low':'';}
+
+function render(){
+  document.getElementById('cnt').classList.remove('hidden');
+  document.getElementById('cnt').textContent=ROWS.length+' ใบรอตรวจ';
+  const q=document.getElementById('queue');q.innerHTML='';
+  document.getElementById('emptyCard').classList.toggle('hidden',ROWS.length>0);
+  ROWS.forEach(row=>q.appendChild(cardEl(row)));
+}
+
+function cardEl(row){
+  const div=document.createElement('div');div.className='card';div.id='card_'+row.id;
+  const isPdf=row.file_type==='pdf';
+  const media=isPdf?`<iframe src="${row.file_url}"></iframe>`:`<img src="${row.file_url}" onclick="zoomImg('${row.file_url}')">`;
+  const catOpts=CATS.map(c=>`<option ${c===row.ai_cat?'selected':''}>${c}</option>`).join('');
+  const pay=row.ai_pay_status==='paid'?'paid':'unpaid';
+  div.innerHTML=`
+  <div class="review">
+    <div><div class="imgbox">${media}</div><div class="muted">ผู้แจ้ง: ${esc(row.tg_sender_name)||'-'} · ${(row.created_at||'').slice(0,16).replace('T',' ')}</div></div>
+    <div>
+      <div class="f ${lowCls(row,'supplier')}" style="margin-bottom:10px"><label>ผู้ขาย *</label><input id="s_${row.id}" value="${esc(row.ai_supplier)}"></div>
+      <div class="grid">
+        <div class="f"><label>เลขภาษีผู้ขาย</label><input id="t_${row.id}" value="${esc(row.ai_supplier_tax)}"></div>
+        <div class="f ${lowCls(row,'invoice_no')}"><label>เลขที่ใบกำกับ (อ้างอิง)</label><input id="r_${row.id}" value="${esc(row.ai_invoice_no)}"></div>
+        <div class="f ${lowCls(row,'date')}"><label>วันที่</label><input type="date" id="d_${row.id}" value="${esc(row.ai_date)}"></div>
+        <div class="f"><label>ครบกำหนดชำระ</label><input type="date" id="due_${row.id}" value="${esc(row.ai_due_date)}"></div>
+      </div>
+      <div class="f" style="margin-top:10px"><label>รายการ *</label><input id="ds_${row.id}" value="${esc(row.ai_description)}"></div>
+      <div class="grid" style="margin-top:10px">
+        <div class="f ${lowCls(row,'cat')}"><label>หมวดหมู่</label><select id="c_${row.id}">${catOpts}</select></div>
+        <div class="f ${lowCls(row,'amount')}"><label>ยอดรวมสุทธิ (บาท) *</label><input type="number" step="0.01" id="a_${row.id}" value="${row.ai_amount??''}" oninput="vchk('${row.id}')"></div>
+        <div class="f"><label>ยอดก่อน VAT</label><input type="number" step="0.01" id="sub_${row.id}" value="${row.ai_subtotal??''}" oninput="vchk('${row.id}')"></div>
+        <div class="f"><label>VAT</label><input type="number" step="0.01" id="v_${row.id}" value="${row.ai_vat??''}" oninput="vchk('${row.id}')"></div>
+      </div>
+      <div id="vw_${row.id}"></div>
+      <div class="f" style="margin-top:10px"><label>สถานะการจ่าย</label>
+        <div class="pill" id="pay_${row.id}">
+          <button class="paid ${pay==='paid'?'on':''}" onclick="setPay('${row.id}','paid')">✅ จ่ายแล้ว</button>
+          <button class="unpaid ${pay==='unpaid'?'on':''}" onclick="setPay('${row.id}','unpaid')">🕐 ยังไม่จ่าย (→ หนี้สิน)</button>
+        </div>
+      </div>
+      <div class="actions">
+        <span id="msg_${row.id}"></span>
+        <button class="btn btn-no" onclick="reject('${row.id}')">✕ ปฏิเสธ</button>
+        <button class="btn btn-ok" onclick="approve('${row.id}')">✓ อนุมัติเข้าบัญชี</button>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>vchk(row.id),0);
+  return div;
+}
+function zoomImg(u){document.getElementById('zoomImg').src=u;document.getElementById('zoom').style.display='flex';}
+const payState={};
+function setPay(id,v){payState[id]=v;const p=document.getElementById('pay_'+id);p.querySelector('.paid').classList.toggle('on',v==='paid');p.querySelector('.unpaid').classList.toggle('on',v==='unpaid');}
+function getPay(id,row){return payState[id]||row.ai_pay_status||'unpaid';}
+function vchk(id){
+  const sub=parseFloat(document.getElementById('sub_'+id).value)||0;
+  const vat=parseFloat(document.getElementById('v_'+id).value)||0;
+  const amt=parseFloat(document.getElementById('a_'+id).value)||0;
+  const box=document.getElementById('vw_'+id);
+  if(sub&&amt&&Math.abs((sub+vat)-amt)>1){box.innerHTML=`<div class="vwarn">⚠️ VAT ไม่ตรง: ${fmt(sub)} + ${fmt(vat)} = ${fmt(sub+vat)} ≠ ยอดรวม ${fmt(amt)} — ตรวจตัวเลขอีกครั้ง</div>`;}
+  else box.innerHTML='';
+}
+
+async function approve(id){
+  const row=ROWS.find(r=>r.id===id);
+  const g=x=>document.getElementById(x+'_'+id).value;
+  const supplier=g('s').trim(), description=g('ds').trim(), amount=+g('a');
+  const msg=document.getElementById('msg_'+id);msg.innerHTML='';
+  if(!supplier||!description||!amount){msg.innerHTML='<span style="color:var(--red)">กรอกผู้ขาย/รายการ/ยอดเงินให้ครบ</span>';return;}
+  const pay=getPay(id,row);
+  const obj={
+    id:'pur_'+Date.now()+'_'+Math.floor(Math.random()*999),
+    supplier, description,
+    cat:g('c'),
+    amount,
+    date:g('d')||null,
+    due_date: pay==='unpaid' ? (g('due')||null) : null,
+    status: pay,
+    paid_date: pay==='paid' ? (new Date().toISOString().slice(0,10)) : null,
+    ref:g('r'),
+    note:`เลขภาษีผู้ขาย ${g('t')||'-'} | ก่อน VAT ${g('sub')||'-'} | VAT ${g('v')||'-'} | นำเข้าจากบอทบิลซื้อ`,
+    photos:[row.file_url],
+  };
+  const btn=event.target;btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  try{
+    const rp=await fetch(`${HO.url}/rest/v1/tb_purchases`,{method:'POST',headers:{apikey:HO.key,Authorization:`Bearer ${HO.key}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify([obj])});
+    if(!rp.ok)throw new Error(await rp.text());
+    // mark inbox approved
+    await fetch(`${IN.url}/rest/v1/purchase_inbox?id=eq.${id}`,{method:'PATCH',headers:{apikey:IN.key,Authorization:`Bearer ${IN.key}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({status:'approved',linked_purchase_id:obj.id,approved_at:new Date().toISOString()})});
+    ROWS=ROWS.filter(r=>r.id!==id);
+    document.getElementById('card_'+id).outerHTML=`<div class="card"><div class="ok">✅ อนุมัติแล้ว: ${esc(supplier)} · ฿${fmt(amount)} · ${pay==='unpaid'?'เข้าหนี้สิน':'จ่ายแล้ว'} — เปิดแอปแล้วกดรีเฟรชดูที่บิลซื้อได้เลย</div></div>`;
+    document.getElementById('cnt').textContent=ROWS.length+' ใบรอตรวจ';
+    document.getElementById('emptyCard').classList.toggle('hidden',ROWS.length>0);
+  }catch(e){msg.innerHTML=`<span style="color:var(--red)">บันทึกไม่สำเร็จ: ${e.message}</span>`;btn.disabled=false;btn.textContent='✓ อนุมัติเข้าบัญชี';}
+}
+
+async function reject(id){
+  if(!confirm('ปฏิเสธบิลนี้? (จะไม่เขียนเข้าบัญชี)'))return;
+  try{
+    await fetch(`${IN.url}/rest/v1/purchase_inbox?id=eq.${id}`,{method:'PATCH',headers:{apikey:IN.key,Authorization:`Bearer ${IN.key}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({status:'rejected'})});
+    ROWS=ROWS.filter(r=>r.id!==id);
+    document.getElementById('card_'+id).remove();
+    document.getElementById('cnt').textContent=ROWS.length+' ใบรอตรวจ';
+    document.getElementById('emptyCard').classList.toggle('hidden',ROWS.length>0);
+  }catch(e){alert('ไม่สำเร็จ: '+e.message);}
+}
+</script>
+</body>
+</html>
