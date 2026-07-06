@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำขอสั่งซื้อสินค้า — The Built</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ CONFIG ============ */
+  :root{
+    --bg:#F5F6F8;
+    --surface:#FFFFFF;
+    --ink:#1B2430;
+    --muted:#697586;
+    --faint:#9AA4B2;
+    --line:#E7EAF0;
+    --line-soft:#F0F2F6;
+    --gold:#C6952E;
+    --gold-soft:#FBF3E0;
+
+    --pend:#C2721A;   --pend-bg:#FCF1E4;   --pend-line:#F0D9BC;
+    --order:#2563EB;  --order-bg:#EAF1FE;  --order-line:#CFE0FC;
+    --recv:#15925A;   --recv-bg:#E6F5EC;   --recv-line:#C4E8D3;
+
+    --shadow:0 1px 2px rgba(27,36,48,.04), 0 4px 16px rgba(27,36,48,.05);
+    --shadow-lg:0 8px 40px rgba(27,36,48,.16);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Sarabun',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  h1,h2,h3,.plex{font-family:'IBM Plex Sans Thai','Sarabun',sans-serif}
+
+  /* ============ LOGIN ============ */
+  #login{
+    position:fixed;inset:0;z-index:50;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,#F5F6F8 0%,#ECEEF3 100%);
+    padding:24px;
+  }
+  .login-card{
+    width:100%;max-width:360px;background:var(--surface);
+    border-radius:20px;padding:38px 32px 32px;box-shadow:var(--shadow-lg);
+    border:1px solid var(--line);
+  }
+  .brand-mark{
+    display:inline-flex;align-items:center;gap:9px;margin-bottom:26px;
+  }
+  .brand-dot{width:11px;height:11px;border-radius:3px;background:var(--gold);transform:rotate(45deg)}
+  .brand-mark span{font-family:'IBM Plex Sans Thai';font-weight:700;letter-spacing:.14em;font-size:.72rem;text-transform:uppercase;color:var(--muted)}
+  .login-card h1{font-size:1.42rem;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
+  .login-card p{color:var(--muted);font-size:.9rem;margin-bottom:26px}
+  .pin-label{font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:block}
+  #pin{
+    width:100%;padding:14px 16px;font-size:1.4rem;letter-spacing:.32em;text-align:center;
+    font-family:'IBM Plex Sans Thai';border:1.5px solid var(--line);border-radius:12px;
+    background:#FBFCFD;transition:.15s;color:var(--ink);
+  }
+  #pin:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 4px var(--gold-soft)}
+  .btn-primary{
+    width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;cursor:pointer;
+    background:var(--ink);color:#fff;font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.98rem;
+    transition:.15s;
+  }
+  .btn-primary:hover{background:#2b3949}
+  .btn-primary:active{transform:translateY(1px)}
+  .login-err{color:#C0392B;font-size:.85rem;margin-top:14px;text-align:center;min-height:20px}
+
+  /* ============ APP SHELL ============ */
+  #app{display:none;min-height:100vh;flex-direction:column}
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(255,255,255,.82);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  }
+  .head-inner{max-width:1120px;margin:0 auto;padding:15px 22px;display:flex;align-items:center;gap:16px}
+  .title-wrap{display:flex;align-items:center;gap:11px;min-width:0}
+  .title-wrap .brand-dot{width:13px;height:13px}
+  .head-title{font-family:'IBM Plex Sans Thai';font-weight:700;font-size:1.12rem;letter-spacing:-.01em;white-space:nowrap}
+  .head-sub{color:var(--faint);font-size:.75rem;font-weight:500}
+  .head-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .icon-btn{
+    display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--muted);font-family:'Sarabun';
+    font-size:.85rem;font-weight:600;transition:.14s;
+  }
+  .icon-btn:hover{border-color:#D3D9E2;color:var(--ink);background:#FBFCFD}
+  .icon-btn svg{width:15px;height:15px}
+  .who{font-size:.8rem;color:var(--faint);font-weight:500;padding-right:2px}
+
+  main{max-width:1120px;margin:0 auto;padding:26px 22px 60px;width:100%}
+
+  /* ============ PIPELINE STATS ============ */
+  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  .stat{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--faint)}
+  .stat.s-total::before{background:var(--ink)}
+  .stat.s-pend::before{background:var(--pend)}
+  .stat.s-order::before{background:var(--order)}
+  .stat.s-recv::before{background:var(--recv)}
+  .stat .n{font-family:'IBM Plex Sans Thai';font-weight:700;font-size:1.9rem;line-height:1;letter-spacing:-.02em}
+  .stat .l{font-size:.8rem;color:var(--muted);font-weight:500;margin-top:6px}
+
+  /* ============ TOOLBAR ============ */
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+  .tabs{display:flex;gap:4px;background:#EDF0F4;padding:4px;border-radius:11px}
+  .tab{
+    padding:8px 15px;border-radius:8px;cursor:pointer;font-size:.86rem;font-weight:600;
+    color:var(--muted);border:none;background:transparent;font-family:'IBM Plex Sans Thai';transition:.13s;white-space:nowrap;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(27,36,48,.1)}
+  .tab .cnt{color:var(--faint);font-weight:500;margin-left:3px}
+  .tab.active .cnt{color:var(--gold)}
+  .search{position:relative;margin-left:auto;flex:1;min-width:180px;max-width:280px}
+  .search input{
+    width:100%;padding:9px 13px 9px 34px;border:1px solid var(--line);border-radius:10px;
+    font-family:'Sarabun';font-size:.88rem;background:#fff;color:var(--ink);transition:.14s;
+  }
+  .search input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--faint)}
+
+  /* ============ LIST (ROWS) ============ */
+  #list{display:flex;flex-direction:column;gap:11px}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);border-left:3px solid var(--faint);transition:.16s;
+    display:flex;align-items:stretch;gap:16px;padding:15px 18px;
+  }
+  .card:hover{box-shadow:0 4px 20px rgba(27,36,48,.09)}
+  .card.st-pending{border-left-color:var(--pend)}
+  .card.st-ordered{border-left-color:var(--order)}
+  .card.st-received{border-left-color:var(--recv)}
+
+  .thumb{
+    width:58px;height:58px;flex-shrink:0;border-radius:9px;background:#EDF0F4;
+    background-size:cover;background-position:center;cursor:pointer;border:1px solid var(--line);
+    position:relative;transition:.14s;align-self:flex-start;
+  }
+  .thumb:hover{border-color:var(--gold)}
+  .thumb.empty{display:flex;align-items:center;justify-content:center;cursor:default}
+  .thumb.empty svg{width:22px;height:22px;color:var(--faint)}
+  .thumb .zoom{position:absolute;right:3px;bottom:3px;background:rgba(27,36,48,.72);border-radius:5px;padding:2px;display:flex}
+  .thumb .zoom svg{width:11px;height:11px;color:#fff}
+
+  .row-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+  .row-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+    font-size:.72rem;font-weight:600;font-family:'IBM Plex Sans Thai';flex-shrink:0;
+  }
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%}
+  .pill.pending{background:var(--pend-bg);color:var(--pend)}.pill.pending::before{background:var(--pend)}
+  .pill.ordered{background:var(--order-bg);color:var(--order)}.pill.ordered::before{background:var(--order)}
+  .pill.received{background:var(--recv-bg);color:var(--recv)}.pill.received::before{background:var(--recv)}
+  .prod{font-family:'IBM Plex Sans Thai';font-weight:600;font-size:1.04rem;letter-spacing:-.01em;line-height:1.3;word-break:break-word}
+  .shop{color:var(--muted);font-size:.85rem;font-weight:500}
+  .shop::before{content:"·";margin-right:7px;color:var(--faint)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{
+    display:inline-flex;align-items:baseline;gap:5px;font-size:.83rem;
+    background:#F4F6F9;border:1px solid var(--line-soft);border-radius:7px;padding:3px 9px;
+  }
+  .chip .k{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:600}
+  .chip .v{font-weight:500;color:var(--ink)}
+  .chip .v.price{font-family:'IBM Plex Sans Thai';font-weight:600;color:var(--gold)}
+  .row-note{font-size:.85rem;color:var(--muted)}
+  .row-note b{font-weight:600}
+  .stamp{font-size:.75rem;color:var(--faint);display:flex;align-items:center;gap:5px;margin-top:1px}
+  .stamp b{color:var(--muted);font-weight:600}
+
+  .row-actions{
+    flex-shrink:0;width:212px;display:flex;flex-direction:column;gap:9px;
+    padding-left:16px;border-left:1px solid var(--line-soft);justify-content:center;
+  }
+  .seg{display:flex;background:#EDF0F4;border-radius:9px;padding:3px;gap:3px}
+  .seg button{
+    flex:1;padding:8px 4px;border:none;background:transparent;border-radius:6px;cursor:pointer;
+    font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.76rem;color:var(--muted);transition:.13s;white-space:nowrap;
+  }
+  .seg button:hover{color:var(--ink)}
+  .seg button.on-pending{background:#fff;color:var(--pend);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg button.on-ordered{background:#fff;color:var(--order);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg button.on-received{background:#fff;color:var(--recv);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .date-wrap{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.76rem;color:var(--muted)}
+  .date-wrap input{
+    font-family:'Sarabun';font-size:.8rem;padding:5px 7px;border:1px solid var(--line);
+    border-radius:6px;color:var(--ink);background:#fff;flex:1;min-width:0;
+  }
+  .date-wrap input:focus{outline:none;border-color:var(--gold)}
+  .edit-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:7px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;
+    font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.78rem;color:var(--muted);transition:.14s;
+  }
+  .edit-btn svg{width:13px;height:13px}
+  .edit-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+  .act-btns{display:flex;gap:8px}
+  .act-btns .edit-btn{flex:1}
+  .del-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:7px 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;
+    color:var(--faint);transition:.14s;
+  }
+  .del-btn svg{width:15px;height:15px}
+  .del-btn:hover{border-color:#E4B4AE;color:#C0392B;background:#FCEBEA}
+  /* danger button (in confirm modal) */
+  .btn-danger{padding:11px 20px;border:none;background:#C0392B;color:#fff;border-radius:10px;cursor:pointer;font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.9rem}
+  .btn-danger:hover{background:#a83226}
+  .del-body{padding:22px 24px;font-size:.95rem;color:var(--muted);line-height:1.6}
+  .del-body b{color:var(--ink);font-weight:600}
+
+  /* ============ FILTER BAR ============ */
+  .filterbar{
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 14px;box-shadow:var(--shadow);
+  }
+  .fl-label{font-size:.78rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .fl-label svg{width:15px;height:15px;color:var(--faint)}
+  .filterbar select,.filterbar .date-in{
+    font-family:'Sarabun';font-size:.86rem;padding:7px 10px;border:1px solid var(--line);
+    border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;
+  }
+  .filterbar select:focus,.filterbar .date-in:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  .fl-sep{width:1px;height:22px;background:var(--line)}
+  .fl-to{color:var(--faint);font-size:.82rem}
+  .fl-clear{margin-left:auto;font-size:.82rem;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Sarabun';font-weight:600;padding:6px 9px;border-radius:7px;transition:.14s}
+  .fl-clear:hover{color:#C0392B;background:#FCEBEA}
+
+  /* ============ EDIT MODAL ============ */
+  .modal{
+    position:fixed;inset:0;z-index:60;background:rgba(20,26,34,.5);display:none;
+    align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px);
+  }
+  .modal-card{background:#fff;border-radius:18px;width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;animation:pop .18s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .modal-head{padding:20px 24px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .modal-head h3{font-family:'IBM Plex Sans Thai';font-size:1.12rem;font-weight:700}
+  .modal-head .x{cursor:pointer;color:var(--faint);font-size:1.5rem;line-height:1;font-family:sans-serif}
+  .modal-head .x:hover{color:var(--ink)}
+  .modal-body{padding:19px 24px;display:flex;flex-direction:column;gap:13px;max-height:66vh;overflow:auto}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:.78rem;font-weight:600;color:var(--muted)}
+  .fld input,.fld textarea{
+    font-family:'Sarabun';font-size:.92rem;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;background:#FBFCFD;color:var(--ink);transition:.14s;resize:vertical;
+  }
+  .fld input:focus,.fld textarea:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px var(--gold-soft)}
+  .modal-foot{padding:15px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .btn-ghost{padding:11px 18px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.9rem;color:var(--muted)}
+  .btn-ghost:hover{border-color:#D3D9E2;color:var(--ink)}
+  .btn-save{padding:11px 20px;border:none;background:var(--ink);color:#fff;border-radius:10px;cursor:pointer;font-family:'IBM Plex Sans Thai';font-weight:600;font-size:.9rem}
+  .btn-save:hover{background:#2b3949}
+
+  /* ============ STATES ============ */
+  .center-state{text-align:center;padding:70px 20px;color:var(--muted)}
+  .center-state .ico{width:52px;height:52px;margin:0 auto 16px;color:var(--faint)}
+  .center-state h3{font-weight:600;font-size:1.05rem;color:var(--ink);margin-bottom:5px}
+  .center-state p{font-size:.9rem}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .config-warn{background:#FEF6E7;border:1px solid #F5D98B;border-radius:12px;padding:16px 18px;margin-bottom:20px;font-size:.9rem;color:#8A6410}
+  .config-warn b{font-weight:700}
+  .config-warn code{background:#fff;padding:1px 6px;border-radius:5px;font-family:'IBM Plex Sans Thai';font-size:.85em;border:1px solid #F0DFA8}
+
+  /* ============ LIGHTBOX ============ */
+  #lightbox{
+    position:fixed;inset:0;z-index:60;background:rgba(20,26,34,.86);display:none;
+    align-items:center;justify-content:center;padding:30px;cursor:zoom-out;backdrop-filter:blur(3px);
+  }
+  #lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #lightbox .lb-close{position:absolute;top:20px;right:24px;color:#fff;font-size:1.8rem;cursor:pointer;opacity:.8;font-family:sans-serif}
+  #lightbox .lb-close:hover{opacity:1}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:.88rem;font-weight:500;
+    box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:70;font-family:'IBM Plex Sans Thai'}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:680px){
+    .pipeline{grid-template-columns:1fr 1fr}
+    .head-sub{display:none}
+    .card{flex-wrap:wrap}
+    .row-actions{width:100%;border-left:none;border-top:1px solid var(--line-soft);padding-left:0;padding-top:11px}
+    .search{max-width:none;order:3;width:100%;margin-left:0}
+    .tabs{width:100%;overflow-x:auto}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand-mark"><span class="brand-dot"></span><span>The Built · Procurement</span></div>
+    <h1>คำขอสั่งซื้อสินค้า</h1>
+    <p>ใส่รหัส PIN เพื่อเข้าจัดการรายการสั่งซื้อ</p>
+    <label class="pin-label" for="pin">รหัส PIN</label>
+    <input id="pin" type="password" inputmode="numeric" placeholder="••••••" autocomplete="off">
+    <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <header>
+    <div class="head-inner">
+      <div class="title-wrap">
+        <span class="brand-dot"></span>
+        <div>
+          <div class="head-title">คำขอสั่งซื้อสินค้า</div>
+          <div class="head-sub">The Built · ระบบติดตามการสั่งซื้อ</div>
+        </div>
+      </div>
+      <div class="head-actions">
+        <span class="who" id="who"></span>
+        <button class="icon-btn" onclick="loadData()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+          รีเฟรช
+        </button>
+        <button class="icon-btn" onclick="logout()">ออก</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="configWarn"></div>
+
+    <div class="pipeline">
+      <div class="stat s-total"><div class="n" id="cTotal">0</div><div class="l">ทั้งหมด</div></div>
+      <div class="stat s-pend"><div class="n" id="cPend">0</div><div class="l">รอดำเนินการ</div></div>
+      <div class="stat s-order"><div class="n" id="cOrder">0</div><div class="l">สั่งแล้ว</div></div>
+      <div class="stat s-recv"><div class="n" id="cRecv">0</div><div class="l">ของถึงแล้ว</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab active" data-f="all" onclick="setFilter('all',this)">ทั้งหมด <span class="cnt" id="tAll">0</span></button>
+        <button class="tab" data-f="pending" onclick="setFilter('pending',this)">รอดำเนินการ <span class="cnt" id="tPend">0</span></button>
+        <button class="tab" data-f="ordered" onclick="setFilter('ordered',this)">สั่งแล้ว <span class="cnt" id="tOrder">0</span></button>
+        <button class="tab" data-f="received" onclick="setFilter('received',this)">ของถึงแล้ว <span class="cnt" id="tRecv">0</span></button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" placeholder="ค้นหา สินค้า / ร้าน / ผู้สั่ง" oninput="render()">
+      </div>
+    </div>
+
+    <div class="filterbar">
+      <span class="fl-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        ช่วงเวลา
+      </span>
+      <select id="monthSel" onchange="onMonth(this.value)"><option value="">ทุกเดือน</option></select>
+      <span class="fl-sep"></span>
+      <input type="date" class="date-in" id="dFrom" onchange="onRange()" title="ตั้งแต่วันที่">
+      <span class="fl-to">ถึง</span>
+      <input type="date" class="date-in" id="dTo" onchange="onRange()" title="ถึงวันที่">
+      <button class="fl-clear" onclick="clearDates()">ล้างตัวกรอง</button>
+    </div>
+
+    <div id="list"></div>
+  </main>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal" id="editModal" onclick="if(event.target===this)closeEdit()">
+  <div class="modal-card">
+    <div class="modal-head"><h3>แก้ไขข้อมูลสั่งซื้อ</h3><span class="x" onclick="closeEdit()">×</span></div>
+    <div class="modal-body">
+      <div class="fld"><label>สินค้า</label><input id="eProduct" type="text"></div>
+      <div class="fld"><label>บริษัท / ร้าน</label><input id="eShop" type="text"></div>
+      <div class="fld"><label>ราคา</label><input id="ePrice" type="text" placeholder="เช่น 9,990 บาท หรือ รอราคาจากผู้ขาย"></div>
+      <div class="fld"><label>การชำระเงิน</label><input id="ePayment" type="text" placeholder="เงินสด / เครดิต"></div>
+      <div class="fld"><label>ผู้รับผิดชอบสั่งซื้อ</label><input id="eResp" type="text"></div>
+      <div class="fld"><label>หมายเหตุ</label><textarea id="eNote" rows="2"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeEdit()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveEdit()">บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE CONFIRM MODAL ===== -->
+<div class="modal" id="delModal" onclick="if(event.target===this)closeDelete()">
+  <div class="modal-card" style="max-width:400px">
+    <div class="modal-head"><h3>ลบรายการสั่งซื้อ</h3><span class="x" onclick="closeDelete()">×</span></div>
+    <div class="del-body">ต้องการลบรายการ <b id="delName">—</b> ออกถาวรใช่ไหม?<br>การลบนี้ไม่สามารถกู้คืนได้</div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeDelete()">ยกเลิก</button>
+      <button class="btn-danger" onclick="confirmDelete()">ลบรายการ</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="closeLb()"><span class="lb-close">×</span><img id="lbImg" src="" alt=""></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   ⚙️  ตั้งค่า — วาง anon key ของโปรเจกต์ kpn-inbox ตรงนี้
+   ========================================================= */
+const SUPABASE_URL = 'https://kgjymqajwkhymqcofkhn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE';   // ⬅️ แก้ตรงนี้
+
+const PINS = { '16012521':'Owner', '123456':'Admin' };
+/* ========================================================= */
+
+const STATUS = {
+  pending:  { label:'รอดำเนินการ', cls:'pending' },
+  ordered:  { label:'สั่งแล้ว',     cls:'ordered' },
+  received: { label:'ของถึงแล้ว',   cls:'received' },
+};
+
+let sb = null, rows = [], filter = 'all', role = '';
+let monthFilter = '', dateFrom = '', dateTo = '', editId = null;
+let monthOptions = [];
+const DEFAULT_LIMIT = 300;   // จำนวนรายการล่าสุดที่โหลดเมื่อไม่ได้กรองวันที่
+
+/* ---------- LOGIN ---------- */
+document.getElementById('pin').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+function doLogin(){
+  const v = document.getElementById('pin').value.trim();
+  if(PINS[v]){
+    role = PINS[v];
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('who').textContent = role;
+    initApp();
+  } else {
+    document.getElementById('loginErr').textContent = 'รหัส PIN ไม่ถูกต้อง';
+    document.getElementById('pin').value='';
+    document.getElementById('pin').focus();
+  }
+}
+function logout(){ location.reload(); }
+
+/* ---------- INIT ---------- */
+function initApp(){
+  if(SUPABASE_ANON_KEY === 'PASTE_YOUR_ANON_KEY_HERE'){
+    document.getElementById('configWarn').innerHTML =
+      '<div class="config-warn"><b>ยังไม่ได้ตั้งค่า key</b> — เปิดไฟล์นี้ด้วยโปรแกรมแก้ข้อความ แล้ววาง <code>anon key</code> ลงในตัวแปร <code>SUPABASE_ANON_KEY</code> (บรรทัดใกล้ๆ ท้ายไฟล์) จากนั้นเซฟและรีเฟรช</div>';
+    return;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  loadMonths();
+  loadData();
+  setInterval(loadData, 30000); // auto-refresh ทุก 30 วิ
+}
+
+/* ---------- LOAD ---------- */
+async function loadData(){
+  if(!sb) return;
+  if(rows.length===0) showLoading();
+
+  let query = sb.from('order_requests').select('*').order('created_at', { ascending:false });
+  const b = queryBounds();
+  if(b){                                    // กำลังกรองวันที่ → ดึงเฉพาะช่วงนั้น (ของเก่าครบ)
+    if(b.from) query = query.gte('created_at', b.from);
+    if(b.to)   query = query.lte('created_at', b.to);
+    query = query.limit(1000);
+  } else {                                  // ปกติ → 300 ล่าสุด
+    query = query.limit(DEFAULT_LIMIT);
+  }
+
+  const { data, error } = await query;
+  if(error){
+    document.getElementById('list').innerHTML =
+      `<div class="center-state" style="grid-column:1/-1">
+        <h3>โหลดข้อมูลไม่สำเร็จ</h3><p>${escapeHtml(error.message)}</p></div>`;
+    return;
+  }
+  rows = data || [];
+  mergeMonths(rows);
+  updateStats();
+  render();
+}
+
+/* ดึงรายชื่อเดือนทั้งหมด (แยกจากตัวรายการ เพื่อให้ dropdown ไม่หดเวลากรอง) */
+async function loadMonths(){
+  const { data } = await sb.from('order_requests')
+    .select('created_at').order('created_at', { ascending:false }).limit(1000);
+  if(data){
+    const s = new Set();
+    data.forEach(r=>{ if(r.created_at) s.add(r.created_at.slice(0,7)); });
+    monthOptions = [...s].sort().reverse();
+    renderMonthSelect();
+  }
+}
+
+/* ---------- DATE FILTER ---------- */
+// แปลงตัวกรองเป็นขอบเขตวันที่สำหรับ query (null = ไม่กรอง = โหลด 300 ล่าสุด)
+function queryBounds(){
+  if(monthFilter){
+    const [y,m] = monthFilter.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    return {
+      from: `${monthFilter}-01T00:00:00`,
+      to:   `${monthFilter}-${String(lastDay).padStart(2,'0')}T23:59:59`
+    };
+  }
+  if(dateFrom || dateTo){
+    return {
+      from: dateFrom ? dateFrom+'T00:00:00' : null,
+      to:   dateTo   ? dateTo+'T23:59:59'   : null
+    };
+  }
+  return null;
+}
+// กรองซ้ำฝั่ง client (กันพลาด) — ปกติ server กรองมาให้แล้ว
+function dateScoped(){
+  return rows.filter(r=>{
+    const d = (r.created_at||'').slice(0,10);
+    if(dateFrom && d < dateFrom) return false;
+    if(dateTo && d > dateTo) return false;
+    if(monthFilter && (r.created_at||'').slice(0,7) !== monthFilter) return false;
+    return true;
+  });
+}
+function mergeMonths(list){
+  let added = false;
+  list.forEach(r=>{
+    if(r.created_at){
+      const m = r.created_at.slice(0,7);
+      if(!monthOptions.includes(m)){ monthOptions.push(m); added = true; }
+    }
+  });
+  if(added){ monthOptions.sort().reverse(); renderMonthSelect(); }
+}
+function renderMonthSelect(){
+  const sel = document.getElementById('monthSel');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">ทุกเดือน</option>' +
+    monthOptions.map(m=>`<option value="${m}">${thMonth(m)}</option>`).join('');
+  sel.value = monthFilter;
+}
+function thMonth(ym){
+  const [y,m] = ym.split('-');
+  const names = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return names[+m-1] + ' ' + (+y + 543);
+}
+function onMonth(v){
+  monthFilter = v; dateFrom=''; dateTo='';
+  document.getElementById('dFrom').value=''; document.getElementById('dTo').value='';
+  loadData();                               // ยิงถามเฉพาะเดือนนั้น
+}
+function onRange(){
+  dateFrom = document.getElementById('dFrom').value;
+  dateTo   = document.getElementById('dTo').value;
+  if(dateFrom || dateTo){ monthFilter=''; document.getElementById('monthSel').value=''; }
+  loadData();                               // ยิงถามเฉพาะช่วงนั้น
+}
+function clearDates(){
+  monthFilter=''; dateFrom=''; dateTo='';
+  document.getElementById('monthSel').value='';
+  document.getElementById('dFrom').value=''; document.getElementById('dTo').value='';
+  loadData();                               // กลับไป 300 ล่าสุด
+}
+function showLoading(){
+  document.getElementById('list').innerHTML =
+    '<div class="center-state" style="grid-column:1/-1"><div class="spinner"></div><p>กำลังโหลดรายการ…</p></div>';
+}
+
+/* ---------- STATS ---------- */
+function updateStats(){
+  const scoped = dateScoped();
+  const c = {pending:0,ordered:0,received:0};
+  scoped.forEach(r=>{ c[r.status] = (c[r.status]||0)+1; });
+  document.getElementById('cTotal').textContent = scoped.length;
+  document.getElementById('cPend').textContent  = c.pending;
+  document.getElementById('cOrder').textContent = c.ordered;
+  document.getElementById('cRecv').textContent  = c.received;
+  document.getElementById('tAll').textContent   = scoped.length;
+  document.getElementById('tPend').textContent  = c.pending;
+  document.getElementById('tOrder').textContent = c.ordered;
+  document.getElementById('tRecv').textContent  = c.received;
+}
+
+/* ---------- FILTER / SEARCH ---------- */
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function render(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let items = dateScoped();
+  if(filter!=='all') items = items.filter(r=>r.status===filter);
+  if(q) items = items.filter(r=>{
+    return [r.product,r.shop,r.responsible,r.note,r.raw_text]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+
+  const list = document.getElementById('list');
+  if(items.length===0){
+    list.innerHTML = `<div class="center-state" style="grid-column:1/-1">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <h3>ยังไม่มีรายการ</h3><p>${q||filter!=='all'?'ไม่พบรายการที่ตรงกับเงื่อนไข':'เมื่อมีคนพิมพ์คำขอสั่งซื้อในกลุ่ม Telegram รายการจะแสดงที่นี่'}</p></div>`;
+    return;
+  }
+  list.innerHTML = items.map(cardHtml).join('');
+}
+
+/* ---------- CARD (ROW) ---------- */
+function cardHtml(r){
+  const st = STATUS[r.status] || STATUS.pending;
+  const thumb = r.image_url
+    ? `<div class="thumb" style="background-image:url('${r.image_url}')" onclick="openLb('${r.image_url}')">
+         <span class="zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m21 21-3-3M11 8v6M8 11h6"/></svg></span></div>`
+    : `<div class="thumb empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>`;
+
+  const chips = [];
+  if(r.price)       chips.push(`<span class="chip"><span class="k">ราคา</span><span class="v price">${escapeHtml(r.price)}</span></span>`);
+  if(r.payment)     chips.push(`<span class="chip"><span class="k">ชำระ</span><span class="v">${escapeHtml(r.payment)}</span></span>`);
+  if(r.responsible) chips.push(`<span class="chip"><span class="k">ผู้สั่ง</span><span class="v">${escapeHtml(r.responsible)}</span></span>`);
+  const chipsHtml = chips.length ? `<div class="chips">${chips.join('')}</div>` : '';
+
+  const dateBlock = (r.status==='ordered'||r.status==='received')
+    ? `<div class="date-wrap"><span>วันที่สั่ง</span><input type="date" value="${r.ordered_date||''}" onchange="setDate('${r.id}',this.value)"></div>`
+    : '';
+
+  return `<div class="card st-${r.status}">
+    ${thumb}
+    <div class="row-body">
+      <div class="row-head">
+        <span class="pill ${st.cls}">${st.label}</span>
+        <span class="prod">${escapeHtml(r.product||'(ไม่ระบุสินค้า)')}</span>
+        ${r.shop?`<span class="shop">${escapeHtml(r.shop)}</span>`:''}
+      </div>
+      ${chipsHtml}
+      ${r.note?`<div class="row-note"><b>หมายเหตุ:</b> ${escapeHtml(r.note)}</div>`:''}
+      <div class="stamp">📩 <b>${escapeHtml(r.tg_user_name||'—')}</b> · ${fmtTime(r.created_at)}</div>
+    </div>
+    <div class="row-actions">
+      <div class="seg">
+        <button class="${r.status==='pending'?'on-pending':''}"  onclick="setStatus('${r.id}','pending')">รอ</button>
+        <button class="${r.status==='ordered'?'on-ordered':''}"  onclick="setStatus('${r.id}','ordered')">สั่งแล้ว</button>
+        <button class="${r.status==='received'?'on-received':''}" onclick="setStatus('${r.id}','received')">ของถึง</button>
+      </div>
+      ${dateBlock}
+      <div class="act-btns">
+        <button class="edit-btn" onclick="openEdit('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          แก้ไขข้อมูล
+        </button>
+        <button class="del-btn" onclick="openDelete('${r.id}')" title="ลบรายการ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- ACTIONS ---------- */
+async function setStatus(id, status){
+  const row = rows.find(r=>r.id===id);
+  if(!row || row.status===status) return;
+  const patch = { status };
+  // ตั้งวันที่สั่งอัตโนมัติเมื่อเปลี่ยนเป็น "สั่งแล้ว" ครั้งแรก
+  if(status==='ordered' && !row.ordered_date){
+    patch.ordered_date = new Date().toISOString().slice(0,10);
+  }
+  row.status = status;
+  if(patch.ordered_date) row.ordered_date = patch.ordered_date;
+  updateStats(); render();
+  const { error } = await sb.from('order_requests').update(patch).eq('id', id);
+  if(error){ toast('บันทึกไม่สำเร็จ'); loadData(); }
+  else toast('อัปเดตเป็น “'+STATUS[status].label+'”');
+}
+async function setDate(id, val){
+  const row = rows.find(r=>r.id===id);
+  if(row) row.ordered_date = val;
+  const { error } = await sb.from('order_requests').update({ ordered_date: val||null }).eq('id', id);
+  toast(error?'บันทึกวันที่ไม่สำเร็จ':'บันทึกวันที่แล้ว');
+}
+
+/* ---------- EDIT ---------- */
+function openEdit(id){
+  const r = rows.find(x=>x.id===id);
+  if(!r) return;
+  editId = id;
+  document.getElementById('eProduct').value = r.product||'';
+  document.getElementById('eShop').value    = r.shop||'';
+  document.getElementById('ePrice').value   = r.price||'';
+  document.getElementById('ePayment').value = r.payment||'';
+  document.getElementById('eResp').value    = r.responsible||'';
+  document.getElementById('eNote').value    = r.note||'';
+  document.getElementById('editModal').style.display='flex';
+}
+function closeEdit(){ document.getElementById('editModal').style.display='none'; editId=null; }
+async function saveEdit(){
+  if(!editId) return;
+  const fv = id => { const v = document.getElementById(id).value.trim(); return v===''?null:v; };
+  const patch = {
+    product: fv('eProduct'), shop: fv('eShop'), price: fv('ePrice'),
+    payment: fv('ePayment'), responsible: fv('eResp'), note: fv('eNote'),
+    updated_at: new Date().toISOString()
+  };
+  const row = rows.find(x=>x.id===editId);
+  const savedId = editId;
+  if(row) Object.assign(row, patch);
+  closeEdit();
+  render();
+  const { error } = await sb.from('order_requests').update(patch).eq('id', savedId);
+  if(error){ toast('บันทึกไม่สำเร็จ'); loadData(); }
+  else toast('บันทึกการแก้ไขแล้ว');
+}
+
+/* ---------- DELETE ---------- */
+let delId = null;
+function openDelete(id){
+  const r = rows.find(x=>x.id===id);
+  if(!r) return;
+  delId = id;
+  document.getElementById('delName').textContent = r.product || '(ไม่ระบุสินค้า)';
+  document.getElementById('delModal').style.display='flex';
+}
+function closeDelete(){ document.getElementById('delModal').style.display='none'; delId=null; }
+async function confirmDelete(){
+  if(!delId) return;
+  const id = delId;
+  closeDelete();
+  rows = rows.filter(r=>r.id!==id);   // เอาออกจากจอทันที
+  updateStats(); render();
+  const { error } = await sb.from('order_requests').delete().eq('id', id);
+  if(error){ toast('ลบไม่สำเร็จ'); loadData(); }
+  else toast('ลบรายการแล้ว');
+}
+
+/* ---------- LIGHTBOX ---------- */
+function openLb(url){ document.getElementById('lbImg').src=url; document.getElementById('lightbox').style.display='flex'; }
+function closeLb(){ document.getElementById('lightbox').style.display='none'; }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeLb(); closeEdit(); closeDelete(); } });
+
+/* ---------- UTIL ---------- */
+function fmtTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString()===now.toDateString();
+  const t = d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  if(sameDay) return 'วันนี้ '+t;
+  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short'})+' '+t;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+let toastT;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
