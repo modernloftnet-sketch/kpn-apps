@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPN Post Broadcaster · The Built</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f2744; --navy2:#1a3a5c; --gold:#c9a84c; --gold2:#e8c96b;
+    --cream:#faf6ee; --line:#e6ddca; --ink:#22303f; --muted:#6c7a89;
+    --ok:#2e9e5b; --okbg:#e7f6ec; --bad:#d64545; --badbg:#fdeaea;
+    --shadow:0 8px 30px rgba(15,39,68,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:'Sarabun',sans-serif;line-height:1.55}
+  .wrap{max-width:920px;margin:0 auto;padding:22px 16px 80px}
+  header.top{
+    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    color:#fff;border-radius:18px;padding:22px 24px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden}
+  header.top::after{content:"";position:absolute;right:-40px;top:-40px;
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle,var(--gold2),transparent 70%);opacity:.35}
+  header.top h1{font-family:'Kanit';font-weight:700;margin:0;font-size:22px;
+    letter-spacing:.3px}
+  header.top .sub{color:#cdd8e6;font-size:14px;margin-top:4px}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.2);color:#fff;padding:4px 11px;border-radius:999px;
+    font-size:12.5px;font-family:'Kanit';font-weight:500;margin-top:12px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--gold2);
+    box-shadow:0 0 0 3px rgba(233,201,107,.25)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;
+    padding:20px;margin-top:18px;box-shadow:0 2px 10px rgba(15,39,68,.04)}
+  .card h2{font-family:'Kanit';font-weight:600;font-size:16px;margin:0 0 14px;
+    color:var(--navy);display:flex;align-items:center;gap:8px}
+  .card h2 .n{width:24px;height:24px;border-radius:8px;background:var(--gold);
+    color:var(--navy);font-size:13px;display:flex;align-items:center;justify-content:center;
+    font-weight:700}
+  label.fl{display:block;font-family:'Kanit';font-weight:500;font-size:13.5px;
+    color:var(--navy);margin:0 0 7px}
+  .seg{display:flex;gap:8px;background:var(--cream);border:1px solid var(--line);
+    border-radius:12px;padding:5px}
+  .seg button{flex:1;border:0;background:transparent;padding:10px;border-radius:9px;
+    font-family:'Kanit';font-weight:500;font-size:14px;color:var(--muted);cursor:pointer;
+    transition:.15s}
+  .seg button.on{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(15,39,68,.2)}
+  .fmtgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
+  .fmtgrid button{border:1px solid var(--line);background:var(--cream);padding:12px 8px;border-radius:11px;
+    font-family:'Kanit';font-weight:500;font-size:13px;color:var(--muted);cursor:pointer;transition:.15s}
+  .fmtgrid button:hover{border-color:var(--gold)}
+  .fmtgrid button.on{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 3px 10px rgba(15,39,68,.2)}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;
+    cursor:pointer;transition:.15s;background:#fffdf8;margin-top:14px}
+  .drop:hover{border-color:var(--gold);background:#fffaf0}
+  .drop .ic{font-size:30px}
+  .drop .t{font-family:'Kanit';font-weight:500;color:var(--navy);margin-top:6px}
+  .drop .h{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .thumb{position:relative;width:88px;height:88px;border-radius:11px;overflow:hidden;
+    border:1px solid var(--line);background:#000}
+  .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .rm{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
+    background:rgba(0,0,0,.6);color:#fff;border:0;cursor:pointer;font-size:14px;
+    display:flex;align-items:center;justify-content:center;line-height:1}
+  .thumb .lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);
+    color:#fff;font-size:10.5px;padding:2px 4px;text-align:center}
+  textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    font-family:'Sarabun';font-size:15px;resize:vertical;min-height:110px;background:#fffdf8;
+    color:var(--ink)}
+  textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.15)}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+    font-size:12.5px;color:var(--muted)}
+  .btn{width:100%;border:0;border-radius:13px;padding:15px;font-family:'Kanit';
+    font-weight:600;font-size:16px;cursor:pointer;margin-top:18px;transition:.15s;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);
+    box-shadow:0 6px 18px rgba(201,168,76,.35)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:disabled{background:#e9e2d2;color:#a99;box-shadow:none;cursor:not-allowed;transform:none}
+  .btn.retry{background:var(--navy);color:#fff;box-shadow:0 6px 18px rgba(15,39,68,.25)}
+  .pgcount{font-family:'Kanit';font-weight:500;font-size:13px;color:var(--navy);
+    background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+  .prog-outer{height:12px;background:var(--cream);border:1px solid var(--line);
+    border-radius:999px;overflow:hidden;margin:6px 0 4px}
+  .prog-inner{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold2));
+    transition:width .3s;border-radius:999px}
+  .prog-lab{display:flex;justify-content:space-between;font-size:13px;font-family:'Kanit';
+    font-weight:500;color:var(--navy)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;
+    margin-top:14px}
+  .chip{border:1px solid var(--line);border-radius:11px;padding:9px 11px;font-size:12.5px;
+    display:flex;align-items:center;gap:8px;background:#fff;transition:.2s}
+  .chip .s{width:9px;height:9px;border-radius:50%;background:#d5cdbb;flex:none}
+  .chip.ok{background:var(--okbg);border-color:#bfe6cd}
+  .chip.ok .s{background:var(--ok)}
+  .chip.bad{background:var(--badbg);border-color:#f3c6c6}
+  .chip.bad .s{background:var(--bad)}
+  .chip.run .s{background:var(--gold);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .chip .er{font-size:10.5px;color:var(--bad);width:100%;margin-top:2px}
+  .summary{display:flex;gap:14px;margin-top:6px;font-family:'Kanit';font-weight:500;font-size:13.5px}
+  .summary .g{color:var(--ok)} .summary .r{color:var(--bad)}
+  .hide{display:none}
+  .selbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .pgcount b{color:var(--navy)}
+  .mini{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;
+    padding:6px 12px;font-family:'Kanit';font-weight:500;font-size:12.5px;cursor:pointer;transition:.15s}
+  .mini:hover{background:var(--cream);border-color:var(--gold)}
+  .pglist{display:flex;flex-direction:column;gap:4px}
+  .pggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:8px}
+  .grphead{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;flex-wrap:wrap;gap:6px}
+  .glab{font-family:'Kanit';font-weight:600;font-size:14px;color:var(--navy);display:flex;align-items:center;gap:7px}
+  .glab b{color:var(--gold);font-weight:600}
+  .glab .tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px}
+  .glab .tb{background:var(--navy);color:#fff}
+  .glab .ww{background:#f0812e;color:#fff}
+  .gbtns{display:flex;gap:6px}
+  .pgitem{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:11px;
+    padding:9px 11px;cursor:pointer;background:#fff;transition:.15s;user-select:none}
+  .pgitem:hover{border-color:var(--gold);background:#fffaf0}
+  .pgitem.sel{background:#eef4ec;border-color:#bfe0c8}
+  .pgitem .cb{width:19px;height:19px;border-radius:6px;border:2px solid var(--line);flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:.15s}
+  .pgitem.sel .cb{background:var(--ok);border-color:var(--ok)}
+  .pgitem .nm{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;
+    font-family:'Kanit';font-size:14px;box-shadow:var(--shadow);z-index:99;
+    opacity:0;transition:.25s}
+  .toast.show{opacity:1}
+  .note{background:#fff9ea;border:1px solid #f0e2b8;border-radius:12px;padding:12px 14px;
+    font-size:13px;color:#8a6d1f;margin-top:14px}
+  .histlist{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .histitem{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;
+    padding:10px;background:#fff}
+  .histitem .thumb2{width:52px;height:52px;border-radius:9px;object-fit:cover;background:#0b1a2c;flex:none;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px}
+  .histitem .meta{flex:1;min-width:0}
+  .histitem .cap{font-size:13.5px;font-weight:500;color:var(--ink);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .histitem .sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .histitem .del{border:1px solid #f3c6c6;background:var(--badbg);color:var(--bad);border-radius:9px;
+    padding:9px 13px;font-family:'Kanit';font-weight:500;font-size:12.5px;cursor:pointer;flex:none;transition:.15s}
+  .histitem .del:hover{background:#f8d5d5} .histitem .del:disabled{opacity:.6;cursor:not-allowed}
+  .histitem.gone{opacity:.55}
+  .st{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px}
+  .st.done{background:var(--okbg);color:var(--ok)} .st.deleted{background:#ececec;color:#999}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>📢 KPN Post Broadcaster</h1>
+    <div class="sub">ยิงคอนเทนต์ The Built ครั้งเดียว → ลงเพจสาขาทั้งหมดพร้อมกัน</div>
+    <div class="badge"><span class="dot"></span> <span id="pgstat">กำลังโหลดเพจ…</span></div>
+  </header>
+
+  <!-- Compose -->
+  <div class="card" id="composeCard">
+    <h2><span class="n">1</span> รูปแบบโพสต์ + สื่อ</h2>
+    <div class="fmtgrid" id="fmtGrid">
+      <button data-f="feed_album" class="on">📰 ฟีด · อัลบั้มรูป</button>
+      <button data-f="feed_video">📹 ฟีด · วิดีโอ</button>
+      <button data-f="reels">🎬 Reels</button>
+      <button data-f="photo_story">📸 Story · รูป</button>
+      <button data-f="video_story">📱 Story · วิดีโอ</button>
+    </div>
+
+    <div class="drop" id="drop">
+      <div class="ic" id="dropIc">🖼️</div>
+      <div class="t" id="dropT">แตะเพื่อเลือกรูป (เลือกได้หลายใบ)</div>
+      <div class="h" id="dropH">JPG / PNG — สูงสุด 10 รูป</div>
+    </div>
+    <input type="file" id="file" class="hide" accept="image/*" multiple>
+    <div class="thumbs" id="thumbs"></div>
+
+    <div style="margin-top:20px">
+      <label class="fl">✍️ แคปชั่น</label>
+      <textarea id="caption" placeholder="พิมพ์แคปชั่นโพสต์… (เว้นว่างได้ถ้าโพสต์เฉพาะรูป)"></textarea>
+      <div class="row">
+        <span id="capCount">0 ตัวอักษร</span>
+        <span id="mediaInfo"></span>
+      </div>
+    </div>
+
+    <button class="btn" id="sendBtn" disabled>ยิงโพสต์</button>
+    <div class="note">💡 โพสต์จริงลง <b>เพจที่เลือกด้านล่าง</b>ทันที — เริ่มต้นเลือก The Built ไว้ให้ ถ้าต้องการลง Win Win ให้ติ๊กเพิ่มในกลุ่ม Win Win</div>
+  </div>
+
+  <!-- Page selector -->
+  <div class="card" id="selectCard">
+    <h2><span class="n">2</span> เลือกเพจที่จะยิง</h2>
+    <div class="selbar">
+      <span class="pgcount">เลือก <b id="selCount">0</b> / <span id="selTotal">0</span> เพจ</span>
+      <div style="display:flex;gap:8px">
+        <button class="mini" id="selAll">เลือกทั้งหมด</button>
+        <button class="mini" id="selNone">ไม่เลือก</button>
+      </div>
+    </div>
+    <div class="pglist" id="pageList"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="card hide" id="progCard">
+    <h2><span class="n">3</span> ผลการยิงโพสต์</h2>
+    <div class="prog-lab"><span id="progText">เตรียมยิง…</span><span id="progPct">0%</span></div>
+    <div class="prog-outer"><div class="prog-inner" id="progBar"></div></div>
+    <div class="summary"><span class="g">✔ สำเร็จ <span id="okN">0</span></span><span class="r">✘ พลาด <span id="badN">0</span></span></div>
+    <div class="grid" id="pageGrid"></div>
+    <button class="btn retry hide" id="retryBtn">🔁 ยิงซ้ำเฉพาะเพจที่พลาด (<span id="retryN">0</span>)</button>
+    <button class="btn hide" id="newBtn" style="background:#fff;color:var(--navy);border:1px solid var(--line);box-shadow:none">＋ สร้างโพสต์ใหม่</button>
+  </div>
+
+  <!-- History / Delete -->
+  <div class="card" id="historyCard">
+    <h2>🗂️ จัดการโพสต์ที่เคยยิง</h2>
+    <div class="selbar">
+      <span class="pgcount">โพสต์ล่าสุด (สั่งลบออกจากทุกเพจได้)</span>
+      <button class="mini" id="loadHist">🔄 รีเฟรช</button>
+    </div>
+    <div class="histlist" id="histList"></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const SUPA_URL = "https://kgjymqajwkhymqcofkhn.supabase.co";
+const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE";
+const BUCKET = "broadcast-media";
+const BRAND = "thebuilt";
+const H = { apikey: ANON, Authorization: "Bearer " + ANON };
+
+// ===== STATE =====
+const FORMATS = {
+  feed_album:  { label:"อัลบั้มรูป", kind:"image", multi:true,  max:10, ic:"🖼️",
+    t:"แตะเพื่อเลือกรูป (เลือกได้หลายใบ)", h:"JPG / PNG — โพสต์ฟีด (แนะนำ 4–10 รูป)" },
+  feed_video:  { label:"วิดีโอฟีด", kind:"video", multi:false, ic:"📹",
+    t:"แตะเพื่อเลือกวิดีโอ 1 ไฟล์", h:"MP4 — โพสต์วิดีโอลงฟีด" },
+  reels:       { label:"Reels", kind:"video", multi:false, ic:"🎬",
+    t:"แตะเพื่อเลือกวิดีโอ Reels", h:"MP4 แนวตั้ง 9:16 · 3–90 วินาที" },
+  photo_story: { label:"Story รูป", kind:"image", multi:false, ic:"📸",
+    t:"แตะเพื่อเลือกรูป 1 ใบ", h:"รูปแนวตั้ง · หายใน 24 ชม." },
+  video_story: { label:"Story วิดีโอ", kind:"video", multi:false, ic:"📱",
+    t:"แตะเพื่อเลือกวิดีโอ Story", h:"MP4 แนวตั้ง · หายใน 24 ชม." },
+};
+let format = "feed_album";
+let files = [];        // {file, url(objectURL)}
+let pages = [];        // {id, name, branch_name}
+let selected = new Set(); // page ids ที่เลือกยิง
+let results = {};      // page_id -> {ok, error}
+let currentPostId = null;
+let currentMediaUrls = null; // {image_urls} or {video_url}
+const isImage = () => FORMATS[format].kind === "image";
+
+// ===== HELPERS =====
+const $ = id => document.getElementById(id);
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+function safeName(n){ return n.replace(/[^\w.\-]+/g,"_"); }
+
+// ===== LOAD PAGES =====
+async function loadPages(){
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/fb_pages?brand=in.(thebuilt,winwin)&active=eq.true&select=id,name,branch_name,brand&order=brand.asc,branch_name.asc`, {headers:H});
+    pages = await r.json();
+    if(!Array.isArray(pages)) throw new Error(pages.message||"load fail");
+    const nTB = pages.filter(p=>p.brand==='thebuilt').length;
+    const nWW = pages.filter(p=>p.brand==='winwin').length;
+    $("pgstat").textContent = `The Built ${nTB} · Win Win ${nWW} เพจ`;
+    selected = new Set(pages.filter(p=>p.brand==='thebuilt').map(p=>p.id));  // เริ่มต้นเลือกเฉพาะ The Built
+    renderPageList();
+  }catch(e){
+    $("pgstat").textContent = "โหลดเพจไม่สำเร็จ: "+e.message;
+  }
+}
+
+// ===== PAGE SELECTOR (แยกกลุ่มตามแบรนด์) =====
+const GROUPS = [
+  { key:'thebuilt', label:'The Built', tag:'tb' },
+  { key:'winwin',   label:'Win Win',  tag:'ww' },
+];
+function renderPageList(){
+  const box=$("pageList"); box.innerHTML="";
+  GROUPS.forEach(g=>{
+    const gp=pages.filter(p=>p.brand===g.key);
+    if(!gp.length) return;
+    const selN=gp.filter(p=>selected.has(p.id)).length;
+    const head=document.createElement("div"); head.className="grphead";
+    head.innerHTML=`<span class="glab"><span class="tag ${g.tag}">${g.label}</span> <b>${selN}/${gp.length}</b></span>`+
+      `<span class="gbtns"><button class="mini" data-g="${g.key}" data-a="all">เลือกกลุ่ม</button>`+
+      `<button class="mini" data-g="${g.key}" data-a="none">ล้างกลุ่ม</button></span>`;
+    box.appendChild(head);
+    const grid=document.createElement("div"); grid.className="pggrid";
+    gp.forEach(p=>{
+      const on=selected.has(p.id);
+      const d=document.createElement("div");
+      d.className="pgitem"+(on?" sel":""); d.dataset.id=p.id;
+      d.innerHTML=`<span class="cb">${on?"✓":""}</span><span class="nm">${p.branch_name||p.name}</span>`;
+      d.onclick=()=>{ if(selected.has(p.id)) selected.delete(p.id); else selected.add(p.id); renderPageList(); };
+      grid.appendChild(d);
+    });
+    box.appendChild(grid);
+  });
+  box.querySelectorAll(".mini[data-g]").forEach(b=>b.onclick=()=>{
+    const g=b.dataset.g, a=b.dataset.a;
+    pages.filter(p=>p.brand===g).forEach(p=>{ a==="all"?selected.add(p.id):selected.delete(p.id); });
+    renderPageList();
+  });
+  $("selCount").textContent=selected.size;
+  $("selTotal").textContent=pages.length;
+  updateSendLabel();
+}
+function updateSendLabel(){
+  $("sendBtn").textContent = selected.size ? `ยิงโพสต์ ${selected.size} เพจ` : "เลือกอย่างน้อย 1 เพจ";
+  validate();
+}
+
+// ===== FORMAT SELECTOR =====
+function applyFormat(){
+  const f=FORMATS[format];
+  $("file").accept = f.kind==="image" ? "image/*" : "video/*";
+  $("file").multiple = !!f.multi;
+  $("dropIc").textContent = f.ic;
+  $("dropT").textContent = f.t;
+  $("dropH").textContent = f.h;
+}
+$("fmtGrid").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  format=b.dataset.f;
+  [...$("fmtGrid").children].forEach(x=>x.classList.toggle("on", x===b));
+  files.forEach(f=>URL.revokeObjectURL(f.url)); files=[];
+  applyFormat(); renderThumbs(); validate();
+});
+
+// ===== FILE PICK =====
+$("drop").addEventListener("click", ()=>$("file").click());
+$("file").addEventListener("change", e=>{
+  const picked = [...e.target.files];
+  const f=FORMATS[format];
+  if(f.multi){
+    for(const file of picked){ if(files.length>=(f.max||10)){ toast(`สูงสุด ${f.max} รูป`); break; }
+      files.push({file, url:URL.createObjectURL(file)}); }
+  }else{
+    files.forEach(x=>URL.revokeObjectURL(x.url)); files=[];
+    const file = picked[0]; if(file){ const o={file, url:URL.createObjectURL(file)}; files=[o];
+      if(f.kind==="video") checkDuration(o); }
+  }
+  $("file").value=""; renderThumbs(); validate();
+});
+function checkDuration(o){
+  const v=document.createElement("video"); v.preload="metadata";
+  v.onloadedmetadata=()=>{ const d=Math.round(v.duration);
+    o.dur=d;
+    if(format==="reels" && (d<3||d>90)) toast(`⚠️ Reels ${d} วิ (ควร 3–90 วิ)`);
+    renderThumbs(); };
+  v.src=o.url;
+}
+
+function renderThumbs(){
+  const box=$("thumbs"); box.innerHTML="";
+  files.forEach((f,i)=>{
+    const d=document.createElement("div"); d.className="thumb";
+    if(isImage()){ d.innerHTML=`<img src="${f.url}"><button class="rm" data-i="${i}">×</button>`; }
+    else{ d.innerHTML=`<video src="${f.url}" muted></video><button class="rm" data-i="${i}">×</button>`+
+      (f.dur?`<div class="lbl">${f.dur} วิ</div>`:``); }
+    box.appendChild(d);
+  });
+  box.querySelectorAll(".rm").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i; URL.revokeObjectURL(files[i].url); files.splice(i,1);
+    renderThumbs(); validate();
+  });
+  // media info
+  if(isImage()) $("mediaInfo").textContent = files.length?`${files.length} รูป`:"";
+  else $("mediaInfo").textContent = files.length?`วิดีโอ ${files[0].dur||"?"} วิ`:"";
+}
+
+// ===== CAPTION =====
+$("caption").addEventListener("input", e=>{
+  $("capCount").textContent = e.target.value.length+" ตัวอักษร"; validate();
+});
+function validate(){
+  const f=FORMATS[format];
+  const ok = f.multi ? files.length>=1 : files.length===1;
+  $("sendBtn").disabled = !ok || pages.length===0 || selected.size===0;
+}
+
+// ===== SELECT ALL / NONE =====
+$("selAll").addEventListener("click", ()=>{ selected=new Set(pages.map(p=>p.id)); renderPageList(); });
+$("selNone").addEventListener("click", ()=>{ selected.clear(); renderPageList(); });
+
+// ===== UPLOAD =====
+async function uploadFile(file, idx){
+  const path = `posts/${Date.now()}_${idx}_${safeName(file.name)}`;
+  const r = await fetch(`${SUPA_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method:"POST",
+    headers:{ ...H, "Content-Type": file.type||"application/octet-stream", "x-upsert":"true" },
+    body: file
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error("อัปโหลดไม่สำเร็จ: "+t.slice(0,120)); }
+  return `${SUPA_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+}
+
+// ===== CREATE POST ROW =====
+async function createPostRow(caption, media){
+  const body = { message:caption, media_type:format, brand:BRAND,
+    status:"draft", created_by:"broadcaster", ...media };
+  const r = await fetch(`${SUPA_URL}/rest/v1/broadcast_posts`, {
+    method:"POST",
+    headers:{ ...H, "Content-Type":"application/json", Prefer:"return=representation" },
+    body: JSON.stringify(body)
+  });
+  const j = await r.json();
+  if(!r.ok || !j[0]) throw new Error("สร้างโพสต์ไม่สำเร็จ: "+JSON.stringify(j).slice(0,120));
+  return j[0].id;
+}
+
+// ===== QUEUE MODE =====
+let pollTimer = null;
+
+async function enqueuePages(postId, targetPages){
+  const rows = targetPages.map(p=>({
+    post_id: postId, page_id: p.id,
+    page_name: p.branch_name || p.name, status: "pending", attempts: 0
+  }));
+  const r = await fetch(`${SUPA_URL}/rest/v1/broadcast_queue`, {
+    method:"POST",
+    headers:{ ...H, "Content-Type":"application/json",
+      Prefer:"resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(rows)
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error("เข้าคิวไม่สำเร็จ: "+t.slice(0,140)); }
+}
+
+async function kickWorker(){
+  try{
+    await fetch(`${SUPA_URL}/functions/v1/broadcast-worker`, {
+      method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}"
+    });
+  }catch(e){ /* worker ทำงานเบื้องหลัง ไม่ต้องรอผล */ }
+}
+
+async function fetchQueue(postId){
+  const r = await fetch(
+    `${SUPA_URL}/rest/v1/broadcast_queue?post_id=eq.${postId}&select=page_id,page_name,status,attempts,last_error&order=id.asc`,
+    { headers:H });
+  const j = await r.json();
+  return Array.isArray(j) ? j : [];
+}
+
+function renderQueue(rows){
+  const grid=$("pageGrid"); grid.innerHTML="";
+  let ok=0, bad=0, wait=0;
+  rows.forEach(q=>{
+    const d=document.createElement("div");
+    if(q.status==="done"){ d.className="chip ok"; ok++; }
+    else if(q.status==="failed"){ d.className="chip bad"; bad++; }
+    else { d.className="chip run"; wait++; }
+    d.innerHTML = `<span class="s"></span><span class="nm">${q.page_name||q.page_id}</span>` +
+      (q.status==="failed" && q.last_error ? `<span class="er">${q.last_error}</span>` : "") +
+      (q.status==="pending" && q.attempts>0 ? `<span class="er" style="color:var(--muted)">รอรอบถัดไป</span>` : "");
+    grid.appendChild(d);
+  });
+  const total = rows.length || 1;
+  $("okN").textContent = ok;
+  $("badN").textContent = bad;
+  setBar((ok+bad)/total*100);
+  if(wait===0){
+    $("progText").textContent = bad ? `เสร็จ — สำเร็จ ${ok}, พลาด ${bad}` : `🎉 สำเร็จครบ ${ok} เพจ!`;
+    if(bad){ $("retryN").textContent=bad; $("retryBtn").classList.remove("hide"); }
+    $("newBtn").classList.remove("hide");
+    return true;   // จบแล้ว
+  }
+  $("progText").textContent = `เสร็จ ${ok+bad}/${rows.length} เพจ · เหลือในคิว ${wait} (ระบบทยอยยิงเอง)`;
+  $("newBtn").classList.remove("hide");
+  return false;
+}
+
+async function startPolling(postId){
+  clearInterval(pollTimer);
+  const tick = async ()=>{
+    try{
+      const rows = await fetchQueue(postId);
+      if(renderQueue(rows)) clearInterval(pollTimer);
+    }catch(e){}
+  };
+  await tick();
+  pollTimer = setInterval(tick, 15000);   // เช็คทุก 15 วิ
+}
+
+// ===== MAIN SEND =====
+$("sendBtn").addEventListener("click", ()=>{
+  const target = pages.filter(p=>selected.has(p.id));
+  if(!target.length){ toast("เลือกอย่างน้อย 1 เพจ"); return; }
+  runBroadcast(target, true);
+});
+
+async function runBroadcast(targetPages, freshUpload){
+  $("sendBtn").disabled=true;
+  $("composeCard").classList.add("hide");
+  $("selectCard").classList.add("hide");
+  $("progCard").classList.remove("hide");
+  $("retryBtn").classList.add("hide"); $("newBtn").classList.add("hide");
+
+  try{
+    if(freshUpload){
+      $("progText").textContent="กำลังอัปโหลดสื่อ…"; setBar(0);
+      const urls=[];
+      for(let i=0;i<files.length;i++){
+        $("progText").textContent=`อัปโหลด ${i+1}/${files.length}…`;
+        urls.push(await uploadFile(files[i].file, i));
+      }
+      currentMediaUrls = isImage() ? {image_urls:urls} : {video_url:urls[0]};
+      $("progText").textContent="บันทึกโพสต์…";
+      currentPostId = await createPostRow($("caption").value.trim(), currentMediaUrls);
+    }
+    $("progText").textContent="เข้าคิว…";
+    await enqueuePages(currentPostId, targetPages);
+    await kickWorker();                      // เตะให้เริ่มรอบแรกทันที ไม่ต้องรอ cron
+    toast("เข้าคิวแล้ว · ระบบจะทยอยยิงเอง");
+    await startPolling(currentPostId);
+  }catch(e){
+    $("progText").textContent="❌ "+e.message;
+    $("newBtn").classList.remove("hide");
+  }
+}
+function setBar(pct){ $("progBar").style.width=pct+"%"; $("progPct").textContent=Math.round(pct)+"%"; }
+
+// ===== RETRY FAILED (ส่งกลับเข้าคิว) =====
+$("retryBtn").addEventListener("click", async ()=>{
+  if(!currentPostId) return;
+  $("retryBtn").classList.add("hide");
+  try{
+    await fetch(`${SUPA_URL}/rest/v1/broadcast_queue?post_id=eq.${currentPostId}&status=eq.failed`, {
+      method:"PATCH",
+      headers:{ ...H, "Content-Type":"application/json", Prefer:"return=minimal" },
+      body: JSON.stringify({ status:"pending", attempts:0, last_error:null })
+    });
+    await kickWorker();
+    toast("ส่งกลับเข้าคิวแล้ว");
+    await startPolling(currentPostId);
+  }catch(e){ toast("ส่งเข้าคิวไม่สำเร็จ: "+e.message); }
+});
+
+// ===== NEW POST =====
+$("newBtn").addEventListener("click", ()=>{
+  clearInterval(pollTimer);
+  files.forEach(f=>URL.revokeObjectURL(f.url)); files=[];
+  results={}; currentPostId=null; currentMediaUrls=null;
+  $("caption").value=""; $("capCount").textContent="0 ตัวอักษร"; $("mediaInfo").textContent="";
+  renderThumbs();
+  $("progCard").classList.add("hide");
+  $("composeCard").classList.remove("hide");
+  $("selectCard").classList.remove("hide");
+  validate();
+});
+
+// ===== HISTORY / DELETE =====
+$("loadHist").addEventListener("click", loadHistory);
+async function loadHistory(){
+  $("loadHist").textContent="กำลังโหลด…";
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/broadcast_posts?select=id,message,media_type,image_urls,video_url,status,success_count,total_pages,created_at&order=created_at.desc&limit=20`, {headers:H});
+    const posts=await r.json();
+    renderHistory(Array.isArray(posts)?posts:[]);
+  }catch(e){ toast("โหลดประวัติไม่สำเร็จ: "+e.message); }
+  $("loadHist").textContent="🔄 รีเฟรช";
+}
+function renderHistory(posts){
+  const box=$("histList"); box.innerHTML="";
+  if(!posts.length){ box.innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px">ยังไม่มีโพสต์</div>'; return; }
+  posts.forEach(p=>{
+    const hasImg = p.image_urls && p.image_urls[0];
+    const thumb = hasImg && p.image_urls[0];
+    const fmtLabel = (FORMATS[p.media_type] && FORMATS[p.media_type].label) || p.media_type;
+    const dt = new Date(p.created_at).toLocaleString("th-TH",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    const cap = (p.message||"").slice(0,60) || `(${fmtLabel})`;
+    const gone = p.status==="deleted";
+    const d=document.createElement("div"); d.className="histitem"+(gone?" gone":"");
+    d.innerHTML =
+      (thumb?`<img class="thumb2" src="${thumb}">`:`<div class="thumb2">🎬</div>`)+
+      `<div class="meta"><div class="cap">${cap}</div>`+
+      `<div class="sub"><span class="st done" style="background:#eef2f7;color:var(--navy)">${fmtLabel}</span> ${dt} · ยิง ${p.success_count||0}/${p.total_pages||0} เพจ `+
+      `<span class="st ${gone?"deleted":"done"}">${gone?"ลบแล้ว":"โพสต์อยู่"}</span></div></div>`+
+      (gone?``:`<button class="del" data-id="${p.id}">🗑️ ลบทุกเพจ</button>`);
+    box.appendChild(d);
+  });
+  box.querySelectorAll(".del").forEach(b=>b.onclick=()=>deletePost(+b.dataset.id, b));
+}
+async function deletePost(postId, btn){
+  if(!confirm("ลบโพสต์นี้ออกจากทุกเพจที่ยิงไป?\nการลบกู้คืนไม่ได้")) return;
+  btn.disabled=true; btn.textContent="กำลังลบ…";
+  try{
+    const r=await fetch(`${SUPA_URL}/functions/v1/delete-broadcast`, {
+      method:"POST",
+      headers:{ Authorization:"Bearer "+ANON, "Content-Type":"application/json" },
+      body: JSON.stringify({ post_id: postId })
+    });
+    const j=await r.json();
+    if(j && j.ok){ toast(`✅ ลบแล้ว ${j.deleted}/${j.total||j.deleted} เพจ`); loadHistory(); }
+    else{ toast("ลบไม่สำเร็จ: "+((j&&j.error)||"?")); btn.disabled=false; btn.textContent="🗑️ ลบทุกเพจ"; }
+  }catch(e){ toast("ลบไม่สำเร็จ: "+e.message); btn.disabled=false; btn.textContent="🗑️ ลบทุกเพจ"; }
+}
+
+// ===== INIT =====
+applyFormat();
+loadPages();
+loadHistory();
+</script>
+</body>
+</html>
