@@ -14337,8 +14337,12 @@ const JOB_TYPES = ['ครัวบิวท์อิน','ตู้เสื้
 const JOB_STATUS = ['รอ','confirm','ยกเลิก'];
 
 // รายชื่อผู้ขาย — ระบบจะวนรอบอัตโนมัติ
-const SELLERS = ['ฟาง','เกอธ','เบน','แก้ม'];
+const SELLERS = ['ฟาง','อุ้ม','เบน','แก้ม'];
 let _sellerRotationIndex = 0;
+
+// ผู้ขายที่ลาออก → ให้คนใหม่รับช่วงยอดนับต่อ (ไม่แตะข้อมูลเดิมใน Supabase)
+// รูปแบบ: { 'คนใหม่': ['คนเก่า1','คนเก่า2'] }
+const SELLER_INHERIT = { 'อุ้ม': ['เกอธ'] };
 
 function getNextSeller() {
   // นับเฉพาะลูกค้าในเดือนปัจจุบัน
@@ -14346,12 +14350,21 @@ function getNextSeller() {
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const counts = {};
   SELLERS.forEach(s => counts[s] = 0);
+
   customers.forEach(c => {
-    if (c.seller && counts[c.seller] !== undefined) {
-      const d = (c.measure_date || c.created_at || '').slice(0, 7);
-      if (d === ym) counts[c.seller]++;
+    if (!c.seller) return;
+    let s = c.seller;
+    // ถ้าเป็นผู้ขายที่ลาออกแล้ว ให้โอนยอดไปนับให้คนที่รับช่วงต่อ
+    if (counts[s] === undefined) {
+      const heir = Object.keys(SELLER_INHERIT)
+        .find(k => SELLER_INHERIT[k].includes(s));
+      if (!heir) return;
+      s = heir;
     }
+    const d = (c.measure_date || c.created_at || '').slice(0, 7);
+    if (d === ym) counts[s]++;
   });
+
   // หา count ที่น้อยที่สุด
   const minCount = Math.min(...SELLERS.map(s => counts[s]));
   // หาผู้ขายทุกคนที่มี count เท่ากับ minCount
@@ -14362,7 +14375,11 @@ function getNextSeller() {
 
 function populateSellerDropdown(selectedValue) {
   const sel = document.getElementById('fSeller');
-  sel.innerHTML = SELLERS.map(s => `<option value="${s}" ${s===selectedValue?'selected':''}>${s}</option>`).join('');
+  // ถ้าลูกค้าเก่ามีผู้ขายที่ไม่อยู่ในรายชื่อแล้ว ให้คงชื่อเดิมไว้ กันข้อมูลเปลี่ยนเอง
+  const list = (selectedValue && !SELLERS.includes(selectedValue))
+    ? [...SELLERS, selectedValue]
+    : SELLERS;
+  sel.innerHTML = list.map(s => `<option value="${s}" ${s===selectedValue?'selected':''}>${s}</option>`).join('');
   // ไม่ใช่ admin ห้ามแก้ (ใช้ style แทน disabled เพื่อให้ value ยังถูกส่ง)
   if (currentRole !== 'admin') {
     sel.style.pointerEvents = 'none';
