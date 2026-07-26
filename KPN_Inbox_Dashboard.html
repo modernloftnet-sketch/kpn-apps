@@ -302,7 +302,7 @@ async function loadData(isRef=false){
     custLabels={};
     (labels||[]).forEach(l=>{ custLabels[l.sender_id+'_'+l.page_id]={custom_name:l.custom_name,note:l.note}; });
     offset=0;
-    const msgs=await api('fb_messages',`?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data&order=created_at.desc&limit=${pageSize}&offset=0`);
+    const msgs=await api('fb_messages',`?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data,media&order=created_at.desc&limit=${pageSize}&offset=0`);
     if(isRef&&knownIds.size){
       msgs.filter(x=>!knownIds.has(x.id)).forEach(x=>showNotif(x));
     }
@@ -327,7 +327,7 @@ async function loadData(isRef=false){
 async function loadMore(){
   offset+=pageSize;
   const btn=document.querySelector('.lmbtn'); btn.textContent='กำลังโหลด...'; btn.disabled=true;
-  const msgs=await api('fb_messages',`?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data&order=created_at.desc&limit=${pageSize}&offset=${offset}`);
+  const msgs=await api('fb_messages',`?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data,media&order=created_at.desc&limit=${pageSize}&offset=${offset}`);
   msgs.forEach(x=>knownIds.add(x.id));
   allMsgs=[...allMsgs,...msgs];
   hasMore=msgs.length===pageSize;
@@ -548,7 +548,7 @@ function renderChat(conv){
     });
 
     // แสดงชื่อถ้าแถวก่อนหน้าต่างคน
-    const prev=msgs[i-1];
+    const arch=Array.isArray(msg.media)?msg.media:null; if(arch&&arch.length){ imgH=''; arch.forEach(m=>{ const u=m.url; if(!u)return; if(m.link||m.type==='reel'){ imgH+=`<a href="${u}" target="_blank" style="color:var(--accent);text-decoration:underline">▶ ดูวิดีโอ/รีล</a>`; } else if(m.type==='video'||/\.(mp4|webm|mov|m4v)/i.test(u)){ imgH+=`<video src="${u}" controls preload="metadata"></video>`; } else if(m.type==='audio'){ imgH+=`<audio src="${u}" controls></audio>`; } else { imgH+=`<img src="${u}" onclick="openImg('${u}')" onerror="this.style.display='none'">`; } }); } const prev=msgs[i-1];
     const showLabel=!isAdmin&&(!prev||prev.sender_id!==msg.sender_id||(new Date(msg.created_at)-new Date(prev.created_at))>300000);
 
     bubblesH+=`<div class="msg-row ${side}">
