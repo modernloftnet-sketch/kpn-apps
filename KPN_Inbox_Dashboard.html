@@ -155,7 +155,7 @@
   .msg-bubble { padding:8px 12px; border-radius:18px; font-size:13px; line-height:1.45; word-break:break-word; }
   .msg-bubble.inc { background:var(--surface2); color:var(--text); border-bottom-left-radius:4px; }
   .msg-bubble.out { background:var(--accent); color:white; border-bottom-right-radius:4px; }
-  .msg-bubble img { max-width:200px; border-radius:10px; cursor:pointer; display:block; margin-top:4px; }
+  .msg-bubble img { max-width:200px; border-radius:10px; cursor:pointer; display:block; margin-top:4px; } .msg-bubble video { max-width:240px; border-radius:10px; display:block; margin-top:4px; }
   .msg-time { font-size:9px; color:var(--text3); margin-top:3px; padding:0 6px; font-family:'IBM Plex Mono',monospace; }
   .msg-row.out .msg-time { text-align:right; }
   .chat-loading { display:flex; align-items:center; justify-content:center; gap:8px; padding:20px; color:var(--text3); font-size:12px; }
@@ -540,11 +540,11 @@ function renderChat(conv){
     let imgH='';
     webhookAtts.forEach(a=>{
       const u=a.payload?.url;
-      if(u) imgH+=`<img src="${u}" onclick="openImg('${u}')" onerror="this.style.display='none'">`;
+      if(u){ if(a.type==='video'||a.type==='reel'){ imgH+=`<video src="${u}" controls preload="metadata" onerror="this.style.display='none'"></video>`; } else if(a.type==='audio'){ imgH+=`<audio src="${u}" controls></audio>`; } else { imgH+=`<img src="${u}" onclick="openImg('${u}')" onerror="this.style.display='none'">`; } }
     });
     cronAtts.forEach(a=>{
       const u=a.image_data?.url||a.file_url;
-      if(u) imgH+=`<img src="${u}" onclick="openImg('${u}')" onerror="this.style.display='none'">`;
+      if(u){ if(a.type==='video'||a.type==='reel'){ imgH+=`<video src="${u}" controls preload="metadata" onerror="this.style.display='none'"></video>`; } else if(a.type==='audio'){ imgH+=`<audio src="${u}" controls></audio>`; } else { imgH+=`<img src="${u}" onclick="openImg('${u}')" onerror="this.style.display='none'">`; } }
     });
 
     // แสดงชื่อถ้าแถวก่อนหน้าต่างคน
