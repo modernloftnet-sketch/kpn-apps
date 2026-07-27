@@ -1681,6 +1681,108 @@ function buildConversations(){
   }, 700);
 })();
 
+
+(function(){
+  // =====================================================================
+  // รูปโปรไฟล์ Facebook ของลูกค้า — แปะที่หัวแชท (.chat-header-av) และลิสต์ (.av)
+  //   - ดึงแบบ batch ผ่าน edge function fb-profile (throttle กันเรียกถี่)
+  //   - cache ในหน่วยความจำ + fallback เป็นตัวอักษรถ้ารูปโหลดไม่ได้
+  // =====================================================================
+  var EP = SB_URL + '/functions/v1/fb-profile';
+  var picCache = {};      // conversation_id -> url ('' = ไม่มีรูป)
+  var inflight = {};      // conversation_id -> true (กำลังดึง)
+  var queue = [];         // conversation_id ที่รอดึง
+
+  function hdr(){ return { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }; }
+
+  function enqueue(cid, priority){
+    if(!cid) return;
+    if(picCache.hasOwnProperty(cid) || inflight[cid]) return;
+    if(queue.indexOf(cid)>=0){
+      if(priority){ queue.splice(queue.indexOf(cid),1); queue.unshift(cid); }
+      return;
+    }
+    if(priority) queue.unshift(cid); else queue.push(cid);
+  }
+
+  function paintAv(el, url){
+    if(!el || !url) return;
+    if(el.querySelector('img.fbpic')) return;
+    el.style.position = 'relative';
+    el.style.overflow = 'hidden';
+    var img = document.createElement('img');
+    img.className = 'fbpic';
+    img.src = url;
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block';
+    img.onerror = function(){ try { img.remove(); } catch(e){} };
+    el.appendChild(img);
+  }
+
+  function paintRow(cid){
+    var url = picCache[cid];
+    if(!url) return;
+    var row = document.querySelector('[data-cid="' + (window.CSS && CSS.escape ? CSS.escape(cid) : cid) + '"]');
+    if(row){ var av = row.querySelector('.av'); if(av) paintAv(av, url); }
+  }
+
+  function paintHeader(){
+    var cid = null; try { cid = selConvId; } catch(e){}
+    if(!cid) return;
+    var url = picCache[cid];
+    var av = document.querySelector('.chat-header-av');
+    if(av && url) paintAv(av, url);
+  }
+
+  async function processQueue(){
+    if(!queue.length) return;
+    var batch = [];
+    while(queue.length && batch.length < 20){
+      var cid = queue.shift();
+      if(picCache.hasOwnProperty(cid) || inflight[cid]) continue;
+      inflight[cid] = true;
+      batch.push(cid);
+    }
+    if(!batch.length) return;
+    try {
+      var r = await fetch(EP, { method:'POST', headers: hdr(), body: JSON.stringify({ conversation_ids: batch }) });
+      var j = await r.json();
+      var pics = (j && j.pics) || {};
+      batch.forEach(function(cid){
+        picCache[cid] = (pics[cid] || '');   // '' = ไม่มีรูป (จะไม่ดึงซ้ำ)
+        delete inflight[cid];
+        if(picCache[cid]) paintRow(cid);
+      });
+      paintHeader();
+    } catch(e){
+      // ปล่อยให้ลองใหม่รอบหน้า
+      batch.forEach(function(cid){ delete inflight[cid]; });
+    }
+  }
+
+  // ดึงคิวเป็นระยะ (กันเรียก Facebook ถี่เกิน)
+  setInterval(processQueue, 1300);
+
+  // สแกนหน้าจอ: แปะรูปที่มีใน cache + ต่อคิวรูปที่ยังไม่มี
+  setInterval(function(){
+    // หัวแชทก่อน (สำคัญสุด)
+    var cur = null; try { cur = selConvId; } catch(e){}
+    if(cur){
+      if(picCache.hasOwnProperty(cur)){ paintHeader(); }
+      else { enqueue(cur, true); }
+    }
+    // แถวในลิสต์
+    var rows = document.querySelectorAll('[data-cid]');
+    Array.prototype.forEach.call(rows, function(row){
+      var cid = row.getAttribute('data-cid');
+      if(picCache.hasOwnProperty(cid)){
+        if(picCache[cid]) { var av=row.querySelector('.av'); if(av && !av.querySelector('img.fbpic')) paintAv(av, picCache[cid]); }
+      } else {
+        enqueue(cid, false);
+      }
+    });
+  }, 900);
+})();
+
 </script>
 </body>
 </html>
