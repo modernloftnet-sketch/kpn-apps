@@ -1043,7 +1043,7 @@ function buildConversations(){
   }
   var btn=document.createElement('button');
   btn.textContent='👥 Users';
-  btn.style.cssText='position:fixed;bottom:16px;right:16px;z-index:9500;display:none;padding:10px 16px;border:0;border-radius:22px;background:#3b82f6;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
+  btn.style.cssText='position:fixed;top:11px;right:240px;z-index:9500;display:none;padding:10px 16px;border:0;border-radius:22px;background:#3b82f6;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
   document.body.appendChild(btn);
   var iv=setInterval(function(){ if(window.__isSupervisor){ btn.style.display='block'; clearInterval(iv); } },800);
   var modal=document.createElement('div');
