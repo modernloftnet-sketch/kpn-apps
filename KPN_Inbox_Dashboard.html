@@ -1051,7 +1051,7 @@ function buildConversations(){
   modal.innerHTML='<div style="background:#fff;border-radius:14px;width:600px;max-width:94vw;max-height:86vh;overflow:auto;padding:22px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><b style="font-size:17px;color:#0f172a">Manage users</b><button id="kaX" style="border:0;background:#f1f5f9;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600">Close</button></div><div id="kaList" style="font-size:13px;color:#334155">Loading...</div><hr style="margin:18px 0;border:0;border-top:1px solid #e2e8f0"><b style="font-size:14px;color:#0f172a">Add new account</b><div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="kaEmail" placeholder="Email" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px"><input id="kaPass" placeholder="Password" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px"><input id="kaName" placeholder="Display name" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px"><select id="kaRole" style="padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px"><option value="staff">Branch staff</option><option value="supervisor">Supervisor (all)</option></select></div><div id="kaBranchWrap" style="margin-top:10px"><div style="font-size:12px;color:#64748b;margin-bottom:6px">Branches this account can see (staff only):</div><div id="kaBranches" style="display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow:auto"></div></div><button id="kaAdd" style="margin-top:14px;padding:10px 18px;border:0;border-radius:8px;background:#22c55e;color:#fff;font-weight:700;cursor:pointer">Create account</button><div id="kaMsg" style="margin-top:10px;font-size:12.5px;min-height:16px"></div></div>';
   document.body.appendChild(modal);
   var $=function(x){return document.getElementById(x);};
-  function branchList(){ return (window.pages||[]).slice().sort(function(a,b){return (a.branch_name||a.name||'').localeCompare(b.branch_name||b.name||'');}); }
+  function branchList(){ return (pages||[]).slice().sort(function(a,b){return (a.branch_name||a.name||'').localeCompare(b.branch_name||b.name||'');}); }
   function renderBranches(){
     var wrap=$('kaBranches'); wrap.innerHTML='';
     branchList().forEach(function(p){
@@ -1063,7 +1063,7 @@ function buildConversations(){
     });
   }
   function checkedBranches(){ return [].slice.call($('kaBranches').querySelectorAll('input:checked')).map(function(c){return c.value;}); }
-  function brandName(pid){ var p=(window.pages||[]).find(function(x){return x.id===pid;}); return p?(p.branch_name||p.name||pid):pid; }
+  function brandName(pid){ var p=(pages||[]).find(function(x){return x.id===pid;}); return p?(p.branch_name||p.name||pid):pid; }
   function renderList(users){
     var el=$('kaList');
     if(!users||!users.length){ el.textContent='No users yet.'; return; }
