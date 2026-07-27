@@ -1450,6 +1450,108 @@ function buildConversations(){
   }
 })();
 
+
+(function(){
+  var SENDEP = SB_URL + '/functions/v1/send-message';
+  var BUCKET = 'outgoing-media';
+
+  // hidden file input
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.zip';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+
+  function currentConv(){ try { return selConvId || null; } catch(e){ return null; } }
+  function mb(bytes){ return (bytes/1048576).toFixed(1) + 'MB'; }
+  function esc2(s){ try { return esc(s); } catch(e){ return (s==null?'':String(s)); } }
+
+  // ---- แทรกปุ่ม 📎 ลงในแถบพิมพ์ตอบ (ถ้ายังไม่มี) ----
+  setInterval(function(){
+    var inp = document.getElementById('replyInput');
+    if(!inp) return;
+    var row = inp.parentElement;
+    if(!row || row.querySelector('#attachBtn')) return;
+    var b = document.createElement('button');
+    b.id = 'attachBtn';
+    b.type = 'button';
+    b.title = 'แนบรูป/ไฟล์';
+    b.textContent = '📎';
+    b.style.cssText = 'flex:none;border:0;background:#eef2ff;border-radius:10px;padding:0 12px;margin-right:6px;cursor:pointer;font-size:18px;line-height:1';
+    row.insertBefore(b, inp);
+    b.onclick = function(){
+      if(!currentConv()){ alert('เปิดแชทก่อนนะ'); return; }
+      fileInput.value = '';
+      fileInput.click();
+    };
+  }, 600);
+
+  fileInput.onchange = async function(){
+    var f = fileInput.files && fileInput.files[0];
+    if(!f) return;
+    var convId = currentConv();
+    if(!convId){ alert('เปิดแชทก่อนนะ'); return; }
+
+    var isImg = /^image\//.test(f.type);
+    var atype = isImg ? 'image' : 'file';
+    var maxMB = isImg ? 8 : 25;
+    if(f.size > maxMB*1048576){
+      alert('ไฟล์ใหญ่เกิน ' + maxMB + 'MB (ไฟล์นี้ ' + mb(f.size) + ')' + (isImg ? ' — รูปส่งได้ไม่เกิน 8MB' : ''));
+      return;
+    }
+
+    // bubble ชั่วคราวในเธรด
+    var body = document.getElementById('chatBody');
+    var bub = document.createElement('div');
+    bub.className = 'msg-row out';
+    bub.innerHTML = '<div class="msg-av" style="background:#374151">SEND</div>' +
+      '<div class="msg-bubble-wrap"><div class="msg-bubble out">📎 ' + esc2(f.name) + '</div>' +
+      '<div class="msg-time att-st">กำลังอัปโหลด...</div></div>';
+    if(body){ body.appendChild(bub); body.scrollTo({top:body.scrollHeight,behavior:'smooth'}); }
+    var st = bub.querySelector('.att-st');
+
+    try {
+      // 1) อัปโหลดขึ้น Storage
+      var safe = f.name.replace(/[^\w.\-]+/g, '_');
+      var path = convId + '/' + Date.now() + '_' + safe;
+      var up = await fetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + encodeURI(path), {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + window.__authToken,
+          'Content-Type': f.type || 'application/octet-stream',
+          'x-upsert': 'true'
+        },
+        body: f
+      });
+      if(!up.ok){ var et = await up.text(); throw new Error('อัปโหลดไม่สำเร็จ: ' + et.slice(0,140)); }
+      var publicUrl = SB_URL + '/storage/v1/object/public/' + BUCKET + '/' + encodeURI(path);
+
+      if(st) st.textContent = 'กำลังส่ง...';
+      // 2) ส่งเข้า Messenger ผ่าน edge function
+      var r = await fetch(SENDEP, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization':'Bearer ' + window.__authToken },
+        body: JSON.stringify({ conversation_id: convId, attachment_url: publicUrl, attachment_type: atype })
+      });
+      var j = await r.json();
+      if(j && j.ok){
+        if(isImg){
+          var bb = bub.querySelector('.msg-bubble');
+          if(bb){ bb.innerHTML = '<img src="' + publicUrl + '" style="max-width:220px;border-radius:8px;display:block">'; }
+        }
+        if(st) st.textContent = 'ส่งแล้ว';
+      } else {
+        if(st){ st.textContent = 'ส่งไม่สำเร็จ'; st.style.color = '#ef4444'; }
+        alert('ส่งไม่สำเร็จ: ' + ((j && j.error) || ''));
+      }
+    } catch(e){
+      if(st){ st.textContent = 'ผิดพลาด'; st.style.color = '#ef4444'; }
+      alert(String(e && e.message || e));
+    }
+  };
+})();
+
 </script>
 </body>
 </html>
