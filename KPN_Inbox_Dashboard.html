@@ -1230,6 +1230,226 @@ function buildConversations(){
   }
   window.sendReply = _send;
 })();
+
+(function(){
+  var REST = SB_URL + '/rest/v1/quick_replies';
+  var cache = [];
+
+  function hdr(extra){
+    var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + window.__authToken };
+    if(extra){ for(var k in extra){ h[k] = extra[k]; } }
+    return h;
+  }
+
+  // ---------- ปุ่มลอย "สำเร็จรูป" (ซ้ายล่าง ถัดจากปุ่ม AI) ----------
+  var btn = document.createElement('button');
+  btn.id = 'qrBtn';
+  btn.textContent = '⚡ สำเร็จรูป';
+  btn.style.cssText = 'position:fixed;bottom:16px;left:150px;z-index:9400;display:none;padding:10px 16px;border:0;border-radius:22px;background:#0ea5e9;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
+  document.body.appendChild(btn);
+  setInterval(function(){
+    var open = false;
+    try { open = !!selConvId; } catch(e) { open = false; }
+    btn.style.display = open ? 'block' : 'none';
+  }, 600);
+
+  // ---------- กล่องเลือกข้อความ ----------
+  var panel = document.createElement('div');
+  panel.id = 'qrPanel';
+  panel.style.cssText = 'position:fixed;bottom:60px;left:16px;width:400px;max-width:92vw;max-height:60vh;overflow:auto;z-index:9450;display:none;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:12px;font-family:Segoe UI,Tahoma,sans-serif';
+  document.body.appendChild(panel);
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+
+  function esc2(s){ try { return esc(s); } catch(e){ return (s==null?'':String(s)); } }
+
+  function insertText(body){
+    var inp = document.getElementById('replyInput');
+    if(inp){
+      inp.value = body;
+      inp.focus();
+      try { inp.dispatchEvent(new Event('input', {bubbles:true})); } catch(e){}
+      panel.style.display = 'none';
+    } else {
+      // ตอบไม่ได้ (นอกกรอบเวลา/ไม่ใช่ Messenger) -> คัดลอกให้แทน
+      navigator.clipboard.writeText(body).then(function(){
+        alert('คัดลอกข้อความแล้ว (แชทนี้ตอบในแอปไม่ได้ ก็เอาไปวางที่อื่นได้)');
+      }).catch(function(){});
+    }
+  }
+
+  function renderPicker(){
+    var isSup = false; try { isSup = !!window.__isSupervisor; } catch(e){}
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<b style="font-size:14px;color:#0f172a">⚡ ข้อความสำเร็จรูป</b>' +
+      '<div>' +
+        (isSup ? '<button id="qrManage" style="border:0;background:#eef2ff;color:#4f46e5;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700;margin-right:6px">＋ จัดการ</button>' : '') +
+        '<button id="qrClose" style="border:0;background:#f1f5f9;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:600">ปิด</button>' +
+      '</div></div>';
+    if(!cache.length){
+      html += '<div style="font-size:12.5px;color:#94a3b8;padding:14px 6px;text-align:center">ยังไม่มีข้อความสำเร็จรูป' + (isSup ? ' — กด "＋ จัดการ" เพื่อเพิ่ม' : '') + '</div>';
+    } else {
+      cache.forEach(function(q){
+        var scope = q.page_id ? '' : '<span style="font-size:10px;color:#0ea5e9;font-weight:700;margin-left:6px">ทุกสาขา</span>';
+        html += '<div class="qr-item" data-id="' + q.id + '" style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:.12s">' +
+          '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + scope + '</div>' +
+          '<div style="font-size:12px;color:#64748b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc2(q.body) + '</div>' +
+        '</div>';
+      });
+    }
+    panel.innerHTML = html;
+    var c = document.getElementById('qrClose'); if(c) c.onclick = function(){ panel.style.display='none'; };
+    var m = document.getElementById('qrManage'); if(m) m.onclick = openManage;
+    Array.prototype.forEach.call(panel.querySelectorAll('.qr-item'), function(el){
+      el.onmouseover = function(){ el.style.background='#f0f9ff'; el.style.borderColor='#7dd3fc'; };
+      el.onmouseout  = function(){ el.style.background='#fff'; el.style.borderColor='#e2e8f0'; };
+      el.onclick = function(){
+        var id = el.getAttribute('data-id');
+        var q = cache.filter(function(x){ return String(x.id)===String(id); })[0];
+        if(q) insertText(q.body);
+      };
+    });
+  }
+
+  async function loadList(){
+    try {
+      var r = await fetch(REST + '?select=id,title,body,page_id,sort&order=sort.asc,id.asc', { headers: hdr() });
+      cache = await r.json();
+      if(!Array.isArray(cache)) cache = [];
+    } catch(e){ cache = []; }
+  }
+
+  async function openPicker(){
+    panel.style.display = 'block';
+    panel.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;padding:14px;text-align:center">กำลังโหลด...</div>';
+    await loadList();
+    renderPicker();
+  }
+  btn.onclick = openPicker;
+
+  // ---------- โมดัลจัดการ (เฉพาะหัวหน้า) ----------
+  var mask = document.createElement('div');
+  mask.id = 'qrMask';
+  mask.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9600;display:none;align-items:center;justify-content:center;font-family:Segoe UI,Tahoma,sans-serif';
+  mask.innerHTML = '<div id="qrModal" style="background:#fff;width:520px;max-width:94vw;max-height:86vh;overflow:auto;border-radius:16px;padding:18px"></div>';
+  document.body.appendChild(mask);
+  mask.addEventListener('click', function(e){ if(e.target===mask) mask.style.display='none'; });
+
+  function renderManage(){
+    var m = document.getElementById('qrModal');
+    var rows = '';
+    if(!cache.length){
+      rows = '<div style="font-size:12.5px;color:#94a3b8;padding:10px 2px">ยังไม่มีรายการ</div>';
+    } else {
+      cache.forEach(function(q){
+        rows += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 11px;margin-bottom:7px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+            '<div style="min-width:0">' +
+              '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + (q.page_id?'':' <span style="font-size:10px;color:#0ea5e9;font-weight:700">ทุกสาขา</span>') + '</div>' +
+              '<div style="font-size:12px;color:#64748b;margin-top:3px;white-space:pre-wrap;word-break:break-word">' + esc2(q.body) + '</div>' +
+            '</div>' +
+            '<div style="flex:none;display:flex;gap:6px">' +
+              '<button class="qr-edit" data-id="'+q.id+'" style="border:0;background:#eef2ff;color:#4f46e5;border-radius:7px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:700">แก้</button>' +
+              '<button class="qr-del" data-id="'+q.id+'" style="border:0;background:#fee2e2;color:#dc2626;border-radius:7px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:700">ลบ</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+    }
+    m.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<b style="font-size:16px;color:#0f172a">จัดการข้อความสำเร็จรูป</b>' +
+        '<button id="qrMClose" style="border:0;background:#f1f5f9;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:13px;font-weight:600">ปิด</button>' +
+      '</div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:14px">' +
+        '<div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:8px" id="qrFormTitle">เพิ่มข้อความใหม่</div>' +
+        '<input type="hidden" id="qrEditId" value="">' +
+        '<input id="qrIn_title" placeholder="ชื่อสั้นๆ (เช่น ทักทาย)" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;margin-bottom:8px">' +
+        '<textarea id="qrIn_body" rows="3" placeholder="ข้อความที่จะเติมลงช่องตอบ" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:8px"></textarea>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button id="qrSave" style="flex:1;border:0;background:#0ea5e9;color:#fff;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-size:13px">บันทึก</button>' +
+          '<button id="qrCancel" style="border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:13px;display:none">ยกเลิกแก้ไข</button>' +
+        '</div>' +
+        '<div id="qrMMsg" style="font-size:11.5px;color:#64748b;margin-top:7px;min-height:14px"></div>' +
+      '</div>' +
+      '<div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:8px">รายการทั้งหมด (' + cache.length + ')</div>' +
+      rows;
+
+    document.getElementById('qrMClose').onclick = function(){ mask.style.display='none'; };
+    document.getElementById('qrSave').onclick = saveOne;
+    document.getElementById('qrCancel').onclick = resetForm;
+    Array.prototype.forEach.call(m.querySelectorAll('.qr-edit'), function(el){
+      el.onclick = function(){ startEdit(el.getAttribute('data-id')); };
+    });
+    Array.prototype.forEach.call(m.querySelectorAll('.qr-del'), function(el){
+      el.onclick = function(){ delOne(el.getAttribute('data-id')); };
+    });
+  }
+
+  function resetForm(){
+    document.getElementById('qrEditId').value = '';
+    document.getElementById('qrIn_title').value = '';
+    document.getElementById('qrIn_body').value = '';
+    document.getElementById('qrFormTitle').textContent = 'เพิ่มข้อความใหม่';
+    var c = document.getElementById('qrCancel'); if(c) c.style.display = 'none';
+    var msg = document.getElementById('qrMMsg'); if(msg){ msg.textContent=''; msg.style.color='#64748b'; }
+  }
+  function startEdit(id){
+    var q = cache.filter(function(x){ return String(x.id)===String(id); })[0];
+    if(!q) return;
+    document.getElementById('qrEditId').value = q.id;
+    document.getElementById('qrIn_title').value = q.title;
+    document.getElementById('qrIn_body').value = q.body;
+    document.getElementById('qrFormTitle').textContent = 'แก้ไขข้อความ #' + q.id;
+    document.getElementById('qrCancel').style.display = 'inline-block';
+    document.getElementById('qrIn_title').focus();
+  }
+
+  async function saveOne(){
+    var id = document.getElementById('qrEditId').value;
+    var title = document.getElementById('qrIn_title').value.trim();
+    var body = document.getElementById('qrIn_body').value.trim();
+    var msg = document.getElementById('qrMMsg');
+    if(!title || !body){ msg.style.color='#ef4444'; msg.textContent='ใส่ทั้งชื่อและข้อความก่อนนะ'; return; }
+    msg.style.color='#64748b'; msg.textContent='กำลังบันทึก...';
+    try {
+      var r;
+      if(id){
+        r = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
+          method:'PATCH',
+          headers: hdr({ 'Content-Type':'application/json', 'Prefer':'return=representation' }),
+          body: JSON.stringify({ title: title, body: body })
+        });
+      } else {
+        r = await fetch(REST, {
+          method:'POST',
+          headers: hdr({ 'Content-Type':'application/json', 'Prefer':'return=representation' }),
+          body: JSON.stringify({ title: title, body: body, sort: (cache.length ? (cache[cache.length-1].sort||0)+10 : 10) })
+        });
+      }
+      if(!r.ok){ var t = await r.text(); msg.style.color='#ef4444'; msg.textContent='บันทึกไม่สำเร็จ: ' + t.slice(0,120); return; }
+      await loadList(); resetForm(); renderManage();
+    } catch(e){ msg.style.color='#ef4444'; msg.textContent='error: ' + (e && e.message || e); }
+  }
+
+  async function delOne(id){
+    var q = cache.filter(function(x){ return String(x.id)===String(id); })[0];
+    if(!q) return;
+    if(!confirm('ลบข้อความ "' + q.title + '" ?')) return;
+    try {
+      var r = await fetch(REST + '?id=eq.' + encodeURIComponent(id), { method:'DELETE', headers: hdr({ 'Prefer':'return=minimal' }) });
+      if(!r.ok){ var t = await r.text(); alert('ลบไม่สำเร็จ: ' + t.slice(0,120)); return; }
+      await loadList(); renderManage();
+    } catch(e){ alert('error: ' + (e && e.message || e)); }
+  }
+
+  async function openManage(){
+    mask.style.display = 'flex';
+    document.getElementById('qrModal').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8">กำลังโหลด...</div>';
+    await loadList();
+    renderManage();
+  }
+})();
+
 </script>
 </body>
 </html>
