@@ -1196,6 +1196,40 @@ function buildConversations(){
     });
   };
 })();
+(function(){
+  var EP = SB_URL + '/functions/v1/send-message';
+  async function _send(convId){
+    var inp = document.getElementById('replyInput');
+    var txt = (inp && inp.value || '').trim();
+    if(!txt) return;
+    inp.value=''; inp.disabled=true;
+    var body = document.getElementById('chatBody');
+    var bub = document.createElement('div');
+    bub.className = 'msg-row out';
+    bub.innerHTML = '<div class="msg-av" style="background:#374151">SEND</div><div class="msg-bubble-wrap"><div class="msg-bubble out">' + esc(txt) + '</div><div class="msg-time send-st">กำลังส่ง...</div></div>';
+    if(body){ body.appendChild(bub); body.scrollTo({top:body.scrollHeight,behavior:'smooth'}); }
+    var st = bub.querySelector('.send-st');
+    try{
+      var r = await fetch(EP, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization':'Bearer ' + window.__authToken },
+        body: JSON.stringify({ conversation_id: convId, text: txt })
+      });
+      var j = await r.json();
+      if(j && j.ok){ if(st) st.textContent = 'ส่งแล้ว'; }
+      else {
+        if(st){ st.textContent = 'ส่งไม่สำเร็จ'; st.style.color = '#ef4444'; }
+        if(inp) inp.value = txt;
+        alert('ส่งไม่สำเร็จ: ' + ((j && j.error) || ''));
+      }
+    }catch(e){
+      if(st){ st.textContent = 'error'; st.style.color = '#ef4444'; }
+      if(inp) inp.value = txt;
+    }
+    if(inp){ inp.disabled = false; inp.focus(); }
+  }
+  window.sendReply = _send;
+})();
 </script>
 </body>
 </html>
