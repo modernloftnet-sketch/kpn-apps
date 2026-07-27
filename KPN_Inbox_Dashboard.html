@@ -904,6 +904,132 @@ function startRealtime(){
 // SAFETY NET — refresh เต็มทุก 5 นาที เผื่อ realtime หลุด
 setInterval(()=>loadData(true), 5*60*1000);
 
+/* ================================================================
+   Step 5 — ดึงรายชื่อแชทจากตาราง fb_conversations (เห็นลูกค้าครบทุกคน)
+   วิธีใช้: วางทั้งบล็อกนี้ "เหนือ" บรรทัดสุดท้ายของ <script> คือ
+        loadData().then(()=>startRealtime());
+   (บล็อกนี้ override ฟังก์ชันเดิม 6 ตัว — ของเดิมไม่ต้องลบ)
+   =================================================================== */
+
+const CONVSEL = '?select=conversation_id,page_id,customer_id,customer_name,last_message,last_message_at,last_is_read,conv_status&order=last_message_at.desc';
+let pageCounts = {};
+
+function mapConvRow(r){
+  return {
+    id: r.conversation_id,
+    conversation_id: r.conversation_id,
+    page_id: r.page_id,
+    type: 'messenger',
+    sender_name: r.customer_name || '',
+    sender_id: r.customer_id || '',
+    messages: [],
+    _loaded: false,
+    last_msg: { message:r.last_message, text:r.last_message, created_at:r.last_message_at, sender_id:r.customer_id, is_read:r.last_is_read, page_id:r.page_id },
+    last_time: r.last_message_at,
+    unread_count: (r.last_is_read===false)?1:0,
+    conv_status: r.conv_status || 'new'
+  };
+}
+
+async function loadPageCounts(){
+  const ids = (pages||[]).map(p=>p.id);
+  await Promise.all(ids.map(async id=>{
+    try{
+      const r = await fetch(`${SB_URL}/rest/v1/fb_conversations?select=conversation_id&page_id=eq.${id}`, {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,Prefer:'count=exact',Range:'0-0'}});
+      pageCounts[id] = parseInt((r.headers.get('content-range')||'/0').split('/')[1]||'0',10);
+    }catch(e){}
+  }));
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/fb_conversations?select=conversation_id`, {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,Prefer:'count=exact',Range:'0-0'}});
+    pageCounts._total = parseInt((r.headers.get('content-range')||'/0').split('/')[1]||'0',10);
+  }catch(e){}
+}
+
+async function loadData(isRef){
+  const btn=document.getElementById('refreshBtn'); if(btn){btn.textContent='⏳';btn.disabled=true;}
+  try{
+    if(isRef||!pages||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name&order=brand,branch_name');
+    const labels=await api('fb_customer_labels','?select=sender_id,page_id,custom_name,note');
+    custLabels={}; (labels||[]).forEach(l=>{ custLabels[l.sender_id+'_'+l.page_id]={custom_name:l.custom_name,note:l.note}; });
+    offset=0;
+    const rows=await api('fb_conversations', CONVSEL+`&limit=${pageSize}&offset=0`);
+    conversations=(rows||[]).map(mapConvRow);
+    allMsgs=[];
+    hasMore=(rows||[]).length===pageSize;
+    await loadPageCounts();
+    renderPageFilter(); filterConvs(); updateStats();
+    const lm=document.getElementById('lmbar'); if(lm) lm.style.display=hasMore?'':'none';
+  }catch(e){ console.error('loadData',e); }
+  if(btn){btn.textContent='⟳';btn.disabled=false;}
+}
+
+async function loadMore(){
+  offset+=pageSize;
+  const btn=document.querySelector('.lmbtn'); if(btn){btn.textContent='กำลังโหลด...';btn.disabled=true;}
+  try{
+    const rows=await api('fb_conversations', CONVSEL+`&limit=${pageSize}&offset=${offset}`);
+    conversations=[...conversations, ...(rows||[]).map(mapConvRow)];
+    hasMore=(rows||[]).length===pageSize;
+    filterConvs();
+    const lm=document.getElementById('lmbar'); if(lm) lm.style.display=hasMore?'':'none';
+  }catch(e){ console.error('loadMore',e); }
+  if(btn){btn.textContent='โหลดเพิ่ม ↓';btn.disabled=false;}
+}
+
+async function openConv(convId){
+  selConvId=convId;
+  document.querySelectorAll('.ci').forEach(el=>el.classList.toggle('active',el.dataset.cid===convId));
+  const conv=conversations.find(c=>c.id===convId);
+  if(!conv) return;
+  if(!conv._loaded){
+    try{
+      const msgs=await api('fb_messages', `?select=id,page_id,conversation_id,type,sender_name,sender_id,message,created_at,is_read,conv_status,raw_data,media&conversation_id=eq.${conv.conversation_id}&order=created_at.asc&limit=1000`);
+      conv.messages=msgs||[]; conv._loaded=true;
+    }catch(e){ console.error('openConv',e); conv.messages=[]; }
+  }
+  renderChat(conv);
+  if(conv.messages.some(m=>!m.is_read)){
+    conv.messages.forEach(m=>m.is_read=true); conv.unread_count=0;
+    document.querySelector(`[data-cid="${CSS.escape(convId)}"]`)?.classList.remove('unread');
+    api('fb_messages', `?conversation_id=eq.${conv.conversation_id}&is_read=eq.false`, 'PATCH', {is_read:true});
+    updateStats();
+  }
+}
+
+function renderPageFilter(){
+  const bp = cBrand==='all'?pages:pages.filter(p=>p.brand===cBrand);
+  const total = (pageCounts._total!=null)?pageCounts._total:conversations.length;
+  let h=`<button class="fb active" onclick="setPage('all')" id="page-all"><span class="fl">📋 ทุกสาขา</span><span class="cnt">${total}</span></button>`;
+  bp.forEach(p=>{
+    const c = (pageCounts[p.id]!=null)?pageCounts[p.id]:0;
+    const col=p.brand==='thebuilt'?'#3b82f6':'#f59e0b';
+    h+=`<button class="fb" onclick="setPage('${p.id}')" id="page-${p.id}"><span class="fl"><span class="bd" style="background:${col}"></span><span>${esc(p.branch_name||p.name)}</span></span><span class="cnt">${c}</span></button>`;
+  });
+  document.getElementById('pfl').innerHTML=h;
+  if(cPage!=='all'){ document.getElementById('page-'+cPage)?.classList.add('active'); document.getElementById('page-all')?.classList.remove('active'); }
+}
+
+/* realtime: merge ข้อความใหม่เข้า list เดิม (แทนการ rebuild จาก allMsgs) */
+function buildConversations(){
+  for(const m of (allMsgs||[])){
+    if(!m.conversation_id) continue;
+    const isAdmin=(m.sender_id&&m.page_id&&m.sender_id===m.page_id)||isAdminSender(m.sender_name);
+    let conv=conversations.find(c=>c.conversation_id===m.conversation_id);
+    if(!conv){
+      conv=mapConvRow({conversation_id:m.conversation_id,page_id:m.page_id,customer_id:isAdmin?null:m.sender_id,customer_name:isAdmin?null:((m.sender_name&&m.sender_name!=='ไม่ทราบชื่อ')?m.sender_name:null),last_message:m.message,last_message_at:m.created_at,last_is_read:m.is_read,conv_status:m.conv_status});
+      conversations.unshift(conv);
+      if(pageCounts){ pageCounts[m.page_id]=(pageCounts[m.page_id]||0)+1; if(pageCounts._total!=null) pageCounts._total++; }
+    }else{
+      if(new Date(m.created_at)>=new Date(conv.last_time||0)){ conv.last_msg={message:m.message,text:m.message,created_at:m.created_at,sender_id:m.sender_id,is_read:m.is_read,page_id:m.page_id}; conv.last_time=m.created_at; conv.conv_status=m.conv_status||conv.conv_status; }
+      if(!isAdmin&&!conv.sender_name&&m.sender_name&&m.sender_name!=='ไม่ทราบชื่อ'){ conv.sender_name=m.sender_name; conv.sender_id=m.sender_id; }
+      if(!m.is_read) conv.unread_count=(conv.unread_count||0)+1;
+      if(conv._loaded&&conv.messages&&!conv.messages.some(x=>x.id===m.id)) conv.messages.push(m);
+      conversations=[conv,...conversations.filter(c=>c!==conv)];
+    }
+  }
+  allMsgs=[];
+}
+/* ===== end Step 5 block ===== */
 loadData().then(()=>startRealtime());
 </script>
 </body>
