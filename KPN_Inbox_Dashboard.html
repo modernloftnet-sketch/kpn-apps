@@ -869,7 +869,7 @@ function startRealtime(){
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
   s.onload=()=>{
-    const sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:10}}});
+    const sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:10}}});try{if(window.__authToken)sb.realtime.setAuth(window.__authToken);}catch(e){}
     rtChan=sb.channel('fb_messages_changes')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'fb_messages'},(payload)=>{
         const m=payload.new;
@@ -1105,6 +1105,94 @@ function buildConversations(){
       $('kaAdd').disabled=false;
       if(r&&r.error){ msg.style.color='#ef4444'; msg.textContent=r.error; }
       else{ msg.style.color='#16a34a'; msg.textContent='Created ✓'; $('kaEmail').value='';$('kaPass').value='';$('kaName').value=''; [].slice.call($('kaBranches').querySelectorAll('input:checked')).forEach(function(c){c.checked=false;}); load(); }
+    });
+  };
+})();
+(function(){
+  var EP = SB_URL + '/functions/v1/ai-draft';
+  // ---- ปุ่มลอย "ร่าง AI" (มุมซ้ายล่าง) ----
+  var btn = document.createElement('button');
+  btn.id = 'aiBtn';
+  btn.textContent = '✨ ร่าง AI';
+  btn.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:9400;display:none;padding:10px 16px;border:0;border-radius:22px;background:#8b5cf6;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
+  document.body.appendChild(btn);
+  // แสดงเฉพาะตอนเปิดแชทอยู่
+  setInterval(function(){
+    var open = false;
+    try { open = !!selConvId; } catch(e) { open = false; }
+    btn.style.display = open ? 'block' : 'none';
+  }, 600);
+
+  // ---- กล่องผลลัพธ์ ----
+  var panel = document.createElement('div');
+  panel.id = 'aiPanel';
+  panel.style.cssText = 'position:fixed;bottom:70px;left:16px;width:380px;max-width:92vw;z-index:9450;display:none;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:14px;font-family:Segoe UI,Tahoma,sans-serif';
+  panel.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<b style="font-size:14px;color:#0f172a">ร่างโดย AI <span id="aiProv" style="font-size:10.5px;color:#8b5cf6;font-weight:600"></span></b>' +
+      '<button id="aiClose" style="border:0;background:#f1f5f9;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:600">ปิด</button>' +
+    '</div>' +
+    '<textarea id="aiOut" rows="5" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;font-size:13.5px;font-family:inherit;resize:vertical"></textarea>' +
+    '<div style="display:flex;gap:8px;margin-top:8px">' +
+      '<button id="aiCopy" style="flex:1;border:0;background:#22c55e;color:#fff;border-radius:9px;padding:9px;font-weight:700;cursor:pointer;font-size:13px">คัดลอก</button>' +
+      '<button id="aiRegen" style="border:0;background:#eef2ff;color:#4f46e5;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer;font-size:13px">ร่างใหม่</button>' +
+    '</div>' +
+    '<div id="aiMsg" style="font-size:11.5px;color:#64748b;margin-top:7px;min-height:14px"></div>';
+  document.body.appendChild(panel);
+  var $ = function(x){ return document.getElementById(x); };
+
+  function setBusy(on){
+    btn.disabled = on;
+    btn.textContent = on ? '⏳ กำลังร่าง...' : '✨ ร่าง AI';
+    if($('aiRegen')) $('aiRegen').disabled = on;
+  }
+
+  async function gen(){
+    var cid = null;
+    try { cid = selConvId; } catch(e) {}
+    if(!cid){ return; }
+    setBusy(true);
+    if($('aiMsg')) $('aiMsg').textContent = '';
+    try {
+      var r = await fetch(EP, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization':'Bearer ' + window.__authToken },
+        body: JSON.stringify({ conversation_id: cid })
+      });
+      var j = await r.json();
+      if(j && j.draft){
+        $('aiOut').value = j.draft;
+        $('aiProv').textContent = j.provider ? '(' + j.provider + ')' : '';
+        panel.style.display = 'block';
+        var inp = document.getElementById('replyInput');
+        if(inp){ inp.value = j.draft; }
+        $('aiMsg').textContent = 'ตรวจ/แก้ได้ก่อนคัดลอกไปวางตอบลูกค้า';
+      } else {
+        panel.style.display = 'block';
+        $('aiOut').value = '';
+        $('aiMsg').style.color = '#ef4444';
+        $('aiMsg').textContent = 'AI: ' + ((j && j.error) || 'ร่างไม่สำเร็จ');
+      }
+    } catch(e){
+      panel.style.display = 'block';
+      $('aiMsg').style.color = '#ef4444';
+      $('aiMsg').textContent = 'error: ' + (e && e.message || e);
+    }
+    setBusy(false);
+  }
+
+  btn.onclick = gen;
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  $('aiClose').onclick = function(){ panel.style.display = 'none'; };
+  $('aiRegen').onclick = gen;
+  $('aiCopy').onclick = function(){
+    var txt = $('aiOut').value;
+    navigator.clipboard.writeText(txt).then(function(){
+      $('aiMsg').style.color = '#16a34a';
+      $('aiMsg').textContent = 'คัดลอกแล้ว ✓ ไปวางใน Messenger ได้เลย';
+    }).catch(function(){
+      $('aiOut').select(); document.execCommand('copy');
+      $('aiMsg').textContent = 'คัดลอกแล้ว';
     });
   };
 })();
