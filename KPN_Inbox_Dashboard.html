@@ -1552,6 +1552,135 @@ function buildConversations(){
   };
 })();
 
+
+(function(){
+  // =====================================================================
+  // ส่วนที่ 1: ตัวกรอง "ยังไม่ตอบ"  (แชทที่ลูกค้าทักแล้วยังไม่ได้ตอบ)
+  // =====================================================================
+  var style = document.createElement('style');
+  style.textContent = '.unansw-hide{display:none !important;}';
+  document.head.appendChild(style);
+  window.__unanswOnly = false;
+
+  function applyUnansw(){
+    var map = {};
+    try { (conversations||[]).forEach(function(c){ map[c.id]=c; map[c.conversation_id]=c; }); } catch(e){}
+    var rows = document.querySelectorAll('[data-cid]');
+    Array.prototype.forEach.call(rows, function(row){
+      var c = map[row.getAttribute('data-cid')];
+      var unread = c && (c.unread_count>0);
+      if(window.__unanswOnly && c && !unread){ row.classList.add('unansw-hide'); }
+      else { row.classList.remove('unansw-hide'); }
+    });
+  }
+
+  setInterval(function(){
+    // แทรกชิป "ยังไม่ตอบ" ข้างแท็บกรอง (ถ้ายังไม่มี)
+    var tab = document.querySelector('.tb');
+    if(tab && tab.parentElement && !document.getElementById('unanswChip')){
+      var chip = document.createElement('button');
+      chip.id = 'unanswChip';
+      chip.type = 'button';
+      chip.textContent = '🔴 ยังไม่ตอบ';
+      chip.style.cssText = 'margin-left:6px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:16px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer';
+      chip.onclick = function(){
+        window.__unanswOnly = !window.__unanswOnly;
+        chip.style.background = window.__unanswOnly ? '#dc2626' : '#fff';
+        chip.style.color = window.__unanswOnly ? '#fff' : '#dc2626';
+        applyUnansw();
+      };
+      tab.parentElement.appendChild(chip);
+    }
+    if(window.__unanswOnly) applyUnansw();
+  }, 700);
+
+  // =====================================================================
+  // ส่วนที่ 2: แท็ก (Tags) ติดป้ายลูกค้ารายที่เปิดแชทอยู่
+  // =====================================================================
+  var REST = SB_URL + '/rest/v1/fb_customer_labels';
+  var PRESETS = ['สนใจ','ตีราคาแล้ว','นัดวัดแล้ว','ปิดการขาย','ติดตาม'];
+  var curTags = [];
+  var loadedFor = null;
+
+  function hdr(extra){ var h={'apikey':SB_KEY,'Authorization':'Bearer '+window.__authToken}; if(extra){ for(var k in extra) h[k]=extra[k]; } return h; }
+  function curConv(){ try { return (conversations||[]).find(function(c){ return c.id===selConvId; })||null; } catch(e){ return null; } }
+  function esc2(s){ try { return esc(s); } catch(e){ return (s==null?'':String(s)); } }
+
+  var btn = document.createElement('button');
+  btn.id = 'tagBtn';
+  btn.textContent = '🏷️ แท็ก';
+  btn.style.cssText = 'position:fixed;bottom:16px;left:290px;z-index:9400;display:none;padding:10px 16px;border:0;border-radius:22px;background:#f59e0b;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
+  document.body.appendChild(btn);
+
+  var panel = document.createElement('div');
+  panel.id = 'tagPanel';
+  panel.style.cssText = 'position:fixed;bottom:60px;left:16px;width:360px;max-width:92vw;z-index:9450;display:none;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:14px;font-family:Segoe UI,Tahoma,sans-serif';
+  document.body.appendChild(panel);
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+
+  function updateBtn(){ btn.textContent = '🏷️ แท็ก' + (curTags.length ? (' ('+curTags.length+')') : ''); }
+
+  async function loadTags(conv){
+    curTags = [];
+    try {
+      var r = await fetch(REST + '?sender_id=eq.' + encodeURIComponent(conv.sender_id) + '&page_id=eq.' + encodeURIComponent(conv.page_id) + '&select=tags', { headers: hdr() });
+      var j = await r.json();
+      if(Array.isArray(j) && j.length && Array.isArray(j[0].tags)) curTags = j[0].tags;
+    } catch(e){}
+    loadedFor = conv.id;
+    updateBtn();
+  }
+
+  async function saveTags(conv){
+    try {
+      await fetch(REST + '?on_conflict=sender_id,page_id', {
+        method: 'POST',
+        headers: hdr({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify({ sender_id: conv.sender_id, page_id: conv.page_id, tags: curTags, updated_at: new Date().toISOString() })
+      });
+    } catch(e){ alert('บันทึกแท็กไม่สำเร็จ'); }
+    updateBtn();
+  }
+
+  function commit(){ var c = curConv(); if(c){ saveTags(c); render(); } }
+
+  function render(){
+    var chips = curTags.length ? curTags.map(function(t, idx){
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:14px;padding:3px 10px;font-size:12.5px;font-weight:700;margin:0 6px 6px 0">' + esc2(t) + '<span data-rm="' + idx + '" style="cursor:pointer;color:#b45309;font-weight:900">✕</span></span>';
+    }).join('') : '<span style="font-size:12px;color:#94a3b8">ยังไม่มีแท็ก</span>';
+    var presetBtns = PRESETS.map(function(p){
+      var on = curTags.indexOf(p)>=0;
+      return '<button data-add="' + esc2(p) + '" ' + (on?'disabled':'') + ' style="border:1px solid #fde68a;background:' + (on?'#f1f5f9':'#fffbeb') + ';color:' + (on?'#94a3b8':'#92400e') + ';border-radius:14px;padding:4px 10px;font-size:12px;font-weight:600;cursor:' + (on?'default':'pointer') + ';margin:0 6px 6px 0">' + esc2(p) + '</button>';
+    }).join('');
+    panel.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:14px;color:#0f172a">🏷️ แท็กลูกค้ารายนี้</b><button id="tagClose" style="border:0;background:#f1f5f9;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:600">ปิด</button></div>' +
+      '<div style="margin-bottom:10px;min-height:22px">' + chips + '</div>' +
+      '<div style="font-size:11.5px;color:#64748b;margin-bottom:5px">เพิ่มด่วน</div>' +
+      '<div style="margin-bottom:8px">' + presetBtns + '</div>' +
+      '<div style="display:flex;gap:6px"><input id="tagIn" placeholder="พิมพ์แท็กใหม่..." style="flex:1;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px;font-size:13px;font-family:inherit"><button id="tagAdd" style="border:0;background:#f59e0b;color:#fff;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13px">เพิ่ม</button></div>';
+    document.getElementById('tagClose').onclick = function(){ panel.style.display='none'; };
+    Array.prototype.forEach.call(panel.querySelectorAll('[data-rm]'), function(x){ x.onclick = function(){ curTags.splice(parseInt(x.getAttribute('data-rm'),10),1); commit(); }; });
+    Array.prototype.forEach.call(panel.querySelectorAll('[data-add]'), function(x){ x.onclick = function(){ var t=x.getAttribute('data-add'); if(curTags.indexOf(t)<0){ curTags.push(t); commit(); } }; });
+    document.getElementById('tagAdd').onclick = function(){ var v=document.getElementById('tagIn').value.trim(); if(v && curTags.indexOf(v)<0){ curTags.push(v); commit(); } };
+    document.getElementById('tagIn').onkeydown = function(e){ if(e.key==='Enter'){ document.getElementById('tagAdd').onclick(); } };
+  }
+
+  btn.onclick = function(){
+    var c = curConv(); if(!c) return;
+    if(loadedFor !== c.id){ loadTags(c).then(render); } else { render(); }
+    panel.style.display = 'block';
+  };
+
+  // โชว์ปุ่มเฉพาะตอนเปิดแชท + โหลดแท็กเมื่อสลับแชท
+  setInterval(function(){
+    var open=false; try { open=!!selConvId; } catch(e){}
+    btn.style.display = open ? 'block' : 'none';
+    if(!open){ panel.style.display='none'; loadedFor=null; return; }
+    var c = curConv();
+    if(c && loadedFor !== c.id){ loadTags(c); }
+  }, 700);
+})();
+
 </script>
 </body>
 </html>
