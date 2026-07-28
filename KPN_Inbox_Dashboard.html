@@ -1234,11 +1234,82 @@ function buildConversations(){
 (function(){
   var REST = SB_URL + '/rest/v1/quick_replies';
   var cache = [];
+  var qrFormImages = [];                              // รูปที่กำลังแก้ในฟอร์มจัดการ
+  var QR_BUCKET = 'outgoing-media';                   // ใช้ bucket เดียวกับปุ่ม 📎
+  var QR_SEND = SB_URL + '/functions/v1/send-message';
 
   function hdr(extra){
     var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + window.__authToken };
     if(extra){ for(var k in extra){ h[k] = extra[k]; } }
     return h;
+  }
+
+  function imgCount(q){ return (q && q.images && q.images.length) ? q.images.length : 0; }
+
+  // อัปโหลดรูป 1 ไฟล์ขึ้น Storage แล้วคืน public URL
+  async function uploadQrImage(f){
+    var safe = (f.name || 'img').replace(/[^\w.\-]+/g, '_');
+    var path = 'quick-replies/' + Date.now() + '_' + Math.random().toString(36).slice(2,7) + '_' + safe;
+    var up = await fetch(SB_URL + '/storage/v1/object/' + QR_BUCKET + '/' + encodeURI(path), {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + window.__authToken, 'Content-Type': f.type || 'application/octet-stream', 'x-upsert': 'true' },
+      body: f
+    });
+    if(!up.ok){ throw new Error('อัปโหลดรูปไม่สำเร็จ: ' + (await up.text()).slice(0,120)); }
+    return SB_URL + '/storage/v1/object/public/' + QR_BUCKET + '/' + encodeURI(path);
+  }
+
+  // ส่งข้อความ + รูปทั้งหมดของข้อความสำเร็จรูปเข้า Messenger ทันที
+  async function sendQuickReply(q){
+    var convId = null; try { convId = selConvId; } catch(e){}
+    if(!convId){ alert('เปิดแชทก่อนนะ'); return; }
+    panel.style.display = 'none';
+    var body = document.getElementById('chatBody');
+    function addBubble(inner){
+      var bub = document.createElement('div');
+      bub.className = 'msg-row out';
+      bub.innerHTML = '<div class="msg-av" style="background:#374151">SEND</div><div class="msg-bubble-wrap"><div class="msg-bubble out">' + inner + '</div><div class="msg-time qr-st">กำลังส่ง...</div></div>';
+      if(body){ body.appendChild(bub); body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }); }
+      return bub.querySelector('.qr-st');
+    }
+    // 1) ส่งข้อความก่อน (ถ้ามี)
+    if(q.body){
+      var st = addBubble(esc2(q.body));
+      try {
+        var r = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, text: q.body }) });
+        var j = await r.json();
+        if(st) st.textContent = (j && j.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
+        if(st && !(j && j.ok)) st.style.color = '#ef4444';
+      } catch(e){ if(st){ st.textContent='error'; st.style.color='#ef4444'; } }
+    }
+    // 2) ส่งรูปทีละรูป
+    var imgs = (q.images || []);
+    for(var i=0;i<imgs.length;i++){
+      var url = imgs[i];
+      var st2 = addBubble('<img src="' + url + '" style="max-width:220px;border-radius:8px;display:block">');
+      try {
+        var r2 = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, attachment_url: url, attachment_type: 'image' }) });
+        var j2 = await r2.json();
+        if(st2) st2.textContent = (j2 && j2.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
+        if(st2 && !(j2 && j2.ok)) st2.style.color = '#ef4444';
+      } catch(e){ if(st2){ st2.textContent='error'; st2.style.color='#ef4444'; } }
+    }
+  }
+
+  // วาด preview รูปในฟอร์มจัดการ
+  function renderQrImgPreview(){
+    var wrap = document.getElementById('qrImgPreview');
+    if(!wrap) return;
+    if(!qrFormImages.length){ wrap.innerHTML = '<span style="font-size:11.5px;color:#94a3b8">ยังไม่มีรูป</span>'; return; }
+    wrap.innerHTML = qrFormImages.map(function(u, idx){
+      return '<div style="position:relative;width:62px;height:62px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">' +
+        '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;display:block">' +
+        '<span data-rmimg="' + idx + '" title="ลบรูปนี้" style="position:absolute;top:1px;right:1px;background:rgba(220,38,38,.92);color:#fff;font-weight:900;font-size:12px;line-height:1;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer">✕</span>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-rmimg]'), function(x){
+      x.onclick = function(){ qrFormImages.splice(parseInt(x.getAttribute('data-rmimg'),10), 1); renderQrImgPreview(); };
+    });
   }
 
   // ---------- ปุ่มลอย "สำเร็จรูป" (ซ้ายล่าง ถัดจากปุ่ม AI) ----------
@@ -1290,8 +1361,10 @@ function buildConversations(){
     } else {
       cache.forEach(function(q){
         var scope = q.page_id ? '' : '<span style="font-size:10px;color:#0ea5e9;font-weight:700;margin-left:6px">ทุกสาขา</span>';
-        html += '<div class="qr-item" data-id="' + q.id + '" style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:.12s">' +
-          '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + scope + '</div>' +
+        var nimg = imgCount(q);
+        var imgBadge = nimg ? '<span style="font-size:10px;color:#fff;background:#16a34a;font-weight:700;margin-left:6px;border-radius:8px;padding:1px 7px">📷 ' + nimg + ' · กดเพื่อส่งทันที</span>' : '';
+        html += '<div class="qr-item" data-id="' + q.id + '" style="border:1px solid ' + (nimg?'#bbf7d0':'#e2e8f0') + ';border-radius:10px;padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:.12s">' +
+          '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + scope + imgBadge + '</div>' +
           '<div style="font-size:12px;color:#64748b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc2(q.body) + '</div>' +
         '</div>';
       });
@@ -1305,14 +1378,16 @@ function buildConversations(){
       el.onclick = function(){
         var id = el.getAttribute('data-id');
         var q = cache.filter(function(x){ return String(x.id)===String(id); })[0];
-        if(q) insertText(q.body);
+        if(!q) return;
+        if(imgCount(q)) sendQuickReply(q);
+        else insertText(q.body);
       };
     });
   }
 
   async function loadList(){
     try {
-      var r = await fetch(REST + '?select=id,title,body,page_id,sort&order=sort.asc,id.asc', { headers: hdr() });
+      var r = await fetch(REST + '?select=id,title,body,images,page_id,sort&order=sort.asc,id.asc', { headers: hdr() });
       cache = await r.json();
       if(!Array.isArray(cache)) cache = [];
     } catch(e){ cache = []; }
@@ -1344,8 +1419,9 @@ function buildConversations(){
         rows += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:9px 11px;margin-bottom:7px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
             '<div style="min-width:0">' +
-              '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + (q.page_id?'':' <span style="font-size:10px;color:#0ea5e9;font-weight:700">ทุกสาขา</span>') + '</div>' +
+              '<div style="font-weight:700;font-size:13px;color:#0f172a">' + esc2(q.title) + (q.page_id?'':' <span style="font-size:10px;color:#0ea5e9;font-weight:700">ทุกสาขา</span>') + (imgCount(q)?' <span style="font-size:10px;color:#fff;background:#16a34a;font-weight:700;border-radius:8px;padding:1px 7px">📷 '+imgCount(q)+'</span>':'') + '</div>' +
               '<div style="font-size:12px;color:#64748b;margin-top:3px;white-space:pre-wrap;word-break:break-word">' + esc2(q.body) + '</div>' +
+              (imgCount(q) ? '<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">' + q.images.map(function(u){ return '<img src="'+u+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">'; }).join('') + '</div>' : '') +
             '</div>' +
             '<div style="flex:none;display:flex;gap:6px">' +
               '<button class="qr-edit" data-id="'+q.id+'" style="border:0;background:#eef2ff;color:#4f46e5;border-radius:7px;padding:4px 9px;cursor:pointer;font-size:12px;font-weight:700">แก้</button>' +
@@ -1365,6 +1441,13 @@ function buildConversations(){
         '<input type="hidden" id="qrEditId" value="">' +
         '<input id="qrIn_title" placeholder="ชื่อสั้นๆ (เช่น ทักทาย)" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;margin-bottom:8px">' +
         '<textarea id="qrIn_body" rows="3" placeholder="ข้อความที่จะเติมลงช่องตอบ" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:8px"></textarea>' +
+        '<div style="margin-bottom:8px">' +
+          '<div style="font-size:11.5px;color:#64748b;margin-bottom:5px">รูปแนบ (ส่งให้ลูกค้าพร้อมข้อความ — แนบได้หลายรูป เช่น PB / MDF / HMR / Plywood)</div>' +
+          '<div id="qrImgPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px"></div>' +
+          '<button type="button" id="qrAddImg" style="border:1px dashed #93c5fd;background:#eff6ff;color:#2563eb;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer">＋ เพิ่มรูป</button>' +
+          '<span id="qrImgMsg" style="font-size:11.5px;color:#64748b;margin-left:8px"></span>' +
+          '<input type="file" id="qrImgFile" accept="image/*" multiple style="display:none">' +
+        '</div>' +
         '<div style="display:flex;gap:8px">' +
           '<button id="qrSave" style="flex:1;border:0;background:#0ea5e9;color:#fff;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-size:13px">บันทึก</button>' +
           '<button id="qrCancel" style="border:0;background:#f1f5f9;color:#475569;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:13px;display:none">ยกเลิกแก้ไข</button>' +
@@ -1377,6 +1460,28 @@ function buildConversations(){
     document.getElementById('qrMClose').onclick = function(){ mask.style.display='none'; };
     document.getElementById('qrSave').onclick = saveOne;
     document.getElementById('qrCancel').onclick = resetForm;
+    renderQrImgPreview();
+    var addImgBtn = document.getElementById('qrAddImg');
+    var imgFile = document.getElementById('qrImgFile');
+    var imgMsg = document.getElementById('qrImgMsg');
+    if(addImgBtn && imgFile){
+      addImgBtn.onclick = function(){ imgFile.value=''; imgFile.click(); };
+      imgFile.onchange = async function(){
+        var files = Array.prototype.slice.call(imgFile.files || []);
+        if(!files.length) return;
+        addImgBtn.disabled = true;
+        for(var i=0;i<files.length;i++){
+          var f = files[i];
+          if(!/^image\//.test(f.type)){ continue; }
+          if(f.size > 8*1048576){ if(imgMsg){ imgMsg.style.color='#ef4444'; imgMsg.textContent = f.name + ' ใหญ่เกิน 8MB'; } continue; }
+          if(imgMsg){ imgMsg.style.color='#64748b'; imgMsg.textContent = 'กำลังอัปโหลด ' + (i+1) + '/' + files.length + '...'; }
+          try { var url = await uploadQrImage(f); qrFormImages.push(url); renderQrImgPreview(); }
+          catch(e){ if(imgMsg){ imgMsg.style.color='#ef4444'; imgMsg.textContent = String(e && e.message || e); } }
+        }
+        if(imgMsg && imgMsg.style.color !== 'rgb(239, 68, 68)'){ imgMsg.style.color='#16a34a'; imgMsg.textContent = 'อัปโหลดรูปแล้ว ✓ (อย่าลืมกดบันทึก)'; }
+        addImgBtn.disabled = false;
+      };
+    }
     Array.prototype.forEach.call(m.querySelectorAll('.qr-edit'), function(el){
       el.onclick = function(){ startEdit(el.getAttribute('data-id')); };
     });
@@ -1390,6 +1495,9 @@ function buildConversations(){
     document.getElementById('qrIn_title').value = '';
     document.getElementById('qrIn_body').value = '';
     document.getElementById('qrFormTitle').textContent = 'เพิ่มข้อความใหม่';
+    qrFormImages = [];
+    renderQrImgPreview();
+    var im = document.getElementById('qrImgMsg'); if(im){ im.textContent=''; }
     var c = document.getElementById('qrCancel'); if(c) c.style.display = 'none';
     var msg = document.getElementById('qrMMsg'); if(msg){ msg.textContent=''; msg.style.color='#64748b'; }
   }
@@ -1398,7 +1506,9 @@ function buildConversations(){
     if(!q) return;
     document.getElementById('qrEditId').value = q.id;
     document.getElementById('qrIn_title').value = q.title;
-    document.getElementById('qrIn_body').value = q.body;
+    document.getElementById('qrIn_body').value = q.body || '';
+    qrFormImages = Array.isArray(q.images) ? q.images.slice() : [];
+    renderQrImgPreview();
     document.getElementById('qrFormTitle').textContent = 'แก้ไขข้อความ #' + q.id;
     document.getElementById('qrCancel').style.display = 'inline-block';
     document.getElementById('qrIn_title').focus();
@@ -1409,7 +1519,8 @@ function buildConversations(){
     var title = document.getElementById('qrIn_title').value.trim();
     var body = document.getElementById('qrIn_body').value.trim();
     var msg = document.getElementById('qrMMsg');
-    if(!title || !body){ msg.style.color='#ef4444'; msg.textContent='ใส่ทั้งชื่อและข้อความก่อนนะ'; return; }
+    if(!title){ msg.style.color='#ef4444'; msg.textContent='ใส่ชื่อก่อนนะ'; return; }
+    if(!body && !qrFormImages.length){ msg.style.color='#ef4444'; msg.textContent='ใส่ข้อความ หรือแนบรูปอย่างน้อย 1 รูป'; return; }
     msg.style.color='#64748b'; msg.textContent='กำลังบันทึก...';
     try {
       var r;
@@ -1417,13 +1528,13 @@ function buildConversations(){
         r = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
           method:'PATCH',
           headers: hdr({ 'Content-Type':'application/json', 'Prefer':'return=representation' }),
-          body: JSON.stringify({ title: title, body: body })
+          body: JSON.stringify({ title: title, body: body, images: qrFormImages })
         });
       } else {
         r = await fetch(REST, {
           method:'POST',
           headers: hdr({ 'Content-Type':'application/json', 'Prefer':'return=representation' }),
-          body: JSON.stringify({ title: title, body: body, sort: (cache.length ? (cache[cache.length-1].sort||0)+10 : 10) })
+          body: JSON.stringify({ title: title, body: body, images: qrFormImages, sort: (cache.length ? (cache[cache.length-1].sort||0)+10 : 10) })
         });
       }
       if(!r.ok){ var t = await r.text(); msg.style.color='#ef4444'; msg.textContent='บันทึกไม่สำเร็จ: ' + t.slice(0,120); return; }
