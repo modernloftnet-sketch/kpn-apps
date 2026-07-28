@@ -1912,6 +1912,12 @@ function buildConversations(){
       '<div style="background:#fff;border-radius:12px;max-width:720px;width:92%;max-height:88vh;display:flex;flex-direction:column;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;font-size:18px">&#128218; คลังความรู้ AI</h3><button id="kbClose" style="border:none;background:#eee;border-radius:8px;padding:6px 12px;cursor:pointer">ปิด</button></div>'
       + '<p style="margin:4px 0 10px;color:#666;font-size:13px">ใส่ราคา / FAQ / เงื่อนไข / โทนการพูด &mdash; AI จะอ่านทุกครั้งก่อนร่างข้อความตอบลูกค้า</p>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
+      +   '<button id="kbUpBtn" style="border:1px dashed #93c5fd;background:#eff6ff;color:#2563eb;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">&#128206; อัปโหลดไฟล์เข้าคลัง</button>'
+      +   '<span style="font-size:11.5px;color:#94a3b8">PDF / Word / Excel / รูปตารางราคา-คุณสมบัติ</span>'
+      +   '<span id="kbUpMsg" style="font-size:12px;color:#888;flex-basis:100%"></span>'
+      +   '<input type="file" id="kbUpFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,image/*" multiple style="display:none">'
+      + '</div>'
       + '<textarea id="kbText" style="flex:1;min-height:340px;width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.5;padding:12px;border:1px solid #ddd;border-radius:8px;resize:vertical" placeholder="กำลังโหลด..."></textarea>'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span id="kbMsg" style="font-size:13px;color:#888"></span><button id="kbSave" style="border:none;background:#2563eb;color:#fff;border-radius:8px;padding:10px 22px;cursor:pointer;font-weight:600">&#128190; บันทึก</button></div>'
       + '</div>';
@@ -1947,6 +1953,94 @@ function buildConversations(){
         msg.style.color='#16a34a'; msg.textContent='บันทึกแล้ว ✓ (AI จะใช้ข้อมูลนี้ในการร่างครั้งต่อไป)';
       } catch(e){ msg.style.color='#ef4444'; msg.textContent='บันทึกไม่สำเร็จ: '+(e.message||e); }
     };
+
+    // ---------- อัปโหลดไฟล์เข้าคลังความรู้ (ดึงข้อความ/ตาราง แล้วเติมลงกล่อง) ----------
+    var _libs = {};
+    function loadScript(src){
+      if(_libs[src]) return _libs[src];
+      _libs[src] = new Promise(function(res,rej){
+        var s=document.createElement('script'); s.src=src;
+        s.onload=function(){ res(); }; s.onerror=function(){ rej(new Error('โหลดไลบรารีไม่สำเร็จ')); };
+        document.head.appendChild(s);
+      });
+      return _libs[src];
+    }
+    function fileToB64(f){ return new Promise(function(res,rej){ var rd=new FileReader(); rd.onload=function(){ var s=String(rd.result); res(s.slice(s.indexOf(',')+1)); }; rd.onerror=rej; rd.readAsDataURL(f); }); }
+    function kbUpSay(t,c){ var m=$k('kbUpMsg'); if(m){ m.style.color=c||'#888'; m.textContent=t; } }
+
+    async function extractFile(f){
+      var name=(f.name||'file').toLowerCase();
+      var ext=name.split('.').pop();
+      if(ext==='pdf'){
+        kbUpSay('กำลังอ่าน PDF...');
+        await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+        window['pdfjsLib'].GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        var pdf=await window['pdfjsLib'].getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+        var out=[];
+        for(var p=1;p<=pdf.numPages;p++){ var pg=await pdf.getPage(p); var tc=await pg.getTextContent(); out.push(tc.items.map(function(it){return it.str;}).join(' ')); }
+        var txt=out.join('\n').trim();
+        if(!txt) throw new Error('PDF นี้เป็นรูปสแกน (ไม่มีข้อความ) — ลองแคปเป็นรูปแล้วอัปโหลดใหม่');
+        return txt;
+      }
+      if(ext==='xlsx'||ext==='xls'||ext==='csv'){
+        kbUpSay('กำลังอ่านตาราง...');
+        await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+        var wb=window['XLSX'].read(new Uint8Array(await f.arrayBuffer()),{type:'array'});
+        var parts=[];
+        wb.SheetNames.forEach(function(sn){ var csv=window['XLSX'].utils.sheet_to_csv(wb.Sheets[sn]); if(csv.trim()) parts.push('# ชีท: '+sn+'\n'+csv); });
+        return parts.join('\n\n').trim();
+      }
+      if(ext==='docx'||ext==='doc'){
+        kbUpSay('กำลังอ่านเอกสาร...');
+        await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js');
+        var res3=await window['mammoth'].extractRawText({arrayBuffer:await f.arrayBuffer()});
+        return (res3.value||'').trim();
+      }
+      if(/^image\//.test(f.type) || ['png','jpg','jpeg','webp','gif','bmp'].indexOf(ext)>=0){
+        if(f.size>10*1048576) throw new Error('รูปใหญ่เกิน 10MB');
+        // 1) ถ้ามีเซิร์ฟเวอร์ AI vision (kb-extract) ใช้ก่อน (แม่นกับตารางไทย)
+        try {
+          kbUpSay('กำลังให้ AI อ่านรูป...');
+          var b64=await fileToB64(f);
+          var r=await fetch(_URL+'/functions/v1/kb-extract',{ method:'POST', headers:Object.assign({'Content-Type':'application/json'},H()), body:JSON.stringify({image_base64:b64, media_type:f.type||'image/png'}) });
+          if(r.ok){ var j=await r.json(); if(j && j.text) return j.text.trim(); }
+        } catch(_ev){ /* ตกไปใช้ OCR ในเครื่อง */ }
+        // 2) OCR ในเบราว์เซอร์ (Tesseract ไทย+อังกฤษ) — สำรอง
+        kbUpSay('กำลังอ่านตัวอักษรในรูป (OCR ครั้งแรกโหลดนาน)...');
+        await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+        var out=await window['Tesseract'].recognize(f, 'tha+eng', { logger:function(m){ if(m && m.status==='recognizing text'){ kbUpSay('OCR '+Math.round((m.progress||0)*100)+'%...'); } } });
+        var t=((out && out.data && out.data.text) || '').trim();
+        if(!t) throw new Error('อ่านตัวอักษรในรูปไม่ได้');
+        return t;
+      }
+      return (await f.text()).trim();
+    }
+
+    function wireUpload(){
+      var ub=$k('kbUpBtn'), uf=$k('kbUpFile');
+      if(!ub||!uf) return;
+      ub.onclick=function(){ uf.value=''; uf.click(); };
+      uf.onchange=async function(){
+        var files=Array.prototype.slice.call(uf.files||[]);
+        if(!files.length) return;
+        ub.disabled=true; ub.style.opacity='0.6';
+        for(var i=0;i<files.length;i++){
+          var f=files[i];
+          try{
+            kbUpSay('('+(i+1)+'/'+files.length+') กำลังอ่าน '+f.name+' ...');
+            var txt=await extractFile(f);
+            if(!txt){ kbUpSay(f.name+': ไม่พบข้อความในไฟล์','#ef4444'); continue; }
+            var ta=$k('kbText');
+            var header='\n\n=== จากไฟล์: '+f.name+' ===\n';
+            ta.value=(ta.value.trim()? ta.value.replace(/\s+$/,'') : '')+header+txt;
+            ta.scrollTop=ta.scrollHeight;
+            kbUpSay('เพิ่ม "'+f.name+'" ลงคลังแล้ว ✓ — ตรวจ/แก้ได้ แล้วกด บันทึก','#16a34a');
+          }catch(e){ kbUpSay(f.name+': '+(e && e.message || e),'#ef4444'); }
+        }
+        ub.disabled=false; ub.style.opacity='1';
+      };
+    }
+    wireUpload();
   } catch(_e) { /* isolated — must not break the app */ }
 })();
 </script>
