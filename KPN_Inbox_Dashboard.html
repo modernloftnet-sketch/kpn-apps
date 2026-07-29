@@ -323,12 +323,22 @@ function appendSentBy(bub){
   }catch(_e){}
 }
 
+// เลือก endpoint ส่งข้อความตาม platform ของเพจ (line → line-send, อื่นๆ → send-message)
+function sendEndpointFor(convId){
+  try{
+    const c=(conversations||[]).find(x=>x.id===convId||x.conversation_id===convId);
+    const p=(pages||[]).find(x=>x.id===(c&&c.page_id));
+    if(p && p.platform==='line') return SB_URL+'/functions/v1/line-send';
+  }catch(e){}
+  return SB_URL+'/functions/v1/send-message';
+}
+
 // โหลดข้อมูลทั้งหมด
 async function loadData(isRef=false){
   const btn=document.getElementById('refreshBtn');
   btn.textContent='⏳'; btn.disabled=true;
   try{
-    if(isRef||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name&order=brand,branch_name');
+    if(isRef||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name,platform&order=brand,branch_name');
     // โหลด customer labels
     const labels=await api('fb_customer_labels','?select=sender_id,page_id,custom_name,note');
     custLabels={};
@@ -989,7 +999,7 @@ async function loadPageCounts(){
 async function loadData(isRef){
   const btn=document.getElementById('refreshBtn'); if(btn){btn.textContent='⏳';btn.disabled=true;}
   try{
-    if(isRef||!pages||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name&order=brand,branch_name');
+    if(isRef||!pages||!pages.length) pages=await api('fb_pages','?select=id,name,brand,branch_name,platform&order=brand,branch_name');
     const labels=await api('fb_customer_labels','?select=sender_id,page_id,custom_name,note');
     custLabels={}; (labels||[]).forEach(l=>{ custLabels[l.sender_id+'_'+l.page_id]={custom_name:l.custom_name,note:l.note}; });
     offset=0;
@@ -1262,7 +1272,7 @@ function buildConversations(){
     if(body){ body.appendChild(bub); body.scrollTo({top:body.scrollHeight,behavior:'smooth'}); }
     var st = bub.querySelector('.send-st');
     try{
-      var r = await fetch(EP, {
+      var r = await fetch(sendEndpointFor(convId), {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization':'Bearer ' + window.__authToken },
         body: JSON.stringify({ conversation_id: convId, text: txt })
@@ -1328,7 +1338,7 @@ function buildConversations(){
     if(q.body){
       var bub1 = addBubble(esc2(q.body)); var st = bub1.querySelector('.qr-st');
       try {
-        var r = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, text: q.body }) });
+        var r = await fetch(sendEndpointFor(convId), { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, text: q.body }) });
         var j = await r.json();
         if(st) st.textContent = (j && j.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
         if(st && !(j && j.ok)) st.style.color = '#ef4444';
@@ -1341,7 +1351,7 @@ function buildConversations(){
       var url = imgs[i];
       var bub2 = addBubble('<img src="' + url + '" style="max-width:220px;border-radius:8px;display:block">'); var st2 = bub2.querySelector('.qr-st');
       try {
-        var r2 = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, attachment_url: url, attachment_type: 'image' }) });
+        var r2 = await fetch(sendEndpointFor(convId), { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, attachment_url: url, attachment_type: 'image' }) });
         var j2 = await r2.json();
         if(st2) st2.textContent = (j2 && j2.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
         if(st2 && !(j2 && j2.ok)) st2.style.color = '#ef4444';
@@ -1694,7 +1704,7 @@ function buildConversations(){
 
       if(st) st.textContent = 'กำลังส่ง...';
       // 2) ส่งเข้า Messenger ผ่าน edge function
-      var r = await fetch(SENDEP, {
+      var r = await fetch(sendEndpointFor(convId), {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization':'Bearer ' + window.__authToken },
         body: JSON.stringify({ conversation_id: convId, attachment_url: publicUrl, attachment_type: atype })
