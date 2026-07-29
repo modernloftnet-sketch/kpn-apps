@@ -158,6 +158,8 @@
   .msg-bubble img { max-width:200px; border-radius:10px; cursor:pointer; display:block; margin-top:4px; } .msg-bubble video { max-width:240px; border-radius:10px; display:block; margin-top:4px; }
   .msg-time { font-size:9px; color:var(--text3); margin-top:3px; padding:0 6px; font-family:'IBM Plex Mono',monospace; }
   .msg-row.out .msg-time { text-align:right; }
+  .msg-sentby { font-size:9.5px; color:#0ea5e9; margin-top:1px; padding:0 6px; font-weight:700; }
+  .msg-row.out .msg-sentby { text-align:right; }
   .chat-loading { display:flex; align-items:center; justify-content:center; gap:8px; padding:20px; color:var(--text3); font-size:12px; }
 
   /* REPLY BOX */
@@ -289,6 +291,36 @@ async function api(tbl, q='', method='GET', body=null){
   });
   if(method==='GET') return r.json();
   return r;
+}
+
+// บันทึกว่า "ใคร (ไอดีไหน) เป็นคนส่งข้อความนี้" — เก็บถาวรใน Supabase ให้ทั้งทีมเห็น
+async function logReplyAuthor(convId, snippet){
+  try{
+    const who = (window.__displayName || '') || '?';
+    await api('reply_authors', '', 'POST', {
+      conversation_id: String(convId||''),
+      sender_name: String(who).slice(0,120),
+      snippet: String(snippet||'').slice(0,120)
+    });
+    // อัปเดตในหน่วยความจำทันที เพื่อให้ป้าย "ตอบโดย" ขึ้นเลยตอน re-render
+    try{
+      const conv=(conversations||[]).find(c=>c.id===selConvId||c.conversation_id===convId);
+      if(conv){ conv.__authors=conv.__authors||[]; conv.__authors.push({sent_at:new Date().toISOString(), sender_name:who, snippet:String(snippet||'').slice(0,120)}); }
+    }catch(_e){}
+  }catch(e){ console.warn('logReplyAuthor', e); }
+}
+
+// เติมป้าย "↩ ตอบโดย <ชื่อ>" ใต้ bubble ที่เพิ่งส่ง (แสดงทันที)
+function appendSentBy(bub){
+  try{
+    const who = (window.__displayName || '') || '?';
+    const wrap = bub && bub.querySelector('.msg-bubble-wrap');
+    if(!wrap || wrap.querySelector('.msg-sentby')) return;
+    const d=document.createElement('div');
+    d.className='msg-sentby';
+    d.textContent='↩ ตอบโดย '+who;
+    wrap.appendChild(d);
+  }catch(_e){}
 }
 
 // โหลดข้อมูลทั้งหมด
@@ -518,6 +550,14 @@ function renderChat(conv){
   // Page ID เพื่อแยกว่าข้อความไหน "ของเรา" (admin ตอบ)
   const pageOwnerId=conv.page_id;
 
+  // รายชื่อผู้ตอบ (ใครส่งข้อความไหน) — จับคู่กับข้อความฝั่งแอดมินตามเวลาที่ใกล้ที่สุด
+  const authors=(conv.__authors||[]).map(a=>({t:new Date(a.sent_at).getTime(), name:a.sender_name})).filter(a=>!isNaN(a.t));
+  function whoSent(ts){
+    let best=null, bestD=180000; // ภายใน 3 นาที
+    for(const a of authors){ const d=Math.abs(a.t-ts); if(d<=bestD){ bestD=d; best=a; } }
+    return best?best.name:'';
+  }
+
   msgs.forEach((msg,i)=>{
     const d=new Date(msg.created_at);
     const dayStr=d.toLocaleDateString('th-TH',{day:'2-digit',month:'long',year:'numeric'});
@@ -561,6 +601,7 @@ function renderChat(conv){
           ${!msg.message&&!imgH?`<span style="opacity:.5;font-style:italic">ไม่มีข้อความ</span>`:''}
         </div>
         <div class="msg-time">${timeStr}</div>
+        ${(()=>{ if(!isAdmin) return ''; const w=whoSent(d.getTime()); return w?`<div class="msg-sentby">↩ ตอบโดย ${esc(w)}</div>`:''; })()}
       </div>
     </div>`;
   });
@@ -987,6 +1028,11 @@ async function openConv(convId){
       conv.messages=msgs||[]; conv._loaded=true;
     }catch(e){ console.error('openConv',e); conv.messages=[]; }
   }
+  // โหลดรายชื่อผู้ตอบ (ใครส่งข้อความไหน) — เก็บถาวร ทั้งทีมเห็น
+  try{
+    const au=await api('reply_authors', `?select=sent_at,sender_name,snippet&conversation_id=eq.${encodeURIComponent(conv.id)}&order=sent_at.asc&limit=2000`);
+    conv.__authors=Array.isArray(au)?au:[];
+  }catch(e){ conv.__authors=conv.__authors||[]; }
   renderChat(conv);
   if(conv.messages.some(m=>!m.is_read)){
     conv.messages.forEach(m=>m.is_read=true); conv.unread_count=0;
@@ -1222,7 +1268,7 @@ function buildConversations(){
         body: JSON.stringify({ conversation_id: convId, text: txt })
       });
       var j = await r.json();
-      if(j && j.ok){ if(st) st.textContent = 'ส่งแล้ว'; }
+      if(j && j.ok){ if(st) st.textContent = 'ส่งแล้ว'; logReplyAuthor(convId, txt); appendSentBy(bub); }
       else {
         if(st){ st.textContent = 'ส่งไม่สำเร็จ'; st.style.color = '#ef4444'; }
         if(inp) inp.value = txt;
@@ -1276,28 +1322,30 @@ function buildConversations(){
       bub.className = 'msg-row out';
       bub.innerHTML = '<div class="msg-av" style="background:#374151">SEND</div><div class="msg-bubble-wrap"><div class="msg-bubble out">' + inner + '</div><div class="msg-time qr-st">กำลังส่ง...</div></div>';
       if(body){ body.appendChild(bub); body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }); }
-      return bub.querySelector('.qr-st');
+      return bub;
     }
     // 1) ส่งข้อความก่อน (ถ้ามี)
     if(q.body){
-      var st = addBubble(esc2(q.body));
+      var bub1 = addBubble(esc2(q.body)); var st = bub1.querySelector('.qr-st');
       try {
         var r = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, text: q.body }) });
         var j = await r.json();
         if(st) st.textContent = (j && j.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
         if(st && !(j && j.ok)) st.style.color = '#ef4444';
+        if(j && j.ok){ logReplyAuthor(convId, q.body); appendSentBy(bub1); }
       } catch(e){ if(st){ st.textContent='error'; st.style.color='#ef4444'; } }
     }
     // 2) ส่งรูปทีละรูป
     var imgs = (q.images || []);
     for(var i=0;i<imgs.length;i++){
       var url = imgs[i];
-      var st2 = addBubble('<img src="' + url + '" style="max-width:220px;border-radius:8px;display:block">');
+      var bub2 = addBubble('<img src="' + url + '" style="max-width:220px;border-radius:8px;display:block">'); var st2 = bub2.querySelector('.qr-st');
       try {
         var r2 = await fetch(QR_SEND, { method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+window.__authToken }, body: JSON.stringify({ conversation_id: convId, attachment_url: url, attachment_type: 'image' }) });
         var j2 = await r2.json();
         if(st2) st2.textContent = (j2 && j2.ok) ? 'ส่งแล้ว' : 'ส่งไม่สำเร็จ';
         if(st2 && !(j2 && j2.ok)) st2.style.color = '#ef4444';
+        if(j2 && j2.ok){ logReplyAuthor(convId, '[รูปภาพ]'); appendSentBy(bub2); }
       } catch(e){ if(st2){ st2.textContent='error'; st2.style.color='#ef4444'; } }
     }
   }
@@ -1658,6 +1706,7 @@ function buildConversations(){
           if(bb){ bb.innerHTML = '<img src="' + publicUrl + '" style="max-width:220px;border-radius:8px;display:block">'; }
         }
         if(st) st.textContent = 'ส่งแล้ว';
+        logReplyAuthor(convId, isImg ? '[รูปภาพ]' : ('📎 ' + f.name)); appendSentBy(bub);
       } else {
         if(st){ st.textContent = 'ส่งไม่สำเร็จ'; st.style.color = '#ef4444'; }
         alert('ส่งไม่สำเร็จ: ' + ((j && j.error) || ''));
