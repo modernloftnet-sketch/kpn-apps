@@ -1165,8 +1165,12 @@ function buildConversations(){
         $('aiProv').textContent = j.provider ? '(' + j.provider + ')' : '';
         panel.style.display = 'block';
         var inp = document.getElementById('replyInput');
-        if(inp){ inp.value = j.draft; }
-        $('aiMsg').textContent = 'ตรวจ/แก้ได้ก่อนคัดลอกไปวางตอบลูกค้า';
+        var toSend = _stripTeamTL(j.draft);
+        if(inp){ inp.value = toSend; }
+        $('aiMsg').style.color = '#64748b';
+        $('aiMsg').textContent = (toSend !== String(j.draft||'').trim())
+          ? 'กล่องตอบใส่เฉพาะข้อความที่จะส่งลูกค้าแล้ว (คำแปลไทยไว้ให้ทีมอ่านในช่องด้านบน)'
+          : 'ตรวจ/แก้ได้ก่อนคัดลอกไปวางตอบลูกค้า';
       } else {
         panel.style.display = 'block';
         $('aiOut').value = '';
@@ -1181,12 +1185,14 @@ function buildConversations(){
     setBusy(false);
   }
 
+  // ตัดส่วน "(แปลไทยสำหรับทีมงาน: ...)" ออก เหลือเฉพาะข้อความที่จะส่งให้ลูกค้า
+  function _stripTeamTL(s){ return String(s||'').replace(/\s*\(แปลไทยสำหรับทีมงาน[:：][\s\S]*?\)\s*$/,'').trim(); }
   btn.onclick = gen;
   panel.addEventListener('click', function(e){ e.stopPropagation(); });
   $('aiClose').onclick = function(){ panel.style.display = 'none'; };
   $('aiRegen').onclick = gen;
   $('aiCopy').onclick = function(){
-    var txt = $('aiOut').value;
+    var txt = _stripTeamTL($('aiOut').value);
     navigator.clipboard.writeText(txt).then(function(){
       $('aiMsg').style.color = '#16a34a';
       $('aiMsg').textContent = 'คัดลอกแล้ว ✓ ไปวางใน Messenger ได้เลย';
