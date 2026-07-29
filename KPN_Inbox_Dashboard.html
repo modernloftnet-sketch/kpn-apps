@@ -1172,11 +1172,13 @@ function buildConversations(){
   btn.textContent = '✨ ร่าง AI';
   btn.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:9400;display:none;padding:10px 16px;border:0;border-radius:22px;background:#8b5cf6;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif';
   document.body.appendChild(btn);
-  // แสดงเฉพาะตอนเปิดแชทอยู่
+  // แสดงเฉพาะตอนเปิดแชทอยู่ และเฉพาะหัวหน้างาน (supervisor) เท่านั้น เพื่อคุมค่าใช้จ่าย AI
   setInterval(function(){
     var open = false;
     try { open = !!selConvId; } catch(e) { open = false; }
-    btn.style.display = open ? 'block' : 'none';
+    var sup = false;
+    try { sup = !!window.__isSupervisor; } catch(e) { sup = false; }
+    btn.style.display = (open && sup) ? 'block' : 'none';
   }, 600);
 
   // ---- กล่องผลลัพธ์ ----
