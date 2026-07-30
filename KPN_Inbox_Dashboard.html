@@ -2112,5 +2112,237 @@ function buildConversations(){
 })();
 </script>
 
+<!-- STATS-EMBED: in-app inquiry stats (supervisor only) — added by assistant -->
+<style>
+  #stBtn{position:fixed;top:11px;right:560px;z-index:9500;display:none;padding:10px 16px;border:0;border-radius:22px;background:#4f46e5;color:#fff;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);font-family:Segoe UI,Tahoma,sans-serif}
+  #stOv{position:fixed;inset:0;z-index:99998;display:none;background:#f4f6fb;overflow:auto;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Sarabun",Tahoma,sans-serif;color:#0f172a}
+  #stOv .stwrap{max-width:1120px;margin:0 auto;padding:16px 16px 60px}
+  #stOv .sttop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  #stOv .sttitle{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+  #stOv .sttitle small{font-weight:600;color:#64748b;font-size:12px}
+  #stOv .stclose{font-size:14px;color:#fff;background:#0f172a;border:0;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer}
+  #stOv .stcard{background:#fff;border:1px solid #e6e9f0;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  #stOv .stfilters{padding:14px;margin-bottom:16px}
+  #stOv .strow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  #stOv .strow+.strow{margin-top:10px}
+  #stOv .stseg{display:inline-flex;background:#f1f5f9;border-radius:12px;padding:4px;gap:2px;flex-wrap:wrap}
+  #stOv .stseg button{border:0;background:transparent;color:#64748b;font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:inherit}
+  #stOv .stseg button.on{background:#fff;color:#4f46e5;box-shadow:0 1px 3px rgba(15,23,42,.12)}
+  #stOv .stfld{display:flex;align-items:center;gap:6px;font-size:13px;color:#64748b;font-weight:600}
+  #stOv select,#stOv input[type=date],#stOv input[type=month]{font-family:inherit;font-size:14px;color:#0f172a;border:1px solid #e6e9f0;background:#fff;border-radius:10px;padding:8px 10px;outline:none}
+  #stOv .stmonth,#stOv .stcustom{display:none;gap:8px;align-items:center;flex-wrap:wrap}
+  #stOv .stmonth.show,#stOv .stcustom.show{display:flex}
+  #stOv .stkpis{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-bottom:16px}
+  @media(max-width:720px){#stOv .stkpis{grid-template-columns:1fr}}
+  #stOv .stkpi{padding:18px}
+  #stOv .stkpi .lab{font-size:13px;color:#64748b;font-weight:700;margin-bottom:6px}
+  #stOv .stkpi .num{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1;color:#4f46e5}
+  #stOv .stkpi.sub .num{font-size:28px;color:#0f172a}
+  #stOv .stkpi .hint{font-size:12px;color:#64748b;margin-top:8px}
+  #stOv .strangelabel{font-size:13px;color:#64748b;margin:-4px 0 14px;font-weight:600}
+  #stOv .stgrid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){#stOv .stgrid2{grid-template-columns:1fr}}
+  #stOv .stsec{padding:16px}
+  #stOv .stsec h3{margin:0 0 12px;font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+  #stOv .stsec h3 span.small{font-size:12px;color:#64748b;font-weight:600}
+  #stOv .stbbar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+  #stOv .stbbar .nm{width:120px;flex:0 0 120px;color:#0f172a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #stOv .stbbar .track{flex:1;background:#f1f5f9;border-radius:8px;height:20px;position:relative;overflow:hidden}
+  #stOv .stbbar .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#818cf8,#4f46e5);border-radius:8px;min-width:3px}
+  #stOv .stbbar .val{width:56px;flex:0 0 56px;text-align:right;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+  #stOv .stbranchscroll{max-height:420px;overflow:auto}
+  #stOv .sttrend{display:flex;align-items:flex-end;gap:3px;height:180px;padding-top:8px;overflow-x:auto}
+  #stOv .sttcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:16px;flex:1;height:100%}
+  #stOv .sttcol .tb{width:70%;max-width:26px;background:linear-gradient(180deg,#6366f1,#4f46e5);border-radius:5px 5px 0 0;min-height:2px}
+  #stOv .sttcol .tv{font-size:10px;color:#64748b;margin-bottom:3px;font-weight:700;font-variant-numeric:tabular-nums}
+  #stOv .sttcol .tl{font-size:9px;color:#64748b;margin-top:4px;white-space:nowrap}
+  #stOv .stmuted{color:#64748b;font-size:13px;padding:20px;text-align:center}
+  #stOv .stloading{opacity:.45;pointer-events:none}
+  #stOv .stcap{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:10px;padding:8px 12px;font-size:12px;margin-top:10px;display:none}
+  #stOv .stcap.show{display:block}
+  #stOv .stfoot{margin-top:18px;font-size:12px;color:#64748b;text-align:center}
+</style>
+<button id="stBtn" type="button">📊 สถิติ</button>
+<div id="stOv"><div class="stwrap">
+  <div class="sttop">
+    <div class="sttitle">📊 สถิติลูกค้าทักเข้ามา <small>The Built · KPN Inbox</small></div>
+    <button class="stclose" id="stClose" type="button">✕ ปิด</button>
+  </div>
+  <div class="stcard stfilters">
+    <div class="strow">
+      <div class="stfld" style="font-weight:700;color:#0f172a">นับแบบ:</div>
+      <div class="stseg" id="stMetric"><button data-m="new" class="on">ลูกค้าใหม่</button><button data-m="active">มีความเคลื่อนไหว</button></div>
+    </div>
+    <div class="strow">
+      <div class="stseg" id="stSeg">
+        <button data-r="today" class="on">วันนี้</button>
+        <button data-r="7d">7 วันล่าสุด</button>
+        <button data-r="month">เดือนนี้</button>
+        <button data-r="pickmonth">เลือกเดือน</button>
+        <button data-r="custom">เลือกช่วงเวลาเอง</button>
+      </div>
+      <div class="stmonth" id="stMonthWrap"><input type="month" id="stMonth"></div>
+      <div class="stcustom" id="stCustom"><div class="stfld">ตั้งแต่ <input type="date" id="stFrom"></div><div class="stfld">ถึง <input type="date" id="stTo"></div></div>
+    </div>
+    <div class="strow">
+      <div class="stfld">แบรนด์ <select id="stBrand"><option value="">ทุกแบรนด์</option></select></div>
+      <div class="stfld">สาขา <select id="stBranch"><option value="">ทุกสาขา</option></select></div>
+      <div class="stfld">แพลตฟอร์ม <select id="stPlat"><option value="">ทั้งหมด</option><option value="facebook">Facebook</option><option value="line">LINE</option></select></div>
+      <button type="button" id="stRefresh" style="border:0;background:#4f46e5;color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:11px;cursor:pointer;font-family:inherit">↻ รีเฟรช</button>
+    </div>
+  </div>
+  <div class="strangelabel" id="stRangeLabel">—</div>
+  <div class="stkpis">
+    <div class="stcard stkpi"><div class="lab"><span id="stLab">จำนวนลูกค้าใหม่</span> <span id="stSpin"></span></div><div class="num" id="stTotal">–</div><div class="hint" id="stHint">นับลูกค้าที่ทักเข้ามาครั้งแรกในช่วงที่เลือก (ไม่ซ้ำ)</div></div>
+    <div class="stcard stkpi sub"><div class="lab">เฉลี่ยต่อวัน</div><div class="num" id="stAvg">–</div><div class="hint" id="stAvgHint">&nbsp;</div></div>
+    <div class="stcard stkpi sub"><div class="lab">สาขาที่ทักมากสุด</div><div class="num" id="stTop" style="font-size:22px">–</div><div class="hint" id="stTopHint">&nbsp;</div></div>
+  </div>
+  <div class="stgrid2">
+    <div class="stcard stsec"><h3>แยกตามสาขา <span class="small" id="stBranchNote"></span></h3><div class="stbranchscroll" id="stBars"><div class="stmuted">—</div></div></div>
+    <div class="stcard stsec"><h3>แนวโน้มรายวัน <span class="small" id="stTrendNote"></span></h3><div id="stTrendBox"><div class="stmuted">—</div></div></div>
+  </div>
+  <div class="stcap" id="stCap"></div>
+  <div class="stfoot">ข้อมูลจากระบบ KPN Inbox · อัปเดตเมื่อกดรีเฟรช · เวลาโซนไทย (GMT+7)</div>
+</div></div>
+<script>
+(function(){
+  var SB='https://kgjymqajwkhymqcofkhn.supabase.co';
+  var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE';
+  var TZ='Asia/Bangkok', ROW_CAP=20000;
+  var stPages=[], stById={}, stRange='today', stMetric='new', stInit=false;
+  function $(id){return document.getElementById(id);}
+  function H(extra){var h={apikey:KEY,Authorization:'Bearer '+KEY};if(extra)for(var k in extra)h[k]=extra[k];return h;}
+  function mTbl(){return stMetric==='new'?'conv_first_contact':'fb_conversations';}
+  function mField(){return stMetric==='new'?'first_at':'last_message_at';}
+  function mLabel(){return stMetric==='new'?'จำนวนลูกค้าใหม่':'ลูกค้าที่มีความเคลื่อนไหว';}
+  function mHint(){return stMetric==='new'?'นับลูกค้าที่ทักเข้ามาครั้งแรกในช่วงที่เลือก (ไม่ซ้ำ)':'นับห้องแชทที่มีความเคลื่อนไหวล่าสุดในช่วงที่เลือก';}
+  function bkkYMD(d){return new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
+  function addDaysYMD(y,n){var dt=new Date(y+'T00:00:00+07:00');dt.setDate(dt.getDate()+n);return bkkYMD(dt);}
+  function fmtThai(y){try{return new Date(y+'T00:00:00+07:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric',timeZone:TZ});}catch(e){return y;}}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function branchLabel(p){return p?(p.branch_name||p.name||p.id):'—';}
+  function computeRange(){
+    var now=new Date(), todayY=bkkYMD(now), startY, endYexcl;
+    if(stRange==='today'){startY=todayY;endYexcl=addDaysYMD(todayY,1);}
+    else if(stRange==='7d'){startY=addDaysYMD(todayY,-6);endYexcl=addDaysYMD(todayY,1);}
+    else if(stRange==='month'){startY=todayY.slice(0,7)+'-01';endYexcl=addDaysYMD(todayY,1);}
+    else if(stRange==='pickmonth'){var m=$('stMonth').value||todayY.slice(0,7);startY=m+'-01';var dt=new Date(m+'-01T00:00:00+07:00');dt.setMonth(dt.getMonth()+1);endYexcl=bkkYMD(dt);}
+    else{var f=$('stFrom').value,t=$('stTo').value;startY=f||todayY;endYexcl=addDaysYMD(t||todayY,1);}
+    var start=startY+'T00:00:00+07:00', end=endYexcl+'T00:00:00+07:00';
+    var days=Math.max(1,Math.round((new Date(end)-new Date(start))/86400000));
+    var lastY=addDaysYMD(endYexcl,-1);
+    var label=(startY===lastY)?fmtThai(startY):(fmtThai(startY)+' – '+fmtThai(lastY));
+    return {start:start,end:end,startY:startY,lastY:lastY,days:days,label:label};
+  }
+  function pageFilter(){
+    var brand=$('stBrand').value, branch=$('stBranch').value, plat=$('stPlat').value;
+    if(branch) return '&page_id=eq.'+encodeURIComponent(branch);
+    var ids=stPages;
+    if(brand) ids=ids.filter(function(p){return (p.brand||'')===brand;});
+    if(plat) ids=ids.filter(function(p){return (p.platform||'facebook')===plat;});
+    if(brand||plat){ if(!ids.length) return '&page_id=eq.__none__'; return '&page_id=in.('+ids.map(function(p){return '"'+p.id+'"';}).join(',')+')'; }
+    return '';
+  }
+  function count(start,end){
+    var f=mField();
+    var q='&'+f+'=gte.'+encodeURIComponent(start)+'&'+f+'=lt.'+encodeURIComponent(end)+pageFilter();
+    return fetch(SB+'/rest/v1/'+mTbl()+'?select=conversation_id'+q,{headers:H({Prefer:'count=exact',Range:'0-0'})}).then(function(r){
+      var cr=r.headers.get('content-range')||'0-0/0'; return +cr.split('/')[1]||0;
+    });
+  }
+  function fetchRows(start,end){
+    var f=mField();
+    var q='&'+f+'=gte.'+encodeURIComponent(start)+'&'+f+'=lt.'+encodeURIComponent(end)+pageFilter();
+    var out=[],off=0,ps=1000,capped=false;
+    function step(){
+      return fetch(SB+'/rest/v1/'+mTbl()+'?select=page_id,ts:'+f+'&order='+f+'.desc'+q+'&limit='+ps+'&offset='+off,{headers:H()}).then(function(r){return r.json();}).then(function(arr){
+        if(!Array.isArray(arr)||!arr.length) return {rows:out,capped:capped};
+        out=out.concat(arr); off+=ps;
+        if(arr.length<ps) return {rows:out,capped:capped};
+        if(out.length>=ROW_CAP){capped=true; return {rows:out,capped:capped};}
+        return step();
+      });
+    }
+    return step();
+  }
+  function renderBranches(rows){
+    var box=$('stBars'), byPage={};
+    rows.forEach(function(r){byPage[r.page_id]=(byPage[r.page_id]||0)+1;});
+    var items=Object.keys(byPage).map(function(pid){return {label:branchLabel(stById[pid])||pid,n:byPage[pid]};});
+    items.sort(function(a,b){return b.n-a.n;});
+    if(!items.length){box.innerHTML='<div class="stmuted">ไม่มีข้อมูลในช่วงที่เลือก</div>';$('stBranchNote').textContent='';return;}
+    var max=items[0].n;
+    $('stBranchNote').textContent=items.length+' สาขา';
+    box.innerHTML=items.map(function(it){return '<div class="stbbar"><div class="nm" title="'+esc(it.label)+'">'+esc(it.label)+'</div><div class="track"><div class="fill" style="width:'+(it.n/max*100).toFixed(1)+'%"></div></div><div class="val">'+it.n.toLocaleString('th-TH')+'</div></div>';}).join('');
+  }
+  function renderTrend(rows,rng){
+    var box=$('stTrendBox'), byDay={};
+    rows.forEach(function(r){var d=bkkYMD(new Date(r.ts));byDay[d]=(byDay[d]||0)+1;});
+    var days=[],y=rng.startY,guard=0;
+    while(y<=rng.lastY&&guard<400){days.push(y);y=addDaysYMD(y,1);guard++;}
+    if(days.length<=1){box.innerHTML='<div class="stmuted">ช่วงวันเดียว — ดูตัวเลขรวมด้านบน หรือเลือกช่วงหลายวันเพื่อดูแนวโน้ม</div>';$('stTrendNote').textContent='';return;}
+    var vals=days.map(function(d){return byDay[d]||0;}), max=Math.max.apply(null,[1].concat(vals));
+    $('stTrendNote').textContent=days.length+' วัน';
+    var showVal=days.length<=40, showLbl=days.length<=16;
+    box.innerHTML='<div class="sttrend">'+days.map(function(d,i){
+      var v=vals[i], h=(v/max*140);
+      var lbl=new Date(d+'T00:00:00+07:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',timeZone:TZ});
+      return '<div class="sttcol" title="'+esc(lbl)+': '+v.toLocaleString('th-TH')+' คน">'+(showVal?'<div class="tv">'+v+'</div>':'')+'<div class="tb" style="height:'+h+'px"></div>'+(showLbl?'<div class="tl">'+esc(lbl)+'</div>':'')+'</div>';
+    }).join('')+'</div>';
+  }
+  function load(){
+    var rng=computeRange();
+    $('stRangeLabel').textContent='ช่วงที่เลือก: '+rng.label+' ('+rng.days.toLocaleString('th-TH')+' วัน)';
+    $('stLab').textContent=mLabel(); $('stHint').textContent=mHint();
+    $('stOv').classList.add('stloading'); $('stSpin').textContent='…';
+    $('stBars').innerHTML='<div class="stmuted">กำลังโหลด…</div>'; $('stTrendBox').innerHTML='<div class="stmuted">กำลังโหลด…</div>';
+    count(rng.start,rng.end).then(function(total){
+      $('stTotal').textContent=total.toLocaleString('th-TH');
+      $('stAvg').textContent=(rng.days>0?Math.round(total/rng.days):total).toLocaleString('th-TH');
+      $('stAvgHint').textContent='จาก '+rng.days.toLocaleString('th-TH')+' วัน';
+      return fetchRows(rng.start,rng.end);
+    }).then(function(res){
+      var rows=res.rows;
+      renderBranches(rows); renderTrend(rows,rng);
+      var byPage={}; rows.forEach(function(r){byPage[r.page_id]=(byPage[r.page_id]||0)+1;});
+      var top=Object.keys(byPage).sort(function(a,b){return byPage[b]-byPage[a];})[0];
+      if(top){$('stTop').textContent=branchLabel(stById[top]);$('stTopHint').textContent=byPage[top].toLocaleString('th-TH')+' คน';}
+      else{$('stTop').textContent='–';$('stTopHint').textContent=' ';}
+      var cap=$('stCap');
+      if(res.capped){cap.classList.add('show');cap.textContent='* ช่วงที่เลือกมีข้อมูลมาก แสดงกราฟแยกสาขา/รายวันจากตัวอย่าง '+ROW_CAP.toLocaleString('th-TH')+' รายการล่าสุด (ตัวเลขรวมด้านบนยังนับครบ)';}
+      else cap.classList.remove('show');
+    }).catch(function(e){
+      $('stTotal').textContent='—'; $('stBars').innerHTML='<div class="stmuted">โหลดข้อมูลไม่สำเร็จ: '+esc(e&&e.message||e)+'</div>'; $('stTrendBox').innerHTML='';
+    }).then(function(){ $('stOv').classList.remove('stloading'); $('stSpin').textContent=''; });
+  }
+  function buildSelects(){
+    var brands=[]; stPages.forEach(function(p){if(p.brand&&brands.indexOf(p.brand)<0)brands.push(p.brand);});
+    var bsel=$('stBrand');
+    brands.forEach(function(b){var o=document.createElement('option');o.value=b;o.textContent=(b==='thebuilt'?'The Built':(b==='winwin'?'WIN-WIN':b));bsel.appendChild(o);});
+    var brSel=$('stBranch'), seen={};
+    stPages.slice().sort(function(a,b){return branchLabel(a).localeCompare(branchLabel(b),'th');}).forEach(function(p){
+      var o=document.createElement('option');o.value=p.id;var lb=branchLabel(p);if(seen[lb])lb=lb+' ('+(p.name||p.id)+')';seen[branchLabel(p)]=1;o.textContent=lb;brSel.appendChild(o);
+    });
+  }
+  function initStats(){
+    if(stInit) return Promise.resolve();
+    stInit=true;
+    var now=new Date(), ymd=bkkYMD(now);
+    $('stMonth').value=ymd.slice(0,7); $('stTo').value=ymd; $('stFrom').value=addDaysYMD(ymd,-6);
+    $('stMetric').addEventListener('click',function(e){var b=e.target.closest('button[data-m]');if(!b)return;stMetric=b.getAttribute('data-m');Array.prototype.forEach.call($('stMetric').querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});load();});
+    $('stSeg').addEventListener('click',function(e){var b=e.target.closest('button[data-r]');if(!b)return;stRange=b.getAttribute('data-r');Array.prototype.forEach.call($('stSeg').querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});$('stMonthWrap').classList.toggle('show',stRange==='pickmonth');$('stCustom').classList.toggle('show',stRange==='custom');load();});
+    ['stBrand','stBranch','stPlat','stMonth','stFrom','stTo'].forEach(function(id){$(id).addEventListener('change',load);});
+    return fetch(SB+'/rest/v1/fb_pages?select=id,name,brand,branch_name,platform&order=brand,branch_name',{headers:H()}).then(function(r){return r.json();}).then(function(pg){
+      stPages=Array.isArray(pg)?pg:[]; stPages.forEach(function(p){stById[p.id]=p;}); buildSelects();
+    }).catch(function(){ stPages=[]; });
+  }
+  var btn=$('stBtn');
+  btn.onclick=function(){ $('stOv').style.display='block'; document.body.style.overflow='hidden'; initStats().then(load); };
+  $('stClose').onclick=function(){ $('stOv').style.display='none'; document.body.style.overflow=''; };
+  var iv=setInterval(function(){ if(window.__isSupervisor){ btn.style.display='block'; clearInterval(iv); } },800);
+})();
+</script>
+<!-- /STATS-EMBED -->
+
 </body>
 </html>
