@@ -87,6 +87,13 @@
 
   <div class="card filters">
     <div class="frow">
+      <div class="fld" style="font-weight:700;color:var(--ink)">นับแบบ:</div>
+      <div class="seg" id="metricSeg">
+        <button data-m="new" class="on">ลูกค้าใหม่</button>
+        <button data-m="active">มีความเคลื่อนไหว</button>
+      </div>
+    </div>
+    <div class="frow">
       <div class="seg" id="seg">
         <button data-r="today" class="on">วันนี้</button>
         <button data-r="7d">7 วันล่าสุด</button>
@@ -112,9 +119,9 @@
 
   <div class="kpis">
     <div class="card kpi">
-      <div class="lab">จำนวนคนที่ทักเข้ามา <span id="k1spin"></span></div>
+      <div class="lab"><span id="kLab">จำนวนลูกค้าใหม่</span> <span id="k1spin"></span></div>
       <div class="num" id="kTotal">–</div>
-      <div class="hint" id="kTotalHint">นับจากห้องแชทที่มีความเคลื่อนไหวในช่วงที่เลือก</div>
+      <div class="hint" id="kTotalHint">นับลูกค้าที่ทักเข้ามาครั้งแรกในช่วงที่เลือก (ไม่ซ้ำ)</div>
     </div>
     <div class="card kpi sub">
       <div class="lab">เฉลี่ยต่อวัน</div>
@@ -162,9 +169,13 @@ const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 const TZ='Asia/Bangkok';
 const ROW_CAP=20000;
 let SBC=null, TOKEN=null, started=false;
-let pages=[], pageById={}, curRange='today';
+let pages=[], pageById={}, curRange='today', metric='new';
 
 function authH(extra){ const h={apikey:KEY, Authorization:'Bearer '+(TOKEN||KEY)}; if(extra) Object.assign(h,extra); return h; }
+function mTbl(){ return metric==='new' ? 'conv_first_contact' : 'fb_conversations'; }
+function mField(){ return metric==='new' ? 'first_at' : 'last_message_at'; }
+function mLabel(){ return metric==='new' ? 'จำนวนลูกค้าใหม่' : 'ลูกค้าที่มีความเคลื่อนไหว'; }
+function mHint(){ return metric==='new' ? 'นับลูกค้าที่ทักเข้ามาครั้งแรกในช่วงที่เลือก (ไม่ซ้ำ)' : 'นับห้องแชทที่มีความเคลื่อนไหวล่าสุดในช่วงที่เลือก'; }
 
 // ---------- date helpers (Bangkok) ----------
 function bkkYMD(d){ return new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d); }
@@ -209,18 +220,20 @@ function pageFilter(){
 async function refreshToken(){ try{ const {data}=await SBC.auth.getSession(); if(data&&data.session){ TOKEN=data.session.access_token; } }catch(e){} }
 
 async function count(start,end){
-  const q='&last_message_at=gte.'+encodeURIComponent(start)+'&last_message_at=lt.'+encodeURIComponent(end)+pageFilter();
-  const r=await fetch(SB+'/rest/v1/fb_conversations?select=conversation_id'+q,{headers:authH({Prefer:'count=exact',Range:'0-0'})});
+  const f=mField();
+  const q='&'+f+'=gte.'+encodeURIComponent(start)+'&'+f+'=lt.'+encodeURIComponent(end)+pageFilter();
+  const r=await fetch(SB+'/rest/v1/'+mTbl()+'?select=conversation_id'+q,{headers:authH({Prefer:'count=exact',Range:'0-0'})});
   if(r.status===401) throw new Error('unauthorized');
   const cr=r.headers.get('content-range')||'0-0/0';
   return +cr.split('/')[1]||0;
 }
 
 async function fetchRows(start,end){
-  const q='&last_message_at=gte.'+encodeURIComponent(start)+'&last_message_at=lt.'+encodeURIComponent(end)+pageFilter();
+  const f=mField();
+  const q='&'+f+'=gte.'+encodeURIComponent(start)+'&'+f+'=lt.'+encodeURIComponent(end)+pageFilter();
   let out=[],off=0,pageSize=1000,capped=false;
   while(true){
-    const r=await fetch(SB+'/rest/v1/fb_conversations?select=page_id,last_message_at&order=last_message_at.desc'+q+'&limit='+pageSize+'&offset='+off,{headers:authH()});
+    const r=await fetch(SB+'/rest/v1/'+mTbl()+'?select=page_id,ts:'+f+'&order='+f+'.desc'+q+'&limit='+pageSize+'&offset='+off,{headers:authH()});
     const arr=await r.json();
     if(!Array.isArray(arr)||!arr.length) break;
     out=out.concat(arr); off+=pageSize;
@@ -248,7 +261,7 @@ function renderBranches(rows){
 
 function renderTrend(rows,rng){
   const box=document.getElementById('trendBox'); const byDay={};
-  rows.forEach(r=>{ const d=bkkYMD(new Date(r.last_message_at)); byDay[d]=(byDay[d]||0)+1; });
+  rows.forEach(r=>{ const d=bkkYMD(new Date(r.ts)); byDay[d]=(byDay[d]||0)+1; });
   let days=[], y=rng.startY, guard=0;
   while(y<=rng.lastY && guard<400){ days.push(y); y=addDaysYMD(y,1); guard++; }
   if(days.length<=1){ box.innerHTML='<div class="muted">ช่วงวันเดียว — ดูตัวเลขรวมด้านบน หรือเลือกช่วงหลายวันเพื่อดูแนวโน้ม</div>'; document.getElementById('trendNote').textContent=''; return; }
@@ -268,6 +281,8 @@ async function load(){
   if(!started) return;
   const rng=computeRange();
   document.getElementById('rangeLabel').textContent='ช่วงที่เลือก: '+rng.label+' ('+rng.days.toLocaleString('th-TH')+' วัน)';
+  document.getElementById('kLab').textContent=mLabel();
+  document.getElementById('kTotalHint').textContent=mHint();
   document.body.classList.add('loading');
   document.getElementById('k1spin').innerHTML='<span class="spinner"></span>';
   document.getElementById('branchBars').innerHTML='<div class="muted">กำลังโหลด…</div>';
@@ -322,6 +337,12 @@ async function startApp(){
     [...document.querySelectorAll('#seg button')].forEach(x=>x.classList.toggle('on',x===b));
     document.getElementById('monthwrap').classList.toggle('show',curRange==='pickmonth');
     document.getElementById('customwrap').classList.toggle('show',curRange==='custom');
+    load();
+  });
+  document.getElementById('metricSeg').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-m]'); if(!b) return;
+    metric=b.dataset.m;
+    [...document.querySelectorAll('#metricSeg button')].forEach(x=>x.classList.toggle('on',x===b));
     load();
   });
   ['brandSel','branchSel','platSel','monthInput','dFrom','dTo'].forEach(id=>{
