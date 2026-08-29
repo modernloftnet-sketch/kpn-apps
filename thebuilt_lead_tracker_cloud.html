@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Built — ระบบติดตามลูกค้า (Cloud)</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f4f1ea;--card:#fff;--ink:#20242c;--ink2:#4a5160;--muted:#7a8394;--gold:#b8863b;--goldD:#8a6a2c;--navy:#232a36;--line:#e6e1d6;--green:#2f8f5b;--greenBg:#eaf5ee;--red:#c0553f;--redBg:#f9ece8;--blue:#356a8a;--blueBg:#eaf2f7;--amber:#c98a1e;--amberBg:#fbf1dc}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:'Kanit',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+  .top{background:linear-gradient(120deg,var(--navy),#33404f);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .top .logo{width:38px;height:38px;border:2px solid var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Prompt';font-weight:700;color:#e6c877;font-size:20px}
+  .top h1{font-family:'Prompt';font-weight:600;font-size:18px}
+  .top h1 span{display:block;font-size:11px;color:#c9cfda;font-weight:300;letter-spacing:1px}
+  .top .sp{flex:1}
+  .top .dot{width:9px;height:9px;border-radius:50%;background:#e0a24b;box-shadow:0 0 0 3px #ffffff20}
+  .top .dot.ok{background:#5bc98a}
+  .top .tools button{background:#ffffff18;color:#fff;border:1px solid #ffffff30;border-radius:8px;padding:7px 12px;font-family:'Kanit';font-size:12.5px;cursor:pointer;margin-left:6px}
+  .top .tools button:hover{background:#ffffff30}
+  .banner{background:var(--redBg);color:var(--red);padding:10px 20px;font-size:13.5px;border-bottom:1px solid #f0cabf}
+  .tabs{display:flex;gap:4px;background:var(--card);border-bottom:1px solid var(--line);padding:0 12px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  .tabs button{background:none;border:none;padding:14px 16px;font-family:'Prompt';font-weight:500;font-size:14.5px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
+  .tabs button.on{color:var(--goldD);border-bottom-color:var(--gold)}
+  .tabs button .badge{background:var(--red);color:#fff;border-radius:20px;font-size:11px;padding:1px 7px;margin-left:5px;font-family:'Kanit'}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 14px 60px}
+  .pane{display:none}.pane.on{display:block}
+  h2.h{font-family:'Prompt';font-size:16px;font-weight:600;margin:6px 0 12px;color:var(--navy)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:14px}
+  .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .form label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+  .form input,.form select{width:100%;font-family:'Kanit';font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fdfcf9;color:var(--ink)}
+  .form .full{grid-column:1/-1}
+  .btn{font-family:'Prompt';font-weight:500;font-size:14px;padding:9px 18px;border-radius:9px;border:none;cursor:pointer}
+  .btn.gold{background:var(--gold);color:#fff}.btn.gold:hover{background:var(--goldD)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .filters input,.filters select{font-family:'Kanit';font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px}
+  .lead .r1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .lead .nm{font-family:'Prompt';font-weight:600;font-size:15px}
+  .lead .meta{font-size:12.5px;color:var(--muted)}
+  .lead .r2{margin-top:8px;font-size:13px;color:var(--ink2);display:flex;gap:14px;flex-wrap:wrap}
+  .lead .r3{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:11.5px;padding:3px 10px;border-radius:20px;font-family:'Prompt';font-weight:500}
+  .st1{background:#eef1f4;color:#5a6472}.st2{background:var(--blueBg);color:var(--blue)}.st3{background:var(--amberBg);color:var(--amber)}.st4{background:var(--greenBg);color:var(--green)}.stlost{background:var(--redBg);color:var(--red)}
+  .due{background:var(--amberBg);color:var(--amber);font-size:11.5px;padding:3px 9px;border-radius:20px;font-weight:500;font-family:'Prompt'}
+  .overdue{background:var(--redBg);color:var(--red)}
+  .step-btn{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:5px 11px;font-family:'Kanit';font-size:12px;cursor:pointer}
+  .step-btn:hover{background:#3a465a}
+  .mini{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-family:'Kanit';font-size:12px;cursor:pointer;color:var(--ink2)}
+  .mini:hover{border-color:var(--gold)}
+  .msg{background:var(--blueBg);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:9px 12px;font-size:13px;margin-top:9px;color:var(--ink)}
+  .msg .cp{float:right;font-size:11px;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-family:'Kanit'}
+  .funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px}
+  @media(max-width:640px){.funnel{grid-template-columns:repeat(2,1fr)}}
+  .fbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .fbox .n{font-family:'Prompt';font-weight:700;font-size:28px;color:var(--navy)}
+  .fbox .l{font-size:12px;color:var(--muted)}
+  .fbox .pc{font-size:11.5px;color:var(--goldD);font-weight:500;font-family:'Prompt';margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#f0ece3;font-family:'Prompt';font-weight:500;font-size:12.5px;color:var(--ink2)}
+  td.num{text-align:center;font-family:'Prompt'}
+  .bar{height:8px;background:var(--line);border-radius:5px;overflow:hidden;min-width:70px}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--goldD))}
+  .empty{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:13.5px;opacity:0;transition:.3s;z-index:50;max-width:90%}
+  .toast.show{opacity:1}
+  .userchip{color:#e6e9ef;font-size:12.5px;display:flex;align-items:center;gap:6px}
+  .userchip b{color:#fff}
+  .rolebadge{font-size:10.5px;font-family:'Prompt';font-weight:600;padding:2px 8px;border-radius:20px}
+  .rolebadge.admin{background:#e6c877;color:#3a2f12}.rolebadge.staff{background:#3a465a;color:#cdd4de}
+  /* login overlay */
+  .login{position:fixed;inset:0;background:linear-gradient(160deg,#232a36,#33404f);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .login .box{background:var(--card);border-radius:18px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .login .lg{width:52px;height:52px;border:2px solid var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Prompt';font-weight:700;color:var(--goldD);font-size:26px;margin:0 auto 14px}
+  .login h2{font-family:'Prompt';text-align:center;font-size:20px;color:var(--navy);margin-bottom:4px}
+  .login p{text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:20px}
+  .login label{font-size:12px;color:var(--muted);display:block;margin:10px 0 3px}
+  .login input{width:100%;font-family:'Kanit';font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fdfcf9}
+  .login button{width:100%;margin-top:18px;background:var(--gold);color:#fff;border:none;border-radius:9px;padding:11px;font-family:'Prompt';font-weight:600;font-size:15px;cursor:pointer}
+  .login button:hover{background:var(--goldD)}
+  .login .err{color:var(--red);font-size:12.5px;text-align:center;margin-top:12px;min-height:16px}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="login" id="login" style="display:none">
+  <div class="box">
+    <div class="lg">B</div>
+    <h2>The Built · เข้าสู่ระบบ</h2>
+    <p>ระบบติดตามลูกค้า — สำหรับพนักงานทุกสาขา</p>
+    <label>อีเมล</label>
+    <input id="lg_email" type="email" placeholder="you@thebuilt.co.th" autocomplete="username">
+    <label>รหัสผ่าน</label>
+    <input id="lg_pass" type="password" placeholder="รหัสผ่าน" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="err" id="lg_err"></div>
+  </div>
+</div>
+
+<div class="top">
+  <div class="logo">B</div>
+  <div><h1>ระบบติดตามลูกค้า<span>THE BUILT · LEAD TRACKER (CLOUD)</span></h1></div>
+  <div class="sp"></div>
+  <div class="userchip" id="userchip"></div>
+  <div class="dot" id="conn" title="สถานะเชื่อมต่อ"></div>
+  <div class="tools">
+    <button id="btnSample" onclick="loadSample()" style="display:none">โหลดตัวอย่าง</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button id="btnBackup" onclick="backup()" style="display:none">สำรอง</button>
+    <button id="btnLogout" onclick="signOut()" style="display:none">ออกจากระบบ</button>
+  </div>
+</div>
+<div class="banner" id="cfgBanner" style="display:none"></div>
+
+<div class="tabs">
+  <button class="on" data-tab="leads" onclick="tab('leads')">ลูกค้าทั้งหมด <span class="badge" id="allBadge" style="background:#8a8f99">0</span></button>
+  <button data-tab="due" onclick="tab('due')">ต้องติดตาม <span class="badge" id="dueBadge">0</span></button>
+  <button data-tab="dash" onclick="tab('dash')">แดชบอร์ด</button>
+</div>
+
+<div class="wrap">
+  <div class="pane on" id="pane-leads">
+    <div class="card">
+      <h2 class="h">➕ เพิ่มลูกค้าใหม่</h2>
+      <div class="form">
+        <div><label>วันที่ทัก</label><input type="date" id="f_date"></div>
+        <div><label>เพจ/สาขา</label><input id="f_page" list="pages" placeholder="เช่น สาขารังสิต"></div>
+        <div><label>แอดมิน (ผู้ดูแล)</label><input id="f_admin" list="admins" placeholder="ชื่อพนักงาน"></div>
+        <div><label>ชื่อลูกค้า</label><input id="f_name" placeholder="ชื่อ/ชื่อเล่น"></div>
+        <div><label>ช่องทางติดต่อ</label><input id="f_contact" placeholder="เบอร์/line"></div>
+        <div><label>ประเภทงาน</label><select id="f_work"><option>ครัว</option><option>ตู้เสื้อผ้า</option><option>ชุดทีวี</option><option>ห้องนอน</option><option>อื่นๆ</option></select></div>
+        <div><label>งบประมาณ (คร่าวๆ)</label><input id="f_budget" placeholder="เช่น 50,000"></div>
+        <div class="full"><label>โน้ต</label><input id="f_note" placeholder="รายละเอียดเพิ่มเติม"></div>
+        <div class="full"><button class="btn gold" onclick="addLead()">บันทึกลูกค้า</button>
+          <span class="hint">พอบันทึกแล้ว ระบบตั้งเตือน "ติดตามพรุ่งนี้" ให้อัตโนมัติ</span></div>
+      </div>
+      <datalist id="pages"></datalist><datalist id="admins"></datalist>
+    </div>
+    <div class="filters">
+      <input id="q" placeholder="🔍 ค้นหาชื่อ/เบอร์" oninput="renderLeads()">
+      <select id="fStatus" onchange="renderLeads()"><option value="">ทุกสถานะ</option><option>ทัก</option><option>ส่งแบบ</option><option>จ่ายวัด</option><option>ปิด</option><option value="lost">หลุด/เงียบ</option></select>
+      <select id="fAdmin" onchange="renderLeads()"><option value="">ทุกแอดมิน</option></select>
+      <select id="fPage" onchange="renderLeads()"><option value="">ทุกเพจ</option></select>
+    </div>
+    <div id="leadList"><div class="empty">กำลังโหลด…</div></div>
+  </div>
+
+  <div class="pane" id="pane-due">
+    <h2 class="h">🔔 ลูกค้าที่ต้องติดตามวันนี้ (และเลยกำหนด)</h2>
+    <p class="hint" style="margin-bottom:12px">80% ของการปิดเกิดหลังติดตาม 2–5 ครั้ง — กดคัดลอกข้อความไปวางในแชทได้เลย</p>
+    <div id="dueList"></div>
+  </div>
+
+  <div class="pane" id="pane-dash">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h2 class="h" style="margin:0">📊 ภาพรวมท่อขาย</h2>
+        <select id="dashMonth" onchange="renderDash()" style="font-family:Kanit;padding:7px 10px;border:1px solid var(--line);border-radius:8px"></select>
+      </div>
+      <div class="funnel" id="funnel" style="margin-top:12px"></div>
+      <p class="hint" id="convLine"></p>
+    </div>
+    <div class="card"><h2 class="h">👤 ผลงานรายแอดมิน (อัตราแปลง ทัก → จ่ายวัด)</h2><div id="byAdmin"></div></div>
+    <div class="card"><h2 class="h">🏬 ผลงานรายเพจ/สาขา</h2><div id="byPage"></div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   ★★★ ตั้งค่า Supabase — ใส่ 2 ค่านี้จาก Supabase → Project Settings → API ★★★
+   ============================================================ */
+const SUPABASE_URL      = "https://kgjymqajwkhymqcofkhn.supabase.co";       // เช่น https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE";  // anon public key
+/* ============================================================ */
+
+const STAGES=['ทัก','ส่งแบบ','จ่ายวัด','ปิด'];
+let leads=[]; let sb=null; let configured=false; let myRole='staff'; let myName=''; let myUserId='';
+
+function today(){return new Date().toISOString().slice(0,10)}
+function addDays(d,n){const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>e.classList.remove('show'),2200)}
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+document.getElementById('f_date').value=today();
+
+/* ---------- init + auth ---------- */
+(async function init(){
+  if(SUPABASE_URL.includes('PASTE')||SUPABASE_ANON_KEY.includes('PASTE')){
+    document.getElementById('cfgBanner').style.display='block';
+    document.getElementById('cfgBanner').innerHTML='⚠️ ยังไม่ได้ตั้งค่า Supabase — เปิดไฟล์นี้แก้ค่า <b>SUPABASE_URL</b> และ <b>SUPABASE_ANON_KEY</b> ด้านบนสุดของสคริปต์ก่อนใช้งาน';
+    document.getElementById('leadList').innerHTML='<div class="empty">ยังไม่ได้ตั้งค่า Supabase</div>';
+    return;
+  }
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  configured=true;
+  const {data:{session}}=await sb.auth.getSession();
+  if(session&&session.user){ await afterLogin(session.user); }
+  else { document.getElementById('login').style.display='flex'; }
+})();
+
+async function doLogin(){
+  const email=document.getElementById('lg_email').value.trim();
+  const pass=document.getElementById('lg_pass').value;
+  const err=document.getElementById('lg_err'); err.textContent='';
+  if(!email||!pass){err.textContent='กรอกอีเมลและรหัสผ่านให้ครบ';return}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){err.textContent='เข้าสู่ระบบไม่สำเร็จ: '+error.message;return}
+  await afterLogin(data.user);
+}
+async function afterLogin(user){
+  let role='staff', name=(user.email||'user').split('@')[0];
+  try{ const {data:prof}=await sb.from('profiles').select('role,name').eq('id',user.id).single();
+    if(prof){role=prof.role||'staff'; name=prof.name||name;} }catch(e){}
+  myRole=role; myName=name; myUserId=user.id;
+  document.getElementById('login').style.display='none';
+  document.getElementById('userchip').innerHTML='<b>'+esc(name)+'</b> <span class="rolebadge '+role+'">'+(role==='admin'?'แอดมิน':'พนักงาน')+'</span>';
+  document.getElementById('btnLogout').style.display='';
+  document.getElementById('btnBackup').style.display='';
+  if(role==='admin')document.getElementById('btnSample').style.display='';
+  const fa=document.getElementById('f_admin'); if(fa&&!fa.value)fa.value=name;
+  if(await loadAll()) renderAll();
+  try{
+    sb.channel('leads-rt').on('postgres_changes',{event:'*',schema:'public',table:'leads'},async()=>{
+      if(await loadAll()) renderAll();
+    }).subscribe(st=>{ if(st==='SUBSCRIBED')document.getElementById('conn').classList.add('ok'); });
+  }catch(e){}
+
+  // ต่ออายุ token ไม่สำเร็จ / ออกจากระบบจากแท็บอื่น -> รู้ทันที ไม่ปล่อยให้ขึ้น 0
+  sb.auth.onAuthStateChange(async (event,session)=>{
+    if(event==='SIGNED_OUT'||!session){ sessionExpired(); return; }
+    if(event==='TOKEN_REFRESHED'){ if(await loadAll()) renderAll(); }
+  });
+
+  // กลับมาที่แท็บหลังคอมหลับ = จังหวะที่ token มักหมดอายุพอดี ให้เช็กใหม่ทุกครั้ง
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible'&&myUserId){ if(await loadAll()) renderAll(); }
+  });
+}
+async function signOut(){ try{await sb.auth.signOut()}catch(e){}; location.reload(); }
+
+/* เซสชันตาย = Supabase ตอบ 200 พร้อมรายการว่าง (ไม่ใช่ error)
+   ถ้าไม่ดักไว้ หน้าจอจะขึ้น "0 คน" เฉยๆ ทั้งที่ข้อมูลยังอยู่ครบ */
+function sessionExpired(){
+  document.getElementById('conn').classList.remove('ok');
+  const b=document.getElementById('cfgBanner');
+  b.style.display='block';
+  b.innerHTML='⚠️ <b>เซสชันหมดอายุ</b> — ข้อมูลลูกค้ายังอยู่ครบในระบบ ไม่ได้หายไปไหน '+
+              'แต่ต้องเข้าสู่ระบบใหม่ถึงจะดูได้ '+
+              '<button onclick="location.reload()" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:4px 12px;font-family:Kanit;font-size:12.5px;cursor:pointer;margin-left:8px">เข้าสู่ระบบใหม่</button>';
+  document.getElementById('leadList').innerHTML='<div class="empty">เซสชันหมดอายุ — กดปุ่ม "เข้าสู่ระบบใหม่" ด้านบน<br><span style="font-size:12.5px">ข้อมูลไม่ได้หาย ระบบแค่ต้องยืนยันตัวตนอีกครั้ง</span></div>';
+}
+
+async function loadAll(){
+  // 1) เช็กก่อนว่าเซสชันยังมีชีวิตอยู่ไหม — ถ้าตายแล้วจะได้ไม่แสดงผลเป็น 0
+  let session=null;
+  try{ session=(await sb.auth.getSession()).data.session; }catch(e){}
+  if(!session||!session.user){ sessionExpired(); return false; }
+
+  // 2) ดึงแบบแบ่งหน้า — Supabase ส่งกลับได้สูงสุด 1,000 แถวต่อครั้ง
+  //    ถ้าไม่วนเก็บ ลูกค้าเก่าจะหายจากแอปเงียบๆ เมื่อข้อมูลเกิน 1,000
+  const PAGE=1000; let all=[]; let from=0;
+  for(;;){
+    const {data,error}=await sb.from('leads').select('*')
+      .order('created_at',{ascending:false}).range(from,from+PAGE-1);
+    if(error){
+      if(error.code==='PGRST301'||/jwt|token|expired/i.test(error.message||'')){ sessionExpired(); return false; }
+      toast('โหลดข้อมูลไม่ได้: '+error.message); return false;
+    }
+    all=all.concat(data||[]);
+    if(!data||data.length<PAGE) break;
+    from+=PAGE;
+  }
+
+  // 3) ได้ 0 แถวทั้งที่เซสชันดูปกติ = สิทธิ์เข้าถึงมีปัญหา ไม่ใช่ข้อมูลหาย
+  if(all.length===0 && leads.length>0){ sessionExpired(); return false; }
+
+  leads=all;
+  document.getElementById('cfgBanner').style.display='none';
+  document.getElementById('conn').classList.add('ok');
+  const tb=document.getElementById('allBadge'); if(tb) tb.textContent=leads.length;
+  return true;
+}
+
+/* ---------- mutations ---------- */
+async function addLead(){
+  if(!configured)return toast('ยังไม่ได้ตั้งค่า Supabase');
+  const name=document.getElementById('f_name').value.trim();
+  if(!name)return toast('ใส่ชื่อลูกค้าก่อนนะครับ');
+  const obj={date:document.getElementById('f_date').value||today(),
+    page:document.getElementById('f_page').value.trim()||'-',
+    admin:document.getElementById('f_admin').value.trim()||'-',
+    name, contact:document.getElementById('f_contact').value.trim(),
+    work:document.getElementById('f_work').value, budget:document.getElementById('f_budget').value.trim(),
+    note:document.getElementById('f_note').value.trim(),
+    stage:0, lost:false, follow_count:0, next:addDays(today(),1), owner_id:myUserId};
+  const {data,error}=await sb.from('leads').insert(obj).select().single();
+  if(error)return toast('บันทึกไม่ได้: '+error.message);
+  leads.unshift(data);
+  ['f_name','f_contact','f_budget','f_note'].forEach(i=>document.getElementById(i).value='');
+  renderAll(); toast('บันทึกแล้ว + ตั้งเตือนติดตามพรุ่งนี้');
+}
+async function patch(id,p,msg){
+  const {data,error}=await sb.from('leads').update(p).eq('id',id).select().single();
+  if(error)return toast('อัปเดตไม่ได้: '+error.message);
+  const i=leads.findIndex(x=>x.id===id); if(i>=0)leads[i]=data;
+  renderAll(); if(msg)toast(msg);
+}
+function setStage(id,s){const L=leads.find(x=>x.id===id);if(!L)return;
+  patch(id,{stage:s,lost:false,next:s>=3?null:(L.next||addDays(today(),1))},'อัปเดตเป็น "'+STAGES[s]+'"')}
+function setLost(id){patch(id,{lost:true,next:null},'ทำเครื่องหมาย หลุด/เงียบ')}
+function snooze(id,n){const L=leads.find(x=>x.id===id);if(!L)return;
+  patch(id,{lost:false,next:addDays(today(),n),follow_count:(L.follow_count||0)+1},'เลื่อนติดตามอีก '+n+' วัน')}
+function reopen(id){const L=leads.find(x=>x.id===id);if(!L)return;patch(id,{lost:false,next:addDays(today(),1)},'นำกลับมาติดตาม')}
+async function delLead(id){
+  if(myRole!=='admin')return toast('เฉพาะแอดมินเท่านั้นที่ลบได้');
+  if(!confirm('ลบลูกค้ารายนี้?'))return;
+  const {error}=await sb.from('leads').delete().eq('id',id);
+  if(error)return toast('ลบไม่ได้: '+error.message);
+  leads=leads.filter(x=>x.id!==id); renderAll()}
+
+/* ---------- render ---------- */
+function stageChip(L){return L.lost?'<span class="chip stlost">หลุด/เงียบ</span>':'<span class="chip st'+(L.stage+1)+'">'+STAGES[L.stage]+'</span>'}
+function leadHtml(L,showMsg){
+  const overdue=L.next && L.next<today();
+  const dueTxt=L.next?('<span class="due'+(overdue?' overdue':'')+'">'+(overdue?'เลยกำหนด ':'ติดตาม ')+L.next+'</span>'):'';
+  let s='';
+  if(!L.lost && L.stage<3)s+='<button class="step-btn" onclick="setStage(\''+L.id+'\','+(L.stage+1)+')">→ '+STAGES[L.stage+1]+'</button>';
+  s+='<button class="mini" onclick="snooze(\''+L.id+'\',1)">+1 วัน</button><button class="mini" onclick="snooze(\''+L.id+'\',3)">+3 วัน</button><button class="mini" onclick="snooze(\''+L.id+'\',7)">+7 วัน</button>';
+  s+= L.lost? '<button class="mini" onclick="reopen(\''+L.id+'\')">กลับมาใหม่</button>' : '<button class="mini" onclick="setLost(\''+L.id+'\')">หลุด</button>';
+  if(myRole==='admin') s+='<button class="mini" onclick="delLead(\''+L.id+'\')" style="color:var(--red)">ลบ</button>';
+  let msg='';
+  if(showMsg){const m=suggestMsg(L);msg='<div class="msg"><button class="cp" onclick="copy(this,`'+m.replace(/`/g,"'")+'`)">คัดลอก</button>'+m+'</div>'}
+  return '<div class="lead"><div class="r1"><span class="nm">'+esc(L.name)+'</span>'+stageChip(L)+dueTxt+
+    '<span class="meta">· '+esc(L.work||'')+(L.budget?' · งบ '+esc(L.budget):'')+'</span></div>'+
+    '<div class="r2"><span>📄 '+esc(L.page)+'</span><span>👤 '+esc(L.admin)+'</span>'+(L.contact?'<span>📞 '+esc(L.contact)+'</span>':'')+'<span>🗓 ทัก '+L.date+'</span>'+(L.note?'<span>📝 '+esc(L.note)+'</span>':'')+'</div>'+
+    '<div class="r3">'+s+'</div>'+msg+'</div>';
+}
+function suggestMsg(L){
+  if(L.lost)return 'ไม่ได้รบกวนนะคะ 🙏 เผื่อลูกค้ายังสนใจอยู่ แอดมินเก็บแบบไว้ให้แล้วค่ะ สะดวกคุยต่อเมื่อไหร่ทักมาได้เลยนะคะ';
+  if(L.stage===0)return 'สนใจให้ทีมออกแบบ 3D ให้ดูก่อนไหมคะ 😊 ส่งรูป/ขนาดพื้นที่มาได้เลยค่ะ เดี๋ยวออกแบบ + ตีราคาให้ฟรีค่ะ';
+  if(L.stage===2)return 'นัดให้ช่างเข้าไปวัดหน้างานจริงวันไหนดีคะ เสาร์หรืออาทิตย์? (ค่าวัดหักคืนตอนซื้อค่ะ ไม่เสี่ยงเลยค่ะ)';
+  const c=['ได้ดูแบบ 3D ที่ส่งไปหรือยังคะ 😊 มีตรงไหนอยากปรับ บอกได้เลยนะคะ เดี๋ยวจัดให้ค่ะ',
+    'ส่งผลงานจริงงานคล้ายๆ ของลูกค้ามาให้ดูเพิ่มค่ะ 👇 สวยใช่ไหมคะ ของลูกค้าก็ออกมาแนวนี้ได้เลยค่ะ',
+    'ช่วงนี้มีโปรโมชั่นถึงสิ้นเดือนค่ะ ถ้าตัดสินใจช่วงนี้คุ้มมาก สนใจให้เข้าไปวัดหน้างานไหมคะ (ค่าวัดหักคืนตอนซื้อค่ะ)',
+    'ไม่ได้รบกวนนะคะ 🙏 เผื่อยังสนใจอยู่ แอดมินเก็บแบบไว้ให้แล้วค่ะ สะดวกคุยต่อเมื่อไหร่ทักมาได้เลยนะคะ ยินดีดูแลค่ะ'];
+  return c[Math.min(L.follow_count||0,c.length-1)];
+}
+function copy(btn,txt){navigator.clipboard.writeText(txt).then(()=>{btn.textContent='คัดลอกแล้ว ✓';setTimeout(()=>btn.textContent='คัดลอก',1500)})}
+
+function renderLeads(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const fs=document.getElementById('fStatus').value, fa=document.getElementById('fAdmin').value, fp=document.getElementById('fPage').value;
+  const list=leads.filter(L=>{
+    if(q && !((L.name||'').toLowerCase().includes(q)||(L.contact||'').toLowerCase().includes(q)))return false;
+    if(fa && L.admin!==fa)return false; if(fp && L.page!==fp)return false;
+    if(fs==='lost'){if(!L.lost)return false}else if(fs){if(L.lost||STAGES[L.stage]!==fs)return false}
+    return true;
+  });
+  document.getElementById('leadList').innerHTML= list.length? list.map(L=>leadHtml(L,false)).join('') : '<div class="empty">ยังไม่มีลูกค้า — เพิ่มด้านบน หรือกด "โหลดตัวอย่าง"</div>';
+}
+function renderDue(){
+  const due=leads.filter(L=>!L.lost && L.stage<3 && L.next && L.next<=today()).sort((a,b)=>(a.next<b.next?-1:1));
+  document.getElementById('dueBadge').textContent=due.length;
+  document.getElementById('dueList').innerHTML= due.length? due.map(L=>leadHtml(L,true)).join('') : '<div class="empty">🎉 ไม่มีใครค้างติดตามวันนี้ เยี่ยมมาก!</div>';
+}
+function monthsList(){const s=new Set(leads.filter(L=>L.date).map(L=>L.date.slice(0,7)));s.add(today().slice(0,7));return [...s].sort().reverse()}
+function renderDash(){
+  const sel=document.getElementById('dashMonth');
+  const cur=sel.value; sel.innerHTML=monthsList().map(m=>'<option value="'+m+'">'+m+'</option>').join('');
+  if(cur)sel.value=cur;
+  const m=sel.value||today().slice(0,7);
+  const inM=leads.filter(L=>L.date&&L.date.slice(0,7)===m);
+  const reach=s=>inM.filter(L=>L.stage>=s).length;
+  const nTak=inM.length,nSend=reach(1),nMeas=reach(2),nClose=reach(3);
+  const pc=(a,b)=>b?Math.round(a/b*100)+'%':'–';
+  document.getElementById('funnel').innerHTML=fbox(nTak,'ทัก','')+fbox(nSend,'ส่งแบบ 3D',pc(nSend,nTak))+fbox(nMeas,'จ่ายค่าวัด',pc(nMeas,nTak))+fbox(nClose,'ปิดการขาย',pc(nClose,nMeas));
+  document.getElementById('convLine').innerHTML='อัตราแปลงหลัก <b style="color:var(--goldD)">ทัก → จ่ายค่าวัด = '+pc(nMeas,nTak)+'</b> (เป้าหมาย 10%+) · ปิดจากค่าวัด '+pc(nClose,nMeas);
+  document.getElementById('byAdmin').innerHTML=groupTable(inM,'admin');
+  document.getElementById('byPage').innerHTML=groupTable(inM,'page');
+}
+function fbox(n,l,pc){return '<div class="fbox"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(pc?'<div class="pc">'+pc+'</div>':'')+'</div>'}
+function groupTable(list,key){
+  const g={};list.forEach(L=>{const k=L[key]||'-';(g[k]=g[k]||[]).push(L)});
+  const rows=Object.entries(g).map(([k,arr])=>{const tak=arr.length,meas=arr.filter(L=>L.stage>=2).length,close=arr.filter(L=>L.stage>=3).length;return{k,tak,meas,close,rate:tak?Math.round(meas/tak*100):0}}).sort((a,b)=>b.rate-a.rate);
+  if(!rows.length)return '<div class="empty">ยังไม่มีข้อมูลเดือนนี้</div>';
+  return '<table><tr><th>'+(key==='admin'?'แอดมิน':'เพจ/สาขา')+'</th><th class="num">ทัก</th><th class="num">จ่ายวัด</th><th class="num">ปิด</th><th>อัตราแปลงวัด</th></tr>'+
+    rows.map(r=>'<tr><td>'+esc(r.k)+'</td><td class="num">'+r.tak+'</td><td class="num">'+r.meas+'</td><td class="num">'+r.close+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><span style="width:'+Math.min(r.rate*4,100)+'%"></span></div><b style="font-family:Prompt;color:var(--goldD)">'+r.rate+'%</b></div></td></tr>').join('')+'</table>';
+}
+function refreshFilters(){
+  const admins=[...new Set(leads.map(L=>L.admin).filter(x=>x&&x!=='-'))].sort();
+  const pages=[...new Set(leads.map(L=>L.page).filter(x=>x&&x!=='-'))].sort();
+  const fa=document.getElementById('fAdmin'),fp=document.getElementById('fPage');
+  const va=fa.value,vp=fp.value;
+  fa.innerHTML='<option value="">ทุกแอดมิน</option>'+admins.map(a=>'<option>'+esc(a)+'</option>').join(''); fa.value=va;
+  fp.innerHTML='<option value="">ทุกเพจ</option>'+pages.map(p=>'<option>'+esc(p)+'</option>').join(''); fp.value=vp;
+  document.getElementById('admins').innerHTML=admins.map(a=>'<option>'+esc(a)+'</option>').join('');
+  document.getElementById('pages').innerHTML=pages.map(p=>'<option>'+esc(p)+'</option>').join('');
+}
+function renderAll(){refreshFilters();renderLeads();renderDue();renderDash()}
+function tab(t){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));document.getElementById('pane-'+t).classList.add('on');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  if(t==='dash')renderDash();if(t==='due')renderDue();}
+
+/* ---------- utilities ---------- */
+function exportCSV(){
+  const head=['วันที่ทัก','เพจ','แอดมิน','ชื่อลูกค้า','ติดต่อ','งาน','งบ','สถานะ','ติดตามถัดไป','โน้ต'];
+  const rows=leads.map(L=>[L.date,L.page,L.admin,L.name,L.contact,L.work,L.budget,(L.lost?'หลุด':STAGES[L.stage]),L.next||'',L.note].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','));
+  dl('﻿'+[head.join(','),...rows].join('\n'),'leads_'+today()+'.csv','text/csv');
+}
+function backup(){dl(JSON.stringify(leads),'backup_leads_'+today()+'.json','application/json')}
+function dl(txt,name,type){const b=new Blob([txt],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+
+async function loadSample(){
+  if(!configured)return toast('ตั้งค่า Supabase ก่อนนะครับ');
+  if(myRole!=='admin')return toast('เฉพาะแอดมิน');
+  if(!confirm('เพิ่มลูกค้าตัวอย่าง 24 ราย เข้าฐานข้อมูลจริง?'))return;
+  const P=['สาขารังสิต','สาขาบางนา','สาขาเชียงใหม่'],A=['ก้อย','นัท','เบียร์','ฟ้า'],W=['ครัว','ตู้เสื้อผ้า','ชุดทีวี','ห้องนอน'];
+  const rnd=a=>a[Math.floor(Math.random()*a.length)];const rows=[];
+  for(let i=0;i<24;i++){const d=addDays(today(),-Math.floor(Math.random()*20));const stage=Math.floor(Math.random()*4),lost=Math.random()<0.35&&stage<3;
+    rows.push({date:d,page:rnd(P),admin:rnd(A),name:'ลูกค้าตัวอย่าง '+(i+1),contact:'08x-xxx-'+(1000+i),work:rnd(W),budget:[30,50,80,120][Math.floor(Math.random()*4)]+',000',note:'',stage,lost,follow_count:Math.floor(Math.random()*3),next:(lost||stage>=3)?null:addDays(today(),Math.floor(Math.random()*5)-2),owner_id:myUserId})}
+  const {error}=await sb.from('leads').insert(rows);
+  if(error)return toast('เพิ่มตัวอย่างไม่ได้: '+error.message);
+  if(await loadAll())renderAll();toast('เพิ่มลูกค้าตัวอย่าง 24 ราย');
+}
+</script>
+</body>
+</html>
