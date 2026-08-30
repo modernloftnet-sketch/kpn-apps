@@ -18,6 +18,8 @@
   .top .dot.ok{background:#5bc98a}
   .top .tools button{background:#ffffff18;color:#fff;border:1px solid #ffffff30;border-radius:8px;padding:7px 12px;font-family:'Kanit';font-size:12.5px;cursor:pointer;margin-left:6px}
   .top .tools button:hover{background:#ffffff30}
+  #grpSel{background:#ffffff18;color:#fff;border:1px solid #ffffff35;border-radius:8px;padding:7px 10px;font-family:'Prompt';font-weight:500;font-size:13px;cursor:pointer}
+  #grpSel option{color:#20242c;background:#fff}
   .userchip{color:#e6e9ef;font-size:12.5px;display:flex;align-items:center;gap:6px}
   .userchip b{color:#fff}
   .rolebadge{font-size:10.5px;font-family:'Prompt';font-weight:600;padding:2px 8px;border-radius:20px}
@@ -153,7 +155,11 @@
 <div id="app" style="display:none">
 <div class="top">
   <div class="logo">B</div>
-  <h1>บันทึกคะแนน KPI<span>THE BUILT · ช่างติดตั้ง</span></h1>
+  <h1>บันทึกคะแนน KPI<span id="topSub">THE BUILT · ช่างติดตั้ง</span></h1>
+  <select id="grpSel" onchange="switchGroup()" title="สลับกลุ่มพนักงาน">
+    <option>ช่างติดตั้ง</option>
+    <option>ฝ่ายผลิต</option>
+  </select>
   <div class="sp"></div>
   <div class="userchip" id="userchip"></div>
   <div class="dot" id="conn" title="สถานะการเชื่อมต่อ"></div>
@@ -169,7 +175,7 @@
   <button data-p="add" onclick="tab('add')">บันทึกคะแนน</button>
   <button data-p="wait" onclick="tab('wait')">รออนุมัติ <span class="badge" id="waitBadge" style="display:none">0</span></button>
   <button data-p="sum" onclick="tab('sum')">สรุปจ่ายเงิน</button>
-  <button data-p="man" onclick="tab('man')" id="tabMan" style="display:none">รายชื่อช่าง</button>
+  <button data-p="man" onclick="tab('man')" id="tabMan" style="display:none">รายชื่อ<span id="lbTab">ช่าง</span></button>
 </div>
 
 <div class="wrap">
@@ -191,7 +197,7 @@
       <h2 class="h">บันทึกคะแนน</h2>
       <div class="form">
         <div class="full">
-          <label>ช่าง</label>
+          <label><span class="lbW">ช่าง</span></label>
           <select id="a_staff"></select>
         </div>
         <div class="full">
@@ -256,15 +262,15 @@
   <!-- MANAGE -->
   <div class="pane" id="p-man">
     <div class="card">
-      <h2 class="h">เพิ่มช่าง</h2>
+      <h2 class="h">เพิ่ม<span class="lbW">ช่าง</span></h2>
       <div class="form">
         <div><label>รหัสส่วนตัว</label><input id="m_code" placeholder="เช่น TK001"></div>
-        <div><label>ชื่อ</label><input id="m_name" placeholder="ชื่อช่าง"></div>
+        <div><label>ชื่อ</label><input id="m_name" placeholder="ชื่อ"></div>
         <div><label>ทีม / สาขา</label><input id="m_team" placeholder="เช่น ทีมโคราช"></div>
         <div><label>ประเภท</label><select id="m_type"><option>ประจำ</option><option>รายวัน</option></select></div>
-        <div class="full"><button class="btn gold" onclick="addStaff()">เพิ่มช่าง</button></div>
+        <div class="full"><button class="btn gold" onclick="addStaff()">เพิ่ม<span class="lbW">ช่าง</span></button></div>
       </div>
-      <div class="hint">รหัสส่วนตัวคือสิ่งที่ช่างใช้เปิดดูคะแนนตัวเอง ตั้งให้เดายาก และห้ามซ้ำกัน</div>
+      <div class="hint">รหัสส่วนตัวคือสิ่งที่<span class="lbW">ช่าง</span>ใช้เปิดดูคะแนนตัวเอง ตั้งให้เดายาก และห้ามซ้ำกัน</div>
     </div>
     <div class="card tw" id="manTable"></div>
   </div>
@@ -278,7 +284,9 @@
 <script>
 const SUPABASE_URL      = "https://kgjymqajwkhymqcofkhn.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE";
-const GROUP = 'ช่างติดตั้ง';
+let GROUP = 'ช่างติดตั้ง';
+try{ const _g=localStorage.getItem('kpi_group'); if(_g) GROUP=_g; }catch(e){}
+const W = () => GROUP==='ฝ่ายผลิต' ? 'พนักงาน' : 'ช่าง';
 
 let sb=null, myRole='staff', myName='', myUserId='';
 let staffs=[], reasons=[], events=[], photoData=null, curPts=null;
@@ -350,6 +358,7 @@ async function afterLogin(user){
   const label = role==='admin'?'แอดมิน':(role==='manager'?'หัวหน้า':'พนักงาน');
   $('userchip').innerHTML='<b>'+esc(name)+'</b> <span class="rolebadge '+role+'">'+label+'</span>';
   if(role==='admin'){ $('tabMan').style.display=''; }
+  applyLabels();
   await reload();
 }
 
@@ -388,9 +397,23 @@ async function reload(){
   renderDash(); renderAdd(); renderWait(); renderSum(); renderMan();
 }
 
+function applyLabels(){
+  $('topSub').textContent='THE BUILT · '+GROUP;
+  $('grpSel').value=GROUP;
+  const t=$('lbTab'); if(t) t.textContent=W();
+  document.querySelectorAll('.lbW').forEach(x=>x.textContent=W());
+}
+async function switchGroup(){
+  GROUP=$('grpSel').value;
+  try{ localStorage.setItem('kpi_group',GROUP); }catch(e){}
+  applyLabels();
+  await reload();
+  toast('สลับไปกลุ่ม '+GROUP+' แล้ว');
+}
+
 function fillPickers(){
   const act=staffs.filter(s=>s.active);
-  $('a_staff').innerHTML='<option value="">— เลือกช่าง —</option>'+
+  $('a_staff').innerHTML='<option value="">— เลือก'+W()+' —</option>'+
     act.map(s=>'<option value="'+s.id+'">'+esc(s.name)+(s.team?' · '+esc(s.team):'')+'</option>').join('');
   $('a_reason').innerHTML='<option value="">— เลือกหัวข้อ —</option>'+
     reasons.map(r=>'<option value="'+r.id+'">'+esc(r.label)+'</option>').join('');
@@ -422,10 +445,10 @@ function renderDash(){
   const risk=all.filter(s=>s<70).length;
   const pend=events.filter(e=>e.status==='pending').length;
   $('dashKpis').innerHTML=
-    kbox(all.length,'ช่างทั้งหมด')+kbox(avg,'คะแนนเฉลี่ย')+
+    kbox(all.length,W()+'ทั้งหมด')+kbox(avg,'คะแนนเฉลี่ย')+
     kbox(risk,'ต่ำกว่า 70 คะแนน')+kbox(pend,'รออนุมัติ');
 
-  if(!list.length){ $('dashList').innerHTML='<div class="empty">ยังไม่มีรายชื่อช่าง<br>ไปที่แท็บ "รายชื่อช่าง" เพื่อเพิ่ม</div>'; return }
+  if(!list.length){ $('dashList').innerHTML='<div class="empty">ยังไม่มีรายชื่อ'+W()+'<br>ไปที่แท็บ "รายชื่อ'+W()+'" เพื่อเพิ่ม</div>'; return }
 
   $('dashList').innerHTML=list.map(s=>{
     const g=gradeOf(s.sc), p=pendingOf(s.id);
@@ -533,7 +556,7 @@ function photoPicked(){
 
 async function saveEvent(){
   const staff_id=$('a_staff').value, rid=$('a_reason').value;
-  if(!staff_id) return toast('เลือกช่างก่อน');
+  if(!staff_id) return toast('เลือก'+W()+'ก่อน');
   if(!rid)      return toast('เลือกหัวข้อก่อน');
   if(curPts===null||curPts===0) return toast('ระบุคะแนนก่อน');
 
@@ -610,7 +633,7 @@ function renderSum(){
   const list=staffs.filter(s=>s.active).map(s=>({...s,sc:scoreOf(s.id)}));
   $('s_base').value = sales? nf(baseOf(sales,'ประจำ'))+' / '+nf(baseOf(sales,'รายวัน'))+' บาท (ประจำ/รายวัน)' : '—';
 
-  if(!list.length){ $('sumTable').innerHTML='<div class="empty">ยังไม่มีรายชื่อช่าง</div>'; return }
+  if(!list.length){ $('sumTable').innerHTML='<div class="empty">ยังไม่มีรายชื่อ'+W()+'</div>'; return }
   let total=0;
   const rows=list.sort((a,b)=>b.sc-a.sc).map(s=>{
     const g=gradeOf(s.sc), base=baseOf(sales,s.staff_type), pay=Math.round(base*g/100);
@@ -637,13 +660,13 @@ function exportCSV(){
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='kpi-ช่างติดตั้ง-'+month+'.csv'; a.click();
+  a.download='kpi-'+GROUP+'-'+month+'.csv'; a.click();
 }
 
 /* ── manage staff ──────────────────────────────────────── */
 function renderMan(){
   if(myRole!=='admin') return;
-  if(!staffs.length){ $('manTable').innerHTML='<div class="empty">ยังไม่มีรายชื่อช่าง</div>'; return }
+  if(!staffs.length){ $('manTable').innerHTML='<div class="empty">ยังไม่มีรายชื่อ'+W()+'</div>'; return }
   $('manTable').innerHTML='<table><tr><th>รหัส</th><th>ชื่อ</th><th>ทีม</th><th>ประเภท</th><th class="num">สถานะ</th></tr>'+
     staffs.map(s=>'<tr><td><code>'+esc(s.code)+'</code></td><td>'+esc(s.name)+'</td>'+
       '<td>'+esc(s.team||'—')+'</td><td>'+esc(s.staff_type)+'</td>'+
@@ -660,7 +683,7 @@ async function addStaff(){
   });
   if(error) return toast(/duplicate/i.test(error.message)?'รหัสนี้ถูกใช้แล้ว':'เพิ่มไม่สำเร็จ: '+error.message);
   $('m_code').value=''; $('m_name').value=''; $('m_team').value='';
-  toast('เพิ่มช่างแล้ว'); await reload();
+  toast('เพิ่ม'+W()+'แล้ว'); await reload();
 }
 async function toggleStaff(id,active){
   const {error}=await sb.from('kpi_staff').update({active}).eq('id',id);
