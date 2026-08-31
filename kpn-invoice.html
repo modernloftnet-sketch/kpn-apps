@@ -379,224 +379,233 @@ textarea { resize: vertical; min-height: 72px; }
 </head>
 <body>
 <style id="lockscreen-style">
-#lockscreen {
-  position: fixed; inset: 0; z-index: 99999;
-  background: linear-gradient(135deg, #3d0010 0%, #6b0f1a 100%);
-  display: flex; align-items: center; justify-content: center;
-}
-.lock-box {
-  background: white; border-radius: 20px; padding: 48px 40px;
-  width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
-}
-.lock-logo { font-size: 26px; font-weight: 800; color: #6b0f1a; letter-spacing: 1px; margin-bottom: 4px; }
-.lock-sub { font-size: 11px; color: #8a8a9a; margin-bottom: 28px; letter-spacing: 1px; }
-.lock-icon { font-size: 44px; margin-bottom: 16px; }
-.lock-label { font-size: 13px; color: #8a8a9a; margin-bottom: 6px; text-align: left; font-weight: 600; }
-.lock-input {
-  width: 100%; padding: 12px 16px; border: 2px solid #e2ddd6;
-  border-radius: 10px; font-size: 16px; font-family: 'Sarabun', sans-serif;
-  outline: none; transition: border 0.2s; letter-spacing: 3px; text-align: center;
-}
-.lock-input:focus { border-color: #6b0f1a; }
-.lock-input.error { border-color: #c0392b; animation: shake 0.3s; }
-.lock-btn {
-  width: 100%; margin-top: 14px; padding: 13px;
-  background: #6b0f1a; color: white; border: none;
-  border-radius: 10px; font-size: 15px; font-weight: 700;
-  font-family: 'Sarabun', sans-serif; cursor: pointer; transition: background 0.2s;
-}
-.lock-btn:hover { background: #8b1a2a; }
-.lock-error { color: #c0392b; font-size: 13px; margin-top: 10px; min-height: 20px; font-weight: 600; }
-.lock-role-badge {
-  display: inline-block; margin-top: 16px; padding: 4px 14px;
-  border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px;
-}
-.role-owner { background: #fff3cd; color: #856404; }
-.role-manager { background: #d1ecf1; color: #0c5460; }
-.role-sale { background: #d4edda; color: #155724; }
-.role-accounting { background: #f8d7da; color: #721c24; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+#lockscreen{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg, #3d0010 0%, #6b0f1a 100%);display:flex;align-items:center;justify-content:center}
+.lock-box{background:#fff;border-radius:20px;padding:44px 40px;width:390px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.lock-logo{font-size:26px;font-weight:800;color:#6b0f1a;letter-spacing:1px;margin-bottom:4px}
+.lock-sub{font-size:11px;color:#8a8a9a;margin-bottom:26px;letter-spacing:1px}
+.lock-icon{font-size:44px;margin-bottom:14px}
+.lock-label{font-size:13px;color:#8a8a9a;margin-bottom:6px;text-align:left;font-weight:600}
+.lock-input{width:100%;padding:12px 16px;border:2px solid #e2ddd6;border-radius:10px;font-size:15px;
+  font-family:'Sarabun',sans-serif;outline:none;transition:border .2s;text-align:left;box-sizing:border-box}
+.lock-input:focus{border-color:#6b0f1a}
+.lock-input.error{border-color:#c0392b;animation:shake .3s}
+.lock-btn{width:100%;margin-top:18px;padding:13px;background:#6b0f1a;color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:opacity .2s}
+.lock-btn:disabled{opacity:.55;cursor:default}
+.lock-error{color:#c0392b;font-size:13px;margin-top:10px;min-height:20px;font-weight:600}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 </style>
 
 <div id="lockscreen">
   <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-logo">KPN HOUSE & CO</div>
-    <div class="lock-sub">ระบบออกบิล · KPN HOUSE & CO</div>
-    <div class="lock-label">ชื่อผู้ใช้</div>
-    <select class="lock-input" id="lockUser" style="letter-spacing:0;text-align:left;cursor:pointer;">
-      <option value="">— เลือกชื่อ —</option>
-    </select>
-    <div class="lock-label" style="margin-top:12px;">PIN</div>
-    <input type="password" class="lock-input" id="lockInput" placeholder="••••••••"
-      maxlength="10" onkeydown="if(event.key==='Enter') checkLock()">
-    <button class="lock-btn" onclick="checkLock()">🔓 เข้าสู่ระบบ</button>
+    <div class="lock-icon">&#128274;</div>
+    <div class="lock-logo">KPN HOUSE &amp; CO</div>
+    <div class="lock-sub">&#3619;&#3632;&#3610;&#3610;&#3629;&#3629;&#3585;&#3610;&#3636;&#3621; &#183; KPN HOUSE &amp; CO</div>
+    <div class="lock-label">อีเมล</div>
+    <input type="email" class="lock-input" id="lockEmail" autocomplete="username"
+      placeholder="name@thebuilt.co.th" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="lock-label" style="margin-top:12px;">รหัสผ่าน</div>
+    <input type="password" class="lock-input" id="lockPass" autocomplete="current-password"
+      placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lock-btn" id="lockBtn" onclick="doLogin()">เข้าสู่ระบบ</button>
     <div class="lock-error" id="lockError"></div>
-    <div id="lockRoleBadge"></div>
   </div>
 </div>
 <script>
-(function() {
-  // ── Special accounts (Owner/Accounting) — ไม่ผ่าน staff ──
-  const SPECIAL = {
-    '__owner__':      { pin: '16012521', role: 'owner' },
-    '__accounting__': { pin: '123456',   role: 'accounting' },
-  };
-  const ROLE_LABELS = {
-    owner:      '👑 Owner',
-    manager:    '🏢 Manager',
-    sale:       '💼 Sale',
-    accounting: '📒 Accounting',
-  };
-  const ROLE_PAGES = {
-    owner:      null,
-    manager:    ['dashboard','quotations','invoices','receipts','billings','pos','customers','products','reports','commission'],
-    sale:       ['quotations','invoices','receipts','billings','pos','customers','products','commission'],
-    accounting: ['purchases','payables','expenses','finchart'],
-  };
-  const KEY_ROLE    = 'kpn_role';
-  const KEY_UNLOCK  = 'kpn_unlocked';
-  const KEY_STAFF   = 'kpn_staff_name';
-  const KEY_STAFFID = 'kpn_staff_id';
-  const ROLE_VERSION = '5';
-  const KEY_VER = 'kpn_role_ver';
+/* ═══ ประตูหน้า: Supabase Auth (แทนระบบ PIN เดิม) ═══
+   - ต้องล็อกอินก่อน ถึงจะยิงข้อมูลไป Supabase ได้
+   - คำขอทุกอันไปยัง Supabase จะถูกใส่ token ของคนที่ล็อกอินให้อัตโนมัติ
+   - korakot / joy = ทำได้ทุกอย่าง   ·   คนอื่น = ใช้งานได้ แต่เข้าเมนู "ตั้งค่า" ไม่ได้ */
+(function(){
+  var SB_URL = 'https://qybntzlfnrcownntzmir.supabase.co';
+  var SB_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
+  var LSK    = 'kpn_auth';
 
-  if (sessionStorage.getItem(KEY_VER) !== ROLE_VERSION) {
-    ['kpn_role','kpn_unlocked','kpn_staff_name','kpn_staff_id'].forEach(k => sessionStorage.removeItem(k));
-    sessionStorage.setItem(KEY_VER, ROLE_VERSION);
+  var PEOPLE = {
+    'korakot@thebuilt.co.th': { name:'เฮีย',  role:'owner' },
+    'joy@thebuilt.co.th':     { name:'จอย',   role:'owner' },
+    'ben@thebuilt.co.th':     { name:'เบน',   role:'staff' },
+    'gam@thebuilt.co.th':     { name:'แก้ม',  role:'staff' },
+    'kat@thebuilt.co.th':     { name:'เกอธ',  role:'staff' },
+    'oum@thebuilt.co.th':     { name:'อุ้ม',  role:'staff' },
+    'fang@thebuilt.co.th':    { name:'ฟาง',   role:'staff' }
+  };
+  var HIDE_PAGES = ['branches','staff'];   /* เมนูในหมวด "ตั้งค่า" */
+
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem(LSK) || 'null'); } catch(e){}
+
+  var _fetch = window.fetch.bind(window);
+  var isReady = false, readyResolve, ready = new Promise(function(r){ readyResolve = r; });
+
+  function who(){ return PEOPLE[((session&&session.email)||'').toLowerCase()] || null; }
+
+  function saveSession(d){
+    session = {
+      access_token : d.access_token,
+      refresh_token: d.refresh_token,
+      expires_at   : d.expires_at || Math.floor(Date.now()/1000) + (d.expires_in || 3600),
+      email        : (d.user && d.user.email) || (session && session.email) || ''
+    };
+    try { localStorage.setItem(LSK, JSON.stringify(session)); } catch(e){}
   }
+  function clearSession(){ session = null; try { localStorage.removeItem(LSK); } catch(e){} }
 
-  // ── Populate dropdown จาก Supabase kpn_staff ──
-  const SUPABASE_URL = 'https://qybntZlfnrcownntzmir.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
-  async function populateLockUsers() {
-    const sel = document.getElementById('lockUser');
-    if (!sel) return;
+  async function refresh(){
+    if (!session || !session.refresh_token) return false;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/kpn_staff?order=name&select=id,name,position,pin`, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      var r = await _fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+        body: JSON.stringify({ refresh_token: session.refresh_token })
       });
-      const staff = await res.json();
-      (staff||[]).filter(s => s.pin).forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.id;
-        o.dataset.name = s.name;
-        o.dataset.position = s.position;
-        o.dataset.pin = s.pin;
-        o.textContent = s.name + ' (' + s.position + ')';
-        sel.appendChild(o);
-      });
-    } catch(e) { console.warn('load staff for login failed', e); }
-    // Special accounts
-    [
-      { value:'__owner__',      label:'Owner (ผู้บริหาร)' },
-      { value:'__accounting__', label:'Accounting (บัญชี)' },
-    ].forEach(a => {
-      const o = document.createElement('option'); o.value=a.value; o.textContent=a.label; sel.appendChild(o);
-    });
+      if (!r.ok) return false;
+      var d = await r.json();
+      if (!d.access_token) return false;
+      saveSession(d); return true;
+    } catch(e){ return false; }
   }
 
-  const savedRole = sessionStorage.getItem(KEY_ROLE);
-  if (sessionStorage.getItem(KEY_UNLOCK) === '1' && savedRole) {
-    applyRole(savedRole);
-    return;
-  }
-
-  populateLockUsers();
-  setTimeout(() => { const s = document.getElementById('lockUser'); if(s) s.focus(); }, 150);
-
-  window.checkLock = function() {
-    const sel = document.getElementById('lockUser');
-    const pin = document.getElementById('lockInput').value.trim();
-    const userId = sel ? sel.value : '';
-    const errEl = document.getElementById('lockError');
-    const inp = document.getElementById('lockInput');
-    if (!userId) { errEl.textContent = '❌ กรุณาเลือกชื่อผู้ใช้'; return; }
-    if (!pin)    { errEl.textContent = '❌ กรุณากรอก PIN'; inp.focus(); return; }
-
-    let role = null, staffName = '', staffId = '';
-
-    if (SPECIAL[userId]) {
-      if (pin === SPECIAL[userId].pin) {
-        role = SPECIAL[userId].role;
-        staffName = userId === '__owner__' ? 'Owner' : 'Accounting';
-      }
-    } else {
-      const opt = sel.options[sel.selectedIndex];
-      if (opt && opt.dataset.pin === pin) {
-        const pos = opt.dataset.position;
-        role = (pos === 'OM') ? 'manager' : 'sale';
-        staffName = opt.dataset.name;
-        staffId = userId;
+  async function ensureFresh(){
+    if (session && session.expires_at && (Date.now()/1000) > session.expires_at - 90) {
+      if (!(await refresh())) {
+        clearSession(); isReady = false;
+        ready = new Promise(function(r){ readyResolve = r; });
+        showLock('⚠️ หมดเวลาใช้งาน กรุณาเข้าสู่ระบบใหม่');
+        await ready;
       }
     }
+  }
 
-    if (role) {
-      sessionStorage.setItem(KEY_UNLOCK, '1');
-      sessionStorage.setItem(KEY_ROLE, role);
-      sessionStorage.setItem(KEY_STAFF, staffName);
-      sessionStorage.setItem(KEY_STAFFID, staffId);
-      applyRole(role);
-    } else {
-      inp.classList.add('error');
-      errEl.textContent = '❌ PIN ไม่ถูกต้อง';
-      inp.value = '';
-      setTimeout(() => { inp.classList.remove('error'); inp.focus(); }, 400);
+  function normHeaders(h){
+    var o = {};
+    if (!h) return o;
+    if (typeof Headers !== 'undefined' && h instanceof Headers) { h.forEach(function(v,k){ o[k]=v; }); return o; }
+    if (Array.isArray(h)) { h.forEach(function(p){ o[p[0]]=p[1]; }); return o; }
+    for (var k in h) if (Object.prototype.hasOwnProperty.call(h,k)) o[k] = h[k];
+    return o;
+  }
+
+  /* ทุกคำขอที่วิ่งไป Supabase จะถูกแทน key ด้วย token ของผู้ใช้
+     ถ้ายังไม่ล็อกอิน คำขอจะ "รอ" ไว้เฉยๆ จนกว่าจะล็อกอินสำเร็จ */
+  window.fetch = async function(input, init){
+    if (typeof input === 'string' && /supabase\.co\//i.test(input) && !/\/auth\/v1\//i.test(input)) {
+      if (!isReady) await ready;
+      await ensureFresh();
+      init = Object.assign({}, init || {});
+      var h = normHeaders(init.headers);
+      h['apikey'] = SB_KEY;
+      h['Authorization'] = 'Bearer ' + session.access_token;
+      init.headers = h;
+    }
+    return _fetch(input, init);
+  };
+
+  function showLock(msg){
+    var ls = document.getElementById('lockscreen'); if (ls) ls.style.display = 'flex';
+    var e = document.getElementById('lockError'); if (e) e.textContent = msg || '';
+    var b = document.getElementById('lockBtn'); if (b) { b.disabled = false; b.textContent = 'เข้าสู่ระบบ'; }
+  }
+  function whenReady(fn){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn();
+  }
+
+  window.doLogin = async function(){
+    var em  = (document.getElementById('lockEmail').value || '').trim().toLowerCase();
+    var pw  = document.getElementById('lockPass').value || '';
+    var err = document.getElementById('lockError');
+    var btn = document.getElementById('lockBtn');
+    err.textContent = '';
+    if (!em) { err.textContent = '❌ กรุณากรอกอีเมล'; return; }
+    if (!pw) { err.textContent = '❌ กรุณากรอกรหัสผ่าน'; return; }
+    btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
+    try {
+      var r = await _fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+        method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+        body: JSON.stringify({ email: em, password: pw })
+      });
+      var d = await r.json();
+      if (!r.ok || !d.access_token) {
+        err.textContent = '❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        document.getElementById('lockPass').value = '';
+        btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+        document.getElementById('lockPass').focus(); return;
+      }
+      if (!PEOPLE[em]) {
+        err.textContent = '❌ บัญชีนี้ไม่มีสิทธิ์ใช้แอปออกบิล';
+        clearSession(); btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; return;
+      }
+      saveSession(d); unlock();
+    } catch(e) {
+      err.textContent = '❌ เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง';
+      btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
     }
   };
 
-  function applyRole(role) {
-    function _doApply() {
-      const ls = document.getElementById('lockscreen');
-      if (ls) ls.style.display = 'none';
-
-      window.currentRole      = role;
-      window.currentStaffName = sessionStorage.getItem(KEY_STAFF) || '';
-      window.currentStaffId   = sessionStorage.getItem(KEY_STAFFID) || '';
-
-      const roleColors = {
-        owner:      'background:#fff3cd;color:#856404',
-        manager:    'background:#d1ecf1;color:#0c5460',
-        sale:       'background:#d4edda;color:#155724',
-        accounting: 'background:#f8d7da;color:#721c24',
-      };
-      const badge = document.createElement('div');
-      badge.style.cssText = 'font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:1px;' + (roleColors[role]||'');
-      const sName = sessionStorage.getItem(KEY_STAFF) || '';
-      badge.textContent = (sName && !['Owner','Accounting'].includes(sName))
-        ? sName + ' · ' + (ROLE_LABELS[role]||role)
-        : (ROLE_LABELS[role]||role);
-      const topbar = document.querySelector('.topbar-right') || document.querySelector('.topbar');
-      if (topbar) topbar.prepend(badge);
-
-      const allowed = ROLE_PAGES[role];
-      if (allowed !== null) {
-        document.querySelectorAll('.nav-item[onclick]').forEach(el => {
-          const m = el.getAttribute('onclick').match(/goPage\('([^']+)'/);
-          if (m && !allowed.includes(m[1])) el.style.display = 'none';
-        });
-        document.querySelectorAll('.nav-section').forEach(sec => {
-          let next = sec.nextElementSibling; let hasVisible = false;
-          while (next && !next.classList.contains('nav-section')) {
-            if (next.style.display !== 'none') hasVisible = true;
-            next = next.nextElementSibling;
-          }
-          if (!hasVisible) sec.style.display = 'none';
-        });
-        const firstPage = allowed[0];
-        if (firstPage) {
-          const tryGoPage = (n) => {
-            if (typeof window.goPage === 'function') window.goPage(firstPage);
-            else if (n > 0) setTimeout(() => tryGoPage(n-1), 100);
-          };
-          setTimeout(() => tryGoPage(20), 50);
-        }
-      }
-      if (role === 'sale') window.commissionRoleFilter = true;
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _doApply);
-    else _doApply();
+  function unlock(){
+    var w = who() || { name: (session&&session.email)||'', role:'staff' };
+    window.currentRole      = w.role;
+    window.currentStaffName = w.name;
+    window.currentStaffId   = '';
+    try {
+      sessionStorage.setItem('kpn_staff_name', w.name);
+      sessionStorage.setItem('kpn_role', w.role);
+      sessionStorage.setItem('kpn_unlocked', '1');
+    } catch(e){}
+    var ls = document.getElementById('lockscreen'); if (ls) ls.style.display = 'none';
+    isReady = true; readyResolve();
+    whenReady(applyUi);
   }
+
+  function applyUi(){
+    var w = who() || { name:'', role:'staff' };
+    var bar = document.getElementById('topbarActions') || document.querySelector('.topbar');
+    if (bar && !document.getElementById('__whoBadge')) {
+      var b = document.createElement('span');
+      b.id = '__whoBadge';
+      b.style.cssText = 'font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;margin-right:8px;' +
+        (w.role === 'owner' ? 'background:#fff3cd;color:#856404' : 'background:#d4edda;color:#155724');
+      b.textContent = w.name + (w.role === 'owner' ? ' · เจ้าของ' : ' · พนักงาน');
+      bar.prepend(b);
+      var lo = document.createElement('button');
+      lo.className = 'btn btn-outline btn-sm';
+      lo.style.fontSize = '11px';
+      lo.textContent = 'ออกจากระบบ';
+      lo.onclick = function(){ clearSession(); try{ sessionStorage.clear(); }catch(e){} location.reload(); };
+      bar.appendChild(lo);
+    }
+
+    /* ปุ่ม "เปลี่ยน PIN" ไม่ใช้แล้ว (เข้าระบบด้วยอีเมล/รหัสผ่านแทน) */
+    var pinBtn = document.querySelector('[onclick="openChangePinModal()"]');
+    if (pinBtn) pinBtn.style.display = 'none';
+
+    if (w.role !== 'owner') {
+      document.querySelectorAll('.nav-item[onclick]').forEach(function(el){
+        var m = (el.getAttribute('onclick')||'').match(/goPage\('([^']+)'/);
+        if (m && HIDE_PAGES.indexOf(m[1]) >= 0) el.style.display = 'none';
+      });
+      document.querySelectorAll('.nav-section').forEach(function(sec){
+        var n = sec.nextElementSibling, vis = false;
+        while (n && !n.classList.contains('nav-section')) {
+          if (n.style.display !== 'none') vis = true;
+          n = n.nextElementSibling;
+        }
+        if (!vis) sec.style.display = 'none';
+      });
+      ['openApiKeyModal()','debugSchema()'].forEach(function(fn){
+        var el = document.querySelector('[onclick="' + fn + '"]');
+        if (el) el.style.display = 'none';
+      });
+    }
+  }
+
+  (async function boot(){
+    if (session && session.access_token && who()) {
+      var ok = (session.expires_at && (Date.now()/1000) < session.expires_at - 90) ? true : await refresh();
+      if (ok) { unlock(); return; }
+      clearSession();
+    }
+    whenReady(function(){ var e = document.getElementById('lockEmail'); if (e) e.focus(); });
+  })();
 })();
 </script>
 
