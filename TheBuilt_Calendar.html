@@ -157,8 +157,9 @@ body {
   box-shadow: var(--shadow);
   border: 1px solid var(--lgray);
 }
+/* FIX: minmax(0,1fr) = ทุกคอลัมน์กว้างเท่ากันเสมอ ไม่ขยายตามความยาวข้อความ */
 .cal-days-header {
-  display: grid; grid-template-columns: repeat(7, 1fr);
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
   background: var(--navy);
 }
 .cal-day-name {
@@ -168,12 +169,13 @@ body {
 }
 .cal-day-name.weekend { color: var(--gold); }
 .cal-cells {
-  display: grid; grid-template-columns: repeat(7, 1fr);
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 .cal-cell {
   min-height: 120px; border-right: 1px solid var(--lgray); border-bottom: 1px solid var(--lgray);
   padding: 8px; cursor: pointer; transition: background 0.15s;
   position: relative; display: flex; flex-direction: column;
+  min-width: 0;
 }
 .cal-cell:nth-child(7n) { border-right: none; }
 .cal-cell:hover { background: #fefdf9; }
@@ -192,7 +194,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 4px;
 }
-.cal-jobs { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.cal-jobs { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .cal-job-chip {
   border-radius: 5px; padding: 3px 7px; font-size: 11px; font-weight: 600;
   line-height: 1.3; cursor: pointer; transition: all 0.15s;
@@ -436,7 +438,7 @@ body {
   <div class="tb-title">ปฏิทินงานติดตั้ง</div>
   <div class="tb-right">
     <span id="syncDot">☁️ ซิงค์แล้ว</span>
-    <div id="roleBadge" class="role-badge" style="background: rgb(255, 243, 205); color: rgb(133, 100, 4); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block;">👑 Admin</div>
+    <div id="roleBadge" class="role-badge" style="display:none;"></div>
     <button class="tb-btn gold" id="btnAddJob" style="display:none;" onclick="openAddJobModal()">+ เพิ่มงาน</button>
     <button class="tb-btn" id="btnSettings" style="display:none;" onclick="openSettingsModal()">⚙️</button>
   </div>
@@ -462,121 +464,17 @@ body {
         <span style="color:var(--lgray);">|</span>
         <button onclick="selectAllBranches(false)" style="font-size:11px;font-weight:700;color:var(--gray);background:none;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;">ล้างทั้งหมด</button>
       </div>
-      <div id="branchCheckList" style="padding:6px 0;">
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="เชียงใหม่" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">เชียงใหม่</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="เชียงราย" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">เชียงราย</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ลำปาง" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ลำปาง</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ขอนแก่น" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ขอนแก่น</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="อุดรธานี" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">อุดรธานี</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="อุบลฯ" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">อุบลฯ</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="โคราช" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">โคราช</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ภูเก็ต" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ภูเก็ต</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="หาดใหญ่" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">หาดใหญ่</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="สุราษฎร์ฯ" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">สุราษฎร์ฯ</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="นครสวรรค์" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">นครสวรรค์</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="พิษณุโลก" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">พิษณุโลก</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ลพบุรี" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ลพบุรี</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ราชบุรี" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ราชบุรี</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ระยอง" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ระยอง</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="มหาสารคาม" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">มหาสารคาม</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="สกลนคร" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">สกลนคร</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ร้อยเอ็ด" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ร้อยเอ็ด</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="บุรีรัมย์" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">บุรีรัมย์</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="สุรินทร์" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">สุรินทร์</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="ปทุมธานี" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">ปทุมธานี</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="winเชียงใหม่" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">winเชียงใหม่</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="winเชียงราย" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">winเชียงราย</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="winนครสวรรค์" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">winนครสวรรค์</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="winขอนแก่น" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">winขอนแก่น</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-        <input type="checkbox" value="winอุบลฯ" checked="" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" onchange="onBranchCheck(this)">
-        <span style="font-size:13px;font-family:'Sarabun',sans-serif;">winอุบลฯ</span>
-      </label></div>
+      <div id="branchCheckList" style="padding:6px 0;"></div>
     </div>
   </div>
-  <select id="filterTeam" onchange="renderCalendar();updateStats()"><option value="">👷 ทุกทีมช่าง</option><option value="ทีม ต่อ">ทีม ต่อ</option><option value="ทีม ติ่ง">ทีม ติ่ง</option><option value="ทีม แมน">ทีม แมน</option><option value="ทีม เบนซ์หมู">ทีม เบนซ์หมู</option><option value="ทีม ลี่">ทีม ลี่</option><option value="ทีม โจ">ทีม โจ</option><option value="ทีม บิ๊ก">ทีม บิ๊ก</option><option value="ทีม หมู">ทีม หมู</option><option value="ทีม ตั้ม">ทีม ตั้ม</option><option value="ทีม เปา">ทีม เปา</option><option value="ทีม หนุ่ม">ทีม หนุ่ม</option><option value="ทีม อัศ">ทีม อัศ</option><option value="ทีม โคราช">ทีม โคราช</option><option value="ทีม พิเศษ1">ทีม พิเศษ1</option><option value="ทีม พิเศษ2">ทีม พิเศษ2</option></select>
-  <select id="filterStatus" onchange="renderCalendar();updateStats()"><option value="">📋 ทุกสถานะ</option><option value="pending">🔵 รอติดตั้ง</option><option value="st_1773735557261">⚪ ติดตั้งงานต่อ</option><option value="st_1773735568701">⚪ งานแก้ไข</option><option value="st_1773735606197">⚪ งานซ่อมแซม</option></select>
+  <select id="filterTeam" onchange="renderCalendar();updateStats()"><option value="">👷 ทุกทีมช่าง</option></select>
+  <select id="filterStatus" onchange="renderCalendar();updateStats()"><option value="">📋 ทุกสถานะ</option></select>
 </div>
 
 <!-- ─── CALENDAR ─── -->
 <div class="cal-nav">
   <button class="cal-nav-btn" onclick="changeMonth(-1)">◀</button>
-  <div class="cal-month-title" id="calMonthTitle">มีนาคม 2569</div>
+  <div class="cal-month-title" id="calMonthTitle"></div>
   <button class="cal-nav-btn" onclick="changeMonth(1)">▶</button>
   <button class="cal-today-btn" onclick="goToday()">วันนี้</button>
   <div class="cal-legend">
@@ -597,7 +495,7 @@ body {
       <div class="cal-day-name">ศุกร์</div>
       <div class="cal-day-name weekend">เสาร์</div>
     </div>
-    <div class="cal-cells" id="calCells"><div class="cal-cell" onclick="openDayModal('2026-03-01')"><div class="cal-date-num">1</div></div><div class="cal-cell" onclick="openDayModal('2026-03-02')"><div class="cal-date-num">2</div></div><div class="cal-cell" onclick="openDayModal('2026-03-03')"><div class="cal-date-num">3</div></div><div class="cal-cell" onclick="openDayModal('2026-03-04')"><div class="cal-date-num">4</div></div><div class="cal-cell" onclick="openDayModal('2026-03-05')"><div class="cal-date-num">5</div></div><div class="cal-cell" onclick="openDayModal('2026-03-06')"><div class="cal-date-num">6</div></div><div class="cal-cell weekend-cell" onclick="openDayModal('2026-03-07')"><div class="cal-date-num">7</div></div><div class="cal-cell" onclick="openDayModal('2026-03-08')"><div class="cal-date-num">8</div></div><div class="cal-cell" onclick="openDayModal('2026-03-09')"><div class="cal-date-num">9</div></div><div class="cal-cell" onclick="openDayModal('2026-03-10')"><div class="cal-date-num">10</div></div><div class="cal-cell" onclick="openDayModal('2026-03-11')"><div class="cal-date-num">11</div></div><div class="cal-cell" onclick="openDayModal('2026-03-12')"><div class="cal-date-num">12</div></div><div class="cal-cell" onclick="openDayModal('2026-03-13')"><div class="cal-date-num">13</div></div><div class="cal-cell weekend-cell" onclick="openDayModal('2026-03-14')"><div class="cal-date-num">14</div></div><div class="cal-cell" onclick="openDayModal('2026-03-15')"><div class="cal-date-num">15</div></div><div class="cal-cell" onclick="openDayModal('2026-03-16')"><div class="cal-date-num">16</div></div><div class="cal-cell today" onclick="openDayModal('2026-03-17')"><div class="cal-date-num">17</div></div><div class="cal-cell" onclick="openDayModal('2026-03-18')"><div class="cal-date-num">18</div></div><div class="cal-cell" onclick="openDayModal('2026-03-19')"><div class="cal-date-num">19</div></div><div class="cal-cell" onclick="openDayModal('2026-03-20')"><div class="cal-date-num">20</div></div><div class="cal-cell weekend-cell" onclick="openDayModal('2026-03-21')"><div class="cal-date-num">21</div></div><div class="cal-cell" onclick="openDayModal('2026-03-22')"><div class="cal-date-num">22</div></div><div class="cal-cell" onclick="openDayModal('2026-03-23')"><div class="cal-date-num">23</div></div><div class="cal-cell" onclick="openDayModal('2026-03-24')"><div class="cal-date-num">24</div></div><div class="cal-cell" onclick="openDayModal('2026-03-25')"><div class="cal-date-num">25</div></div><div class="cal-cell" onclick="openDayModal('2026-03-26')"><div class="cal-date-num">26</div></div><div class="cal-cell" onclick="openDayModal('2026-03-27')"><div class="cal-date-num">27</div></div><div class="cal-cell weekend-cell" onclick="openDayModal('2026-03-28')"><div class="cal-date-num">28</div></div><div class="cal-cell" onclick="openDayModal('2026-03-29')"><div class="cal-date-num">29</div></div><div class="cal-cell" onclick="openDayModal('2026-03-30')"><div class="cal-date-num">30</div></div><div class="cal-cell" onclick="openDayModal('2026-03-31')"><div class="cal-date-num">31</div></div><div class="cal-cell other-month"><div class="cal-date-num">1</div></div><div class="cal-cell other-month"><div class="cal-date-num">2</div></div><div class="cal-cell other-month"><div class="cal-date-num">3</div></div><div class="cal-cell other-month"><div class="cal-date-num">4</div></div></div>
+    <div class="cal-cells" id="calCells"></div>
   </div>
 </div>
 
@@ -651,11 +549,11 @@ body {
       <div class="form-row">
         <div class="fg">
           <label>สาขา</label>
-          <select id="jBranch"><option value="เชียงใหม่">เชียงใหม่</option><option value="เชียงราย">เชียงราย</option><option value="ลำปาง">ลำปาง</option><option value="ขอนแก่น">ขอนแก่น</option><option value="อุดรธานี">อุดรธานี</option><option value="อุบลฯ">อุบลฯ</option><option value="โคราช">โคราช</option><option value="ภูเก็ต">ภูเก็ต</option><option value="หาดใหญ่">หาดใหญ่</option><option value="สุราษฎร์ฯ">สุราษฎร์ฯ</option><option value="นครสวรรค์">นครสวรรค์</option><option value="พิษณุโลก">พิษณุโลก</option><option value="ลพบุรี">ลพบุรี</option><option value="ราชบุรี">ราชบุรี</option><option value="ระยอง">ระยอง</option><option value="มหาสารคาม">มหาสารคาม</option><option value="สกลนคร">สกลนคร</option><option value="ร้อยเอ็ด">ร้อยเอ็ด</option><option value="บุรีรัมย์">บุรีรัมย์</option><option value="สุรินทร์">สุรินทร์</option><option value="ปทุมธานี">ปทุมธานี</option><option value="winเชียงใหม่">winเชียงใหม่</option><option value="winเชียงราย">winเชียงราย</option><option value="winนครสวรรค์">winนครสวรรค์</option><option value="winขอนแก่น">winขอนแก่น</option><option value="winอุบลฯ">winอุบลฯ</option></select>
+          <select id="jBranch"></select>
         </div>
         <div class="fg">
           <label>ทีมช่าง</label>
-          <select id="jTeam"><option value="">— ยังไม่ระบุ —</option><option value="ทีม ต่อ">ทีม ต่อ</option><option value="ทีม ติ่ง">ทีม ติ่ง</option><option value="ทีม แมน">ทีม แมน</option><option value="ทีม เบนซ์หมู">ทีม เบนซ์หมู</option><option value="ทีม ลี่">ทีม ลี่</option><option value="ทีม โจ">ทีม โจ</option><option value="ทีม บิ๊ก">ทีม บิ๊ก</option><option value="ทีม หมู">ทีม หมู</option><option value="ทีม ตั้ม">ทีม ตั้ม</option><option value="ทีม เปา">ทีม เปา</option><option value="ทีม หนุ่ม">ทีม หนุ่ม</option><option value="ทีม อัศ">ทีม อัศ</option><option value="ทีม โคราช">ทีม โคราช</option><option value="ทีม พิเศษ1">ทีม พิเศษ1</option><option value="ทีม พิเศษ2">ทีม พิเศษ2</option></select>
+          <select id="jTeam"></select>
         </div>
       </div>
       <div class="form-row">
@@ -670,7 +568,7 @@ body {
         </div>
         <div class="fg">
           <label>สถานะ</label>
-          <select id="jStatus"><option value="pending">🔵 รอติดตั้ง</option><option value="st_1773735557261">⚪ ติดตั้งงานต่อ</option><option value="st_1773735568701">⚪ งานแก้ไข</option><option value="st_1773735606197">⚪ งานซ่อมแซม</option></select>
+          <select id="jStatus"></select>
         </div>
       </div>
       <div class="fg">
@@ -716,22 +614,7 @@ body {
       </div>
       <div style="border-top:1px solid var(--lgray);padding-top:16px;">
         <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;">รหัสผ่านแต่ละ Role</div>
-        <div id="pwList">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--lgray);">
-      <div style="flex:1;font-size:13px;font-weight:600;">👑 Admin</div>
-      <input type="text" value="16012521" id="pw-0" style="width:130px;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" placeholder="รหัสผ่าน">
-      
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--lgray);">
-      <div style="flex:1;font-size:13px;font-weight:600;">💼 พนักงานขาย</div>
-      <input type="text" value="1234" id="pw-1" style="width:130px;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" placeholder="รหัสผ่าน">
-      <button onclick="ROLES.splice(1,1);renderPwList()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--lgray);">
-      <div style="flex:1;font-size:13px;font-weight:600;">🔧 ช่าง</div>
-      <input type="text" value="9999" id="pw-2" style="width:130px;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" placeholder="รหัสผ่าน">
-      <button onclick="ROLES.splice(2,1);renderPwList()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;">🗑</button>
-    </div></div>
+        <div id="pwList"></div>
         <button class="btn btn-outline btn-sm" onclick="addPwRow()" style="width:100%;margin-top:10px;">+ เพิ่ม Role</button>
       </div>
     </div>
@@ -750,111 +633,7 @@ body {
       <button class="modal-close" onclick="closeModal('branchMgrModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div id="branchMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 เชียงใหม่</span>
-      <button onclick="deleteBranch(0)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 เชียงราย</span>
-      <button onclick="deleteBranch(1)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ลำปาง</span>
-      <button onclick="deleteBranch(2)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ขอนแก่น</span>
-      <button onclick="deleteBranch(3)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 อุดรธานี</span>
-      <button onclick="deleteBranch(4)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 อุบลฯ</span>
-      <button onclick="deleteBranch(5)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 โคราช</span>
-      <button onclick="deleteBranch(6)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ภูเก็ต</span>
-      <button onclick="deleteBranch(7)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 หาดใหญ่</span>
-      <button onclick="deleteBranch(8)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 สุราษฎร์ฯ</span>
-      <button onclick="deleteBranch(9)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 นครสวรรค์</span>
-      <button onclick="deleteBranch(10)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 พิษณุโลก</span>
-      <button onclick="deleteBranch(11)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ลพบุรี</span>
-      <button onclick="deleteBranch(12)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ราชบุรี</span>
-      <button onclick="deleteBranch(13)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ระยอง</span>
-      <button onclick="deleteBranch(14)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 มหาสารคาม</span>
-      <button onclick="deleteBranch(15)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 สกลนคร</span>
-      <button onclick="deleteBranch(16)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ร้อยเอ็ด</span>
-      <button onclick="deleteBranch(17)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 บุรีรัมย์</span>
-      <button onclick="deleteBranch(18)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 สุรินทร์</span>
-      <button onclick="deleteBranch(19)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 ปทุมธานี</span>
-      <button onclick="deleteBranch(20)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 winเชียงใหม่</span>
-      <button onclick="deleteBranch(21)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 winเชียงราย</span>
-      <button onclick="deleteBranch(22)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 winนครสวรรค์</span>
-      <button onclick="deleteBranch(23)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 winขอนแก่น</span>
-      <button onclick="deleteBranch(24)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">🏪 winอุบลฯ</span>
-      <button onclick="deleteBranch(25)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;" title="ลบ">🗑</button>
-    </div></div>
+      <div id="branchMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
       <div style="display:flex;gap:8px;">
         <input type="text" id="newBranchName" placeholder="ชื่อสาขาใหม่..." style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Sarabun',sans-serif;font-size:13px;" onkeydown="if(event.key==='Enter')addBranch()">
         <button class="btn btn-primary btn-sm" onclick="addBranch()">+ เพิ่ม</button>
@@ -874,67 +653,7 @@ body {
       <button class="modal-close" onclick="closeModal('teamMgrModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div id="teamMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม ต่อ</span>
-      <button onclick="deleteTeam(0)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม ติ่ง</span>
-      <button onclick="deleteTeam(1)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม แมน</span>
-      <button onclick="deleteTeam(2)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม เบนซ์หมู</span>
-      <button onclick="deleteTeam(3)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม ลี่</span>
-      <button onclick="deleteTeam(4)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม โจ</span>
-      <button onclick="deleteTeam(5)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม บิ๊ก</span>
-      <button onclick="deleteTeam(6)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม หมู</span>
-      <button onclick="deleteTeam(7)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม ตั้ม</span>
-      <button onclick="deleteTeam(8)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม เปา</span>
-      <button onclick="deleteTeam(9)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม หนุ่ม</span>
-      <button onclick="deleteTeam(10)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม อัศ</span>
-      <button onclick="deleteTeam(11)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม โคราช</span>
-      <button onclick="deleteTeam(12)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม พิเศษ1</span>
-      <button onclick="deleteTeam(13)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);">
-      <span style="flex:1;font-size:13px;font-weight:600;">👷 ทีม พิเศษ2</span>
-      <button onclick="deleteTeam(14)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;">🗑</button>
-    </div></div>
+      <div id="teamMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
       <div style="display:flex;gap:8px;">
         <input type="text" id="newTeamName" placeholder="ชื่อทีมช่าง เช่น ทีมA..." style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Sarabun',sans-serif;font-size:13px;" onkeydown="if(event.key==='Enter')addTeam()">
         <button class="btn btn-primary btn-sm" onclick="addTeam()">+ เพิ่ม</button>
@@ -956,31 +675,7 @@ body {
       <button class="modal-close" onclick="closeModal('statusMgrModal')">✕</button>
     </div>
     <div class="modal-body" style="padding:16px 24px;">
-      <div id="statusMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--cream);border-radius:10px;border:1px solid var(--border);">
-      <span style="font-size:20px;">🔵</span>
-      <input type="text" value="รอติดตั้ง" id="st-label-0" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" onchange="renameStatus(0,this.value)">
-      <span class="badge badge-pending" style="white-space:nowrap;">🔵 รอติดตั้ง</span>
-      <span style="width:24px;"></span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--cream);border-radius:10px;border:1px solid var(--border);">
-      <span style="font-size:20px;">⚪</span>
-      <input type="text" value="ติดตั้งงานต่อ" id="st-label-1" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" onchange="renameStatus(1,this.value)">
-      <span class="badge badge-inprog" style="white-space:nowrap;">⚪ ติดตั้งงานต่อ</span>
-      <button onclick="deleteStatus(1)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;flex-shrink:0;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--cream);border-radius:10px;border:1px solid var(--border);">
-      <span style="font-size:20px;">⚪</span>
-      <input type="text" value="งานแก้ไข" id="st-label-2" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" onchange="renameStatus(2,this.value)">
-      <span class="badge badge-issue" style="white-space:nowrap;">⚪ งานแก้ไข</span>
-      <button onclick="deleteStatus(2)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;flex-shrink:0;">🗑</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--cream);border-radius:10px;border:1px solid var(--border);">
-      <span style="font-size:20px;">⚪</span>
-      <input type="text" value="งานซ่อมแซม" id="st-label-3" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:'Sarabun',sans-serif;" onchange="renameStatus(3,this.value)">
-      <span class="badge badge-purple" style="white-space:nowrap;">⚪ งานซ่อมแซม</span>
-      <button onclick="deleteStatus(3)" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;flex-shrink:0;">🗑</button>
-    </div></div>
+      <div id="statusMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
       <div style="background:var(--lblue);border-radius:8px;padding:10px 14px;font-size:12px;color:#1a3a8c;margin-bottom:12px;">
         💡 เพิ่มสถานะใหม่ได้ เลือกสีจาก palette ด้านล่าง
       </div>
@@ -1008,7 +703,7 @@ body {
   </div>
 </div>
 
-<div class="toast" id="toast">✅ เพิ่มทีมช่างแล้ว</div>
+<div class="toast" id="toast"></div>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1354,7 +1049,7 @@ function renderCalendar() {
       html += `<div class="cal-jobs">`;
       dayJobs.slice(0, maxShow).forEach(j => {
         const info = [j.customer, j.time ? fmtTime(j.time) : '', j.branch, j.team].filter(Boolean).join(' · ');
-        html += `<div class="cal-job-chip ${statusChipClass(j.status)}" onclick="event.stopPropagation();openJobDetail('${j.id}')">${info}</div>`;
+        html += `<div class="cal-job-chip ${statusChipClass(j.status)}" title="${info}" onclick="event.stopPropagation();openJobDetail('${j.id}')">${info}</div>`;
       });
       if (dayJobs.length > maxShow) html += `<div class="cal-more">+${dayJobs.length - maxShow} งาน</div>`;
       html += `</div>`;
@@ -1845,6 +1540,10 @@ function saveStatusExport() {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
 });
+
+// ─── INITIAL RENDER (แสดงเดือนปัจจุบันทันที แม้ยังไม่ล็อกอิน) ───
+populateFilters();
+renderCalendar();
 
 // ─── AUTO REFRESH ───
 setInterval(() => { if (document.visibilityState==='visible' && currentRole) loadJobs(); }, 60000);
