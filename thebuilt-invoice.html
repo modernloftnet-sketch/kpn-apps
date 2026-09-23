@@ -2765,6 +2765,7 @@ async function loadFromSupabase() {
     state.purchases = purchases;
     state.expenses = expenses;
     state.pos = pos||[];
+    await loadPhotoFlags();
     // Update counters (no longer used for number generation, kept for backward compat)
     ['quotation','invoice','receipt','billing'].forEach(type => {
       const nums = state.documents.filter(d=>d.type===type).map(d=>+d.number.split('-').pop()||0);
@@ -3168,6 +3169,40 @@ function viewReceipt(src) {
   document.getElementById('receiptViewerImg').src = src;
   document.getElementById('receiptViewer').style.display = 'flex';
 }
+// ── ธง "แถวนี้มีรูปแนบไหม" (ดึงแค่ id ไม่ดึงรูป เพื่อไม่ให้หนัก) ──
+async function loadPhotoFlags() {
+  var q = '?select=id&photos=not.is.null&photos=neq.%5B%5D&limit=10000';
+  var res = await Promise.all([
+    supa.get('tb_expenses', q).catch(function(){ return null; }),
+    supa.get('tb_purchases', q).catch(function(){ return null; })
+  ]);
+  if (res[0]) state.expWithPhotos = new Set(res[0].map(function(r){ return String(r.id); }));
+  if (res[1]) state.purWithPhotos = new Set(res[1].map(function(r){ return String(r.id); }));
+}
+
+function photoBadge(kind, id) {
+  var set = kind === 'pur' ? state.purWithPhotos : state.expWithPhotos;
+  if (!set || !set.has(String(id))) return '\u2014';
+  return '<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;white-space:nowrap;" '
+       + 'onclick="loadRowPhotos(\'' + kind + '\',\'' + id + '\')">\ud83d\udcce \u0e14\u0e39\u0e23\u0e39\u0e1b</button>';
+}
+
+async function loadRowPhotos(kind, id) {
+  var table = kind === 'pur' ? 'tb_purchases' : 'tb_expenses';
+  var arr   = kind === 'pur' ? state.purchases : state.expenses;
+  try {
+    var rows = await supa.get(table, '?id=eq.' + encodeURIComponent(id) + '&select=photos');
+    var photos = (rows && rows[0] && rows[0].photos) || [];
+    if (!photos.length) { showToast('ไม่มีรูปแนบ'); return; }
+    var rec = (arr || []).filter(function(x){ return String(x.id) === String(id); })[0];
+    if (rec) rec.photos = photos;
+    window._purTablePhotos = window._purTablePhotos || {};
+    window._purTablePhotos[id] = photos;
+    if (kind === 'pur') renderPurchases(); else renderExpenses();
+    viewReceiptFromTable(id, 0);
+  } catch(e) { showToast('❌ โหลดรูปไม่สำเร็จ'); }
+}
+
 function viewReceiptFromTable(recordId, idx) {
   const photos = (window._purTablePhotos && window._purTablePhotos[recordId]) || [];
   const src = photos[idx];
@@ -3826,7 +3861,7 @@ function renderPurchases() {
         return pdf
           ? `<span onclick="viewReceiptFromTable('${p.id}',${phi})" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:4px;background:#fdf0f0;cursor:pointer;margin-right:3px;font-size:14px;" title="PDF">📄</span>`
           : `<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceiptFromTable('${p.id}',${phi})">`;
-      }).join(''):'—'}</td>
+      }).join(''):photoBadge('pur',p.id)}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openPurchaseModal('${p.id}')">แก้ไข</button></td>
     </tr>`).join('');
 }
@@ -3944,7 +3979,7 @@ function renderExpenses() {
         return pdf
           ? `<span onclick="viewReceiptFromTable('${e.id}',${phi})" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:4px;background:#fdf0f0;cursor:pointer;margin-right:3px;font-size:14px;" title="PDF">📄</span>`
           : `<img src="${ph}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;cursor:pointer;margin-right:3px;" onclick="viewReceiptFromTable('${e.id}',${phi})">`;
-      }).join(''):'—'}</td>
+      }).join(''):photoBadge('exp',e.id)}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">แก้ไข</button></td>
     </tr>`).join('');
 }
