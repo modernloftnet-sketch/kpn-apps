@@ -72,6 +72,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .grow .cat{display:inline-block;background:var(--green-bg);color:var(--green);border-radius:6px;padding:2px 9px;font-size:12px}
 .grow .who{color:var(--muted);font-size:13px}
 
+/* ===== ป้ายประเภท: ค่าใช้จ่าย / บิลซื้อ ===== */
+.kind{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px;white-space:nowrap}
+.kind.exp{background:#e9eefb;color:#1e5aa8}
+.kind.pur{background:#f3e8fb;color:#6b21a8}
+.sup{color:var(--muted);font-size:12px;display:block;margin-top:2px}
+
 /* yellow cards = detailed */
 .ycard{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px;border-left:4px solid var(--yellow)}
 .ycard .raw{background:var(--yellow-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:#5c4d1a;white-space:pre-wrap;margin-bottom:12px;max-height:150px;overflow:auto}
@@ -215,9 +221,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
     <div class="modal-title">แก้ไขรายการ</div>
     <div class="modal-raw" id="editRaw"></div>
     <input type="hidden" id="editId">
+    <div class="yf" style="margin-bottom:10px"><label>ประเภท</label>
+      <select id="editKind" onchange="onEditKindChange()">
+        <option value="expense">ค่าใช้จ่าย</option>
+        <option value="purchase">บิลซื้อ</option>
+      </select>
+    </div>
     <div class="yf" style="margin-bottom:10px"><label>รายการ</label><input id="editDesc"></div>
     <div class="yf" style="margin-bottom:10px"><label>ยอดเงิน (บาท)</label><input id="editAmount" type="number" step="0.01"></div>
     <div class="yf" style="margin-bottom:10px"><label>หมวด</label><select id="editCat"></select></div>
+    <div id="editPurBox" style="display:none">
+      <div class="yf" style="margin-bottom:10px"><label>ซัพพลายเออร์ (ชื่อร้าน/บริษัท)</label><input id="editSupplier" placeholder="เช่น ร้านไม้สมชาย"></div>
+      <div class="yf" style="margin-bottom:10px"><label>ครบกำหนดชำระ (เว้นว่างได้)</label><input id="editDue" type="date"></div>
+    </div>
     <div class="yf" style="margin-bottom:10px"><label>ผู้จ่าย</label><input id="editPaidBy"></div>
     <div class="yf" style="margin-bottom:16px"><label>วันที่</label><input id="editDate" type="date"></div>
     <div class="modal-acts">
@@ -252,7 +268,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 // kpn-inbox (กล่องพัก + edge functions)
 const INBOX_URL = 'https://kgjymqajwkhymqcofkhn.supabase.co';
 const INBOX_KEY = 'sb_publishable_jfL6yrLhd8ct8uiK7bRLpg_e2RDPO31';   // <-- ใส่ publishable key ของ kpn-inbox
-// kpn-house (ดึงรายชื่อพนักงาน tb_staff + หมวด tb_exp_cats)
+// kpn-house (ดึงรายชื่อพนักงาน tb_staff + หมวด tb_exp_cats / tb_pur_cats)
 const HOUSE_URL = 'https://qybntzlfnrcownntzmir.supabase.co';
 const HOUSE_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
 const APPROVE_FN = INBOX_URL + '/functions/v1/expense-approve';
@@ -321,15 +337,19 @@ function checkLock(){
 function logout(){ sessionStorage.removeItem('exp_user'); sessionStorage.removeItem('exp_role'); location.reload(); }
 
 // ========== DATA ==========
-let CATS=[];   // [{id,label}]
+let CATS=[];   // หมวดค่าใช้จ่าย  [{id,label}]
+let PCATS=[];  // หมวดบิลซื้อ     [{id,label}]
 let ROWS=[];   // pending-ready rows
 
 async function loadCats(){
+  const h={ headers:{ apikey:HOUSE_KEY, Authorization:'Bearer '+HOUSE_KEY }};
   try{
-    const r=await fetch(`${HOUSE_URL}/rest/v1/tb_exp_cats?order=sort_order&select=id,label`,
-      { headers:{ apikey:HOUSE_KEY, Authorization:'Bearer '+HOUSE_KEY }});
-    CATS=await r.json();
-  }catch(e){ CATS=[]; }
+    const [r1,r2]=await Promise.all([
+      fetch(`${HOUSE_URL}/rest/v1/tb_exp_cats?order=sort_order&select=id,label`,h),
+      fetch(`${HOUSE_URL}/rest/v1/tb_pur_cats?order=sort_order&select=id,label`,h),
+    ]);
+    CATS=await r1.json(); PCATS=await r2.json();
+  }catch(e){ CATS=[]; PCATS=[]; }
 }
 async function loadData(){
   await loadCats();
@@ -340,14 +360,30 @@ async function loadData(){
   }catch(e){ ROWS=[]; toast('โหลดข้อมูลไม่สำเร็จ'); }
   render();
 }
-function catLabel(id){ const c=CATS.find(x=>x.id===id); return c?c.label:(id||'—'); }
+
+// ── helper เกี่ยวกับประเภท (ค่าใช้จ่าย / บิลซื้อ) ──
+function kindOf(r){ return r.ai_kind==='purchase' ? 'purchase' : 'expense'; }
+function kindBadge(r){
+  return kindOf(r)==='purchase'
+    ? '<span class="kind pur">บิลซื้อ</span>'
+    : '<span class="kind exp">ค่าใช้จ่าย</span>';
+}
+function rowCatLabel(r){
+  const list = kindOf(r)==='purchase' ? PCATS : CATS;
+  const id   = kindOf(r)==='purchase' ? r.ai_pur_cat_id : r.ai_cat_id;
+  const c=list.find(x=>x.id===id);
+  return c ? c.label : (r.ai_cat_label || '—');
+}
 function fmt(n){ return (Number(n)||0).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:2}); }
-function catOptions(sel){ return '<option value="">— หมวด —</option>'+CATS.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${c.label}</option>`).join(''); }
+function catOptions(kind, sel){
+  const list = kind==='purchase' ? PCATS : CATS;
+  return '<option value="">— หมวด —</option>'+
+    list.map(c=>`<option value="${esc(c.id)}" ${c.id===sel?'selected':''}>${esc(c.label)}</option>`).join('');
+}
 
 function render(){
   // 3 โซน:
-  // 🕐 รอโอน = AI อ่านเสร็จ (ready_green/yellow) แต่ยังไม่กดโอน + ต้องเป็นเขียว (ชัดแล้ว)
-  //           รายการเหลืองที่ยังไม่แก้ ไปอยู่โซนต้องตรวจก่อน
+  // 🕐 รอโอน = AI อ่านเสร็จ (ready_green) แต่ยังไม่กดโอน
   // 🟢 พร้อมอนุมัติ = กดโอนแล้ว (paid_confirmed=true)
   // 🟡 ต้องตรวจ = ready_yellow (AI ไม่ชัด) — แก้ก่อน ค่อยไปรอโอน
   const yellow  = ROWS.filter(r=>r.status==='ready_yellow' && !r.paid_confirmed);
@@ -369,8 +405,8 @@ function render(){
       '<div class="grow head"><span><input type="checkbox" id="wAll" onclick="toggleAll(this,\'wchk\',\'btnPaid\')"></span><span>รายการ</span><span>หมวด</span><span>ยอด</span><span>ผู้จ่าย</span></div>'+
       waiting.map(r=>`<div class="grow">
         <span><input type="checkbox" class="wchk" value="${r.id}" onchange="updBtn('wchk','btnPaid','โอนแล้ว')"></span>
-        <span>${esc(r.ai_description)}</span>
-        <span><span class="cat">${esc(catLabel(r.ai_cat_id))}</span></span>
+        <span>${kindBadge(r)}${esc(r.ai_description)}${r.ai_supplier?`<span class="sup">🏪 ${esc(r.ai_supplier)}</span>`:''}</span>
+        <span><span class="cat">${esc(rowCatLabel(r))}</span></span>
         <span class="amt">${fmt(r.ai_amount)} ฿</span>
         <span class="who">${esc(r.ai_paid_by)} <button class="edit-btn" onclick="openEdit(${r.id})" title="แก้ไข">✏️</button><button class="del-btn" onclick="rejectOne(${r.id})" title="ทิ้งรายการ">❌</button></span>
       </div>`).join('')+'</div>';
@@ -384,8 +420,8 @@ function render(){
       '<div class="grow head"><span><input type="checkbox" id="rAll" onclick="toggleAll(this,\'rchk\',\'btnApprove\')"></span><span>รายการ</span><span>หมวด</span><span>ยอด</span><span>ผู้จ่าย</span></div>'+
       ready.map(r=>`<div class="grow">
         <span><input type="checkbox" class="rchk" value="${r.id}" onchange="updBtn('rchk','btnApprove','อนุมัติที่เลือก')"></span>
-        <span>${esc(r.ai_description)}</span>
-        <span><span class="cat">${esc(catLabel(r.ai_cat_id))}</span></span>
+        <span>${kindBadge(r)}${esc(r.ai_description)}${r.ai_supplier?`<span class="sup">🏪 ${esc(r.ai_supplier)}</span>`:''}</span>
+        <span><span class="cat">${esc(rowCatLabel(r))}</span></span>
         <span class="amt">${fmt(r.ai_amount)} ฿</span>
         <span class="who">${esc(r.ai_paid_by)} <button class="edit-btn" onclick="openEdit(${r.id})" title="แก้ไข">✏️</button><button class="del-btn" onclick="rejectOne(${r.id})" title="ทิ้งรายการ">❌</button></span>
       </div>`).join('')+'</div>';
@@ -398,12 +434,23 @@ function render(){
     yb.innerHTML=yellow.map(r=>{
       const c=r.confidence||{};
       const lowAmt=(c.amount??1)<0.9?'low':'', lowCat=(c.cat??1)<0.8?'low':'', lowDesc=(c.description??1)<0.8?'low':'';
+      const lowKind=(c.kind??1)<0.8?'low':'', lowSup=(c.supplier??1)<0.8?'low':'';
+      const k=kindOf(r);
+      const catSel = k==='purchase' ? r.ai_pur_cat_id : r.ai_cat_id;
       return `<div class="ycard" data-id="${r.id}">
         <div class="raw">${esc(r.raw_text)}</div>
         <div class="yfields">
+          <div class="yf ${lowKind}"><label>ประเภท</label>
+            <select id="k_${r.id}" onchange="onKindChange(${r.id})">
+              <option value="expense"  ${k==='expense' ?'selected':''}>ค่าใช้จ่าย</option>
+              <option value="purchase" ${k==='purchase'?'selected':''}>บิลซื้อ</option>
+            </select>
+          </div>
           <div class="yf ${lowDesc}"><label>รายการ</label><input id="d_${r.id}" value="${esc(r.ai_description)}"></div>
           <div class="yf ${lowAmt}"><label>ยอดเงิน (บาท)</label><input id="a_${r.id}" type="number" step="0.01" value="${r.ai_amount??''}"></div>
-          <div class="yf ${lowCat}"><label>หมวด</label><select id="c_${r.id}">${catOptions(r.ai_cat_id)}</select></div>
+          <div class="yf ${lowCat}"><label>หมวด</label><select id="c_${r.id}">${catOptions(k, catSel)}</select></div>
+          <div class="yf ${lowSup}" id="sw_${r.id}" style="${k==='purchase'?'':'display:none'}"><label>ซัพพลายเออร์ (ชื่อร้าน/บริษัท)</label><input id="s_${r.id}" value="${esc(r.ai_supplier)}" placeholder="เช่น ร้านไม้สมชาย"></div>
+          <div class="yf" id="dw_${r.id}" style="${k==='purchase'?'':'display:none'}"><label>ครบกำหนดชำระ (เว้นว่างได้)</label><input id="dd_${r.id}" type="date" value="${r.ai_due_date??''}"></div>
           <div class="yf"><label>ผู้จ่าย</label><input id="p_${r.id}" value="${esc(r.ai_paid_by)}" readonly style="background:#f4f5f7"></div>
         </div>
         <div class="acts">
@@ -414,7 +461,16 @@ function render(){
     }).join('');
   }
 }
-function esc(s){ return (s??'').toString().replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+// เปลี่ยนประเภทในการ์ดเหลือง → สลับชุดหมวด + ซ่อน/แสดงช่องซัพพลายเออร์
+function onKindChange(id){
+  const k=document.getElementById('k_'+id).value;
+  const cur=document.getElementById('c_'+id).value;
+  document.getElementById('c_'+id).innerHTML=catOptions(k, cur);
+  document.getElementById('sw_'+id).style.display = k==='purchase' ? '' : 'none';
+  document.getElementById('dw_'+id).style.display = k==='purchase' ? '' : 'none';
+}
+
 function toggleAll(cb,cls,btnId){ document.querySelectorAll('.'+cls).forEach(c=>c.checked=cb.checked); updBtn(cls,btnId,btnId==='btnPaid'?'โอนแล้ว':'อนุมัติที่เลือก'); }
 function updBtn(cls,btnId,label){
   const n=document.querySelectorAll('.'+cls+':checked').length;
@@ -454,27 +510,49 @@ async function confirmPaid(){
   else toast('❌ ยืนยันไม่สำเร็จ');
 }
 
-// 🟢 อนุมัติ (เฉพาะที่โอนแล้ว) — เขียนลง tb_expenses
+// 🟢 อนุมัติ (เฉพาะที่โอนแล้ว) — ค่าใช้จ่าย → tb_expenses / บิลซื้อ → tb_purchases
 async function approveReady(){
   const ids=[...document.querySelectorAll('.rchk:checked')].map(c=>+c.value);
   if(!ids.length) return;
+  // เตือนถ้าบิลซื้อยังไม่มีชื่อร้าน (ฝั่ง server จะไม่รับ)
+  const missing=ROWS.filter(r=>ids.includes(r.id) && kindOf(r)==='purchase' && !r.ai_supplier);
+  if(missing.length){
+    toast(`⚠️ บิลซื้อ ${missing.length} รายการยังไม่มีชื่อซัพพลายเออร์ — กด ✏️ เพิ่มก่อน`);
+    return;
+  }
   if(!confirm(`อนุมัติ ${ids.length} รายการ เข้าระบบบัญชี?`)) return;
   toast('กำลังอนุมัติ...');
   const res=await callApprove({ action:'approve', ids, approved_by:CUR_USER });
-  if(res.ok){ toast(`✅ อนุมัติ ${res.approved} รายการแล้ว`); loadData(); }
+  if(res.ok){
+    const parts=[];
+    if(res.expenses)  parts.push(`ค่าใช้จ่าย ${res.expenses}`);
+    if(res.purchases) parts.push(`บิลซื้อ ${res.purchases}`);
+    toast(`✅ อนุมัติแล้ว ${parts.join(' · ')||res.approved+' รายการ'}`);
+    if(res.errors) toast(`⚠️ มี ${res.errors} รายการไม่สำเร็จ`);
+    loadData();
+  }
   else toast('❌ '+(res.error||'ผิดพลาด'));
 }
 
 // 🟡 "ตรวจแล้ว" — แก้ฟิลด์เสร็จ ส่งกลับไปโซนรอโอน (เปลี่ยนเป็นเขียว)
 async function reviewDone(id){
+  const kind=document.getElementById('k_'+id).value;
   const desc=document.getElementById('d_'+id).value.trim();
   const amt=parseFloat(document.getElementById('a_'+id).value);
   const cat=document.getElementById('c_'+id).value;
+  const sup=(document.getElementById('s_'+id)?.value||'').trim();
+  const due=document.getElementById('dd_'+id)?.value||null;
   if(!amt||!desc){ toast('กรอกรายการและยอดเงินให้ครบ'); return; }
   if(!cat){ toast('เลือกหมวดก่อน'); return; }
+  if(kind==='purchase' && !sup){ toast('บิลซื้อต้องกรอกชื่อซัพพลายเออร์'); return; }
   toast('กำลังบันทึก...');
   const ok=await patchInbox([id],{
-    ai_description:desc, ai_amount:amt, ai_cat_id:cat,
+    ai_kind:kind,
+    ai_description:desc, ai_amount:amt,
+    ai_cat_id:     kind==='expense'  ? cat : null,
+    ai_pur_cat_id: kind==='purchase' ? cat : null,
+    ai_supplier:   kind==='purchase' ? sup : null,
+    ai_due_date:   kind==='purchase' ? (due||null) : null,
     status:'ready_green', needs_review:false
   });
   if(ok){ toast('✅ ตรวจแล้ว ส่งไปรอโอน'); loadData(); }
@@ -488,31 +566,52 @@ async function rejectOne(id){
   else toast('❌ '+(res.error||'ผิดพลาด'));
 }
 
-// ✏️ แก้ไขรายการ (ใช้ได้ทุกโซน) — เผื่อ AI อ่านเลข/หมวดผิด
+// ✏️ แก้ไขรายการ (ใช้ได้ทุกโซน) — เผื่อ AI อ่านเลข/หมวด/ประเภทผิด
 function openEdit(id){
   const r=ROWS.find(x=>x.id===id); if(!r) return;
+  const k=kindOf(r);
   document.getElementById('editId').value=id;
   document.getElementById('editRaw').textContent=r.raw_text||'';
+  document.getElementById('editKind').value=k;
   document.getElementById('editDesc').value=r.ai_description||'';
   document.getElementById('editAmount').value=r.ai_amount??'';
-  document.getElementById('editCat').innerHTML=catOptions(r.ai_cat_id);
+  document.getElementById('editCat').innerHTML=catOptions(k, k==='purchase'?r.ai_pur_cat_id:r.ai_cat_id);
+  document.getElementById('editSupplier').value=r.ai_supplier||'';
+  document.getElementById('editDue').value=r.ai_due_date||'';
+  document.getElementById('editPurBox').style.display = k==='purchase' ? '' : 'none';
   document.getElementById('editPaidBy').value=r.ai_paid_by||'';
   document.getElementById('editDate').value=r.ai_date||'';
   document.getElementById('editModal').classList.add('show');
 }
+function onEditKindChange(){
+  const k=document.getElementById('editKind').value;
+  const cur=document.getElementById('editCat').value;
+  document.getElementById('editCat').innerHTML=catOptions(k, cur);
+  document.getElementById('editPurBox').style.display = k==='purchase' ? '' : 'none';
+}
 function closeEdit(){ document.getElementById('editModal').classList.remove('show'); }
 async function saveEdit(){
   const id=+document.getElementById('editId').value;
+  const kind=document.getElementById('editKind').value;
   const desc=document.getElementById('editDesc').value.trim();
   const amt=parseFloat(document.getElementById('editAmount').value);
   const cat=document.getElementById('editCat').value;
+  const sup=document.getElementById('editSupplier').value.trim();
+  const due=document.getElementById('editDue').value||null;
   const paidBy=document.getElementById('editPaidBy').value.trim();
   const date=document.getElementById('editDate').value;
   if(!desc||!amt){ toast('กรอกรายการและยอดเงินให้ครบ'); return; }
   if(!cat){ toast('เลือกหมวดก่อน'); return; }
+  if(kind==='purchase' && !sup){ toast('บิลซื้อต้องกรอกชื่อซัพพลายเออร์'); return; }
   toast('กำลังบันทึก...');
   const ok=await patchInbox([id],{
-    ai_description:desc, ai_amount:amt, ai_cat_id:cat, ai_paid_by:paidBy, ai_date:date
+    ai_kind:kind,
+    ai_description:desc, ai_amount:amt,
+    ai_cat_id:     kind==='expense'  ? cat : null,
+    ai_pur_cat_id: kind==='purchase' ? cat : null,
+    ai_supplier:   kind==='purchase' ? sup : null,
+    ai_due_date:   kind==='purchase' ? due : null,
+    ai_paid_by:paidBy, ai_date:date
   });
   if(ok){ toast('✅ บันทึกแล้ว'); closeEdit(); loadData(); }
   else toast('❌ บันทึกไม่สำเร็จ');
