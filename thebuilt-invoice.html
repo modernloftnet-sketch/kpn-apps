@@ -1451,13 +1451,23 @@ let PUR_CATS = [
 ];
 
 function populateExpCats(savedVal) {
-  var cats = (state.expCats && state.expCats.length) ? state.expCats.map(c=>c.label) : [];
-  var opts = cats.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  var cats = (state.expCats && state.expCats.length) ? state.expCats : [];
+  var opts = cats.map(function(c){ return '<option value="'+c.id+'">'+c.label+'</option>'; }).join('');
   var fOpts = '<option value="">ทุกหมวดหมู่</option>'+opts;
   var fc = document.getElementById('exp-filter-cat');
   var ec = document.getElementById('expCat');
   if (fc) { var sv=fc.value; fc.innerHTML=fOpts; if(sv) fc.value=sv; }
-  if (ec) { var sv2=ec.value||savedVal||''; ec.innerHTML=opts; if(sv2) ec.value=sv2; }
+  if (ec) {
+    var want = (savedVal !== undefined && savedVal !== null && savedVal !== '') ? savedVal : (ec.value || '');
+    ec.innerHTML = opts;
+    if (want) {
+      var byLabel = cats.filter(function(c){ return c.label === want; })[0];
+      if (byLabel) want = byLabel.id;
+      var exists = cats.some(function(c){ return c.id === want; });
+      if (!exists) ec.innerHTML = '<option value="'+want+'">'+want+' (หมวดเดิม)</option>' + opts;
+      ec.value = want;
+    }
+  }
 }
 function populatePurCats(savedVal) {
   var cats = (state.purCats && state.purCats.length) ? state.purCats : PUR_CATS;
@@ -3848,7 +3858,7 @@ async function openExpenseModal(id=null) {
   document.getElementById('expModalTitle').textContent = x ? 'แก้ไขค่าใช้จ่าย' : 'บันทึกค่าใช้จ่าย';
   document.getElementById('expDesc').value = x ? (x.description||x.desc||'') : '';
   document.getElementById('expDate').value = x ? x.date : new Date().toISOString().split('T')[0];
-  populateExpCats(x ? (x.cat||'อื่นๆ') : 'อื่นๆ');
+  populateExpCats(x ? (x.cat||'') : '');
   document.getElementById('expAmount').value = x ? x.amount : '';
   document.getElementById('expPaidBy').value = x ? (x.paid_by||'') : '';
   document.getElementById('expMethod').value = x ? (x.method||'เงินสด') : 'เงินสด';
@@ -3917,7 +3927,7 @@ function renderExpenses() {
         <div style="font-size:15px;font-weight:700;color:var(--navy);">${fmt(v)}</div>
       </div>`).join('');
   }
-  let filtered = state.expenses.filter(e=>(!catF||e.cat===catF)&&(!monthF||(e.date||'').startsWith(monthF)));
+  let filtered = state.expenses.filter(e=>(!catF||e.cat===catF||getCatLabel(e.cat)===getCatLabel(catF))&&(!monthF||(e.date||'').startsWith(monthF)));
   const tbody = document.getElementById('exp-list');
   if(!tbody) return;
   tbody.innerHTML = filtered.length===0 ? '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">ยังไม่มีค่าใช้จ่าย</td></tr>' :
