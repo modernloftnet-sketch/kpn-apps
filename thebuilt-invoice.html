@@ -928,7 +928,6 @@ textarea { resize: vertical; min-height: 72px; }
           <select id="pur-filter-cat" onchange="renderPurchases()" style="border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'Sarabun',sans-serif;">
             <option value="">ทุกหมวดหมู่</option>
           </select>
-          <button onclick="openPurCatModal()" style="border:1px solid var(--border);border-radius:8px;padding:7px 12px;background:white;cursor:pointer;font-size:12px;font-weight:600;font-family:'Sarabun',sans-serif;">⚙️ หมวดหมู่</button>
           <select id="pur-filter-status" onchange="renderPurchases()" style="border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'Sarabun',sans-serif;">
             <option value="">ทุกสถานะ</option>
             <option value="unpaid">ยังไม่จ่าย</option>
@@ -944,7 +943,10 @@ textarea { resize: vertical; min-height: 72px; }
             <input type="date" id="pur-date-to" onchange="renderPurchases()" style="border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:'Sarabun',sans-serif;">
           </div>
         </div>
-        <button class="btn btn-primary" onclick="openPurchaseModal()">+ บันทึกบิลซื้อ</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="openPurCatModal()" style="font-size:13px;">⚙️ หมวดหมู่</button>
+          <button class="btn btn-primary" onclick="openPurchaseModal()">+ บันทึกบิลซื้อ</button>
+        </div>
       </div>
       <div class="stats-grid" style="margin-bottom:16px;">
         <div class="stat-card gold"><div class="stat-icon">🛒</div><div class="stat-label">ยอดรวม</div><div class="stat-value" id="pur-stat-month">฿0</div></div>
@@ -1469,14 +1471,27 @@ function populateExpCats(savedVal) {
     }
   }
 }
+function purCatList() {
+  return (state.purCats && state.purCats.length) ? state.purCats : PUR_CATS;
+}
 function populatePurCats(savedVal) {
-  var cats = (state.purCats && state.purCats.length) ? state.purCats : PUR_CATS;
+  var cats = purCatList();
   var opts = cats.map(function(c){ return '<option value="'+c.id+'">'+c.label+'</option>'; }).join('');
   var fOpts = '<option value="">ทุกหมวดหมู่</option>' + opts;
   var fc = document.getElementById('pur-filter-cat');
   var pc = document.getElementById('purCat');
   if (fc) { var sv=fc.value; fc.innerHTML=fOpts; if(sv) fc.value=sv; }
-  if (pc) { pc.innerHTML=opts; if(savedVal) pc.value=savedVal; }
+  if (pc) {
+    var want = (savedVal !== undefined && savedVal !== null && savedVal !== '') ? savedVal : (pc.value || '');
+    pc.innerHTML = opts;
+    if (want) {
+      var byLabel = cats.filter(function(c){ return c.label === want; })[0];
+      if (byLabel) want = byLabel.id;
+      var exists = cats.some(function(c){ return c.id === want; });
+      if (!exists) pc.innerHTML = '<option value="'+want+'">'+want+' (หมวดเดิม)</option>' + opts;
+      pc.value = want;
+    }
+  }
 }
 
 let state = {
@@ -3359,7 +3374,7 @@ async function openPurchaseModal(id=null) {
   document.getElementById('purDate').value = p ? p.date : new Date().toISOString().split('T')[0];
   document.getElementById('purDueDate').value = p ? (p.due_date||'') : '';
   document.getElementById('purDesc').value = p ? (p.description||p.description||'') : '';
-  populatePurCats(p ? (p.cat||PUR_CATS[0].id) : PUR_CATS[0].id);
+  populatePurCats(p ? (p.cat||'') : '');
   document.getElementById('purAmount').value = p ? p.amount : '';
   document.getElementById('purStatus').value = p ? (p.status||'unpaid') : 'unpaid';
   document.getElementById('purPaidDate').value = p ? (p.paid_date||'') : '';
@@ -3542,15 +3557,23 @@ function openPurCatModal() {
   document.getElementById('purCatModal').classList.add('show');
 }
 function renderPurCatList() {
-  var html = '';
-  for (var i = 0; i < PUR_CATS.length; i++) {
-    var c = PUR_CATS[i];
-    var delBtn = i > 0 ? '<button onclick="deletePurCat('+i+')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-weight:700;padding:2px 8px">ลบ</button>' : '<span style="width:40px"></span>';
-    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#faf7f2;border-radius:8px;border:1px solid #ddd">';
-    html += '<input type="text" value="' + c.label.replace(/"/g,'&quot;') + '" style="flex:1;border:1.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px" onchange="renamePurCat('+i+',this.value)">';
-    html += delBtn + '</div>';
+  var cats = purCatList();
+  var fromDb = !!(state.purCats && state.purCats.length);
+  var html = cats.map(function(c,i){
+    var label = String(c.label||'').replace(/"/g,'&quot;');
+    var btn = fromDb
+      ? '<button onclick="deletePurCat('+i+')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-weight:700;padding:2px 8px">ลบ</button>'
+      : '<span style="width:40px"></span>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#faf7f2;border-radius:8px;border:1px solid #ddd">'
+      + '<input type="text" value="' + label + '" style="flex:1;border:1.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px" onchange="renamePurCat('+i+',this.value)">'
+      + btn + '</div>';
+  }).join('');
+  if (!fromDb) {
+    html = '<div style="font-size:12px;color:#b35a00;background:#fff4e8;border:1px solid #f0c96a;border-radius:8px;padding:8px 12px;">'
+         + 'ยังไม่มีหมวดหมู่ในฐานข้อมูล — นี่คือรายการเริ่มต้น กดเพิ่มด้านล่างเพื่อสร้างหมวดจริง</div>' + html;
   }
-  document.getElementById('purCatList').innerHTML = html;
+  document.getElementById('purCatList').innerHTML = html
+    || '<div style="text-align:center;color:var(--gray);padding:16px;">ยังไม่มีหมวดหมู่</div>';
 }
 async function addPurCat() {
   var label = document.getElementById('newPurCatLabel').value.trim();
@@ -3566,15 +3589,36 @@ async function addPurCat() {
     showToast('✅ เพิ่มหมวดหมู่แล้ว');
   } catch(e) { showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
 }
-function renamePurCat(i, v) { if (v.trim()) { PUR_CATS[i].label = v.trim(); populatePurCats(); } }
+async function renamePurCat(i, v) {
+  var label = (v||'').trim();
+  if (!label) return renderPurCatList();
+  var cat = purCatList()[i];
+  if (!cat) return;
+  var inDb = (state.purCats||[]).some(function(c){ return c.id === cat.id; });
+  if (!inDb) {
+    showToast('⚠️ หมวดเริ่มต้นในโค้ด แก้ชื่อไม่ได้ — ให้เพิ่มหมวดใหม่แทน');
+    renderPurCatList(); return;
+  }
+  try {
+    await supa.req('PATCH', 'tb_pur_cats', { label: label }, '?id=eq.' + encodeURIComponent(cat.id));
+    (state.purCats||[]).forEach(function(c){ if (c.id === cat.id) c.label = label; });
+    PUR_CATS.forEach(function(c){ if (c.id === cat.id) c.label = label; });
+    renderPurCatList(); populatePurCats(); renderPurchases();
+    showToast('✅ แก้ไขหมวดหมู่แล้ว');
+  } catch(e) { showToast('❌ แก้ไขไม่สำเร็จ: '+e.message); renderPurCatList(); }
+}
+
 async function deletePurCat(i) {
-  var cat = PUR_CATS[i];
+  var cat = purCatList()[i];
+  if (!cat) return;
+  var inDb = (state.purCats||[]).some(function(c){ return c.id === cat.id; });
+  if (!inDb) { showToast('⚠️ หมวดเริ่มต้นในโค้ด ลบจากหน้านี้ไม่ได้'); return; }
   if (!confirm('ลบหมวดหมู่ "'+cat.label+'"?')) return;
   try {
     await supa.del('tb_pur_cats', cat.id);
-    PUR_CATS.splice(i,1);
-    state.purCats = (state.purCats||[]).filter(c=>c.id!==cat.id);
-    renderPurCatList(); populatePurCats();
+    state.purCats = (state.purCats||[]).filter(function(c){ return c.id !== cat.id; });
+    PUR_CATS = PUR_CATS.filter(function(c){ return c.id !== cat.id; });
+    renderPurCatList(); populatePurCats(); renderPurchases();
     showToast('🗑️ ลบหมวดหมู่แล้ว');
   } catch(e) { showToast('❌ ลบไม่สำเร็จ: '+e.message); }
 }
@@ -3826,7 +3870,7 @@ function renderPurchases() {
   }
 
   let filtered = state.purchases.filter(p => {
-    if (catF && p.cat !== catF) return false;
+    if (catF && p.cat !== catF && getCatLabel(p.cat) !== getCatLabel(catF)) return false;
     if (statF && p.status !== statF) return false;
     if (monthF && monthF !== 'custom' && (!p.date || !p.date.startsWith(monthF))) return false;
     if (monthF === 'custom') {
