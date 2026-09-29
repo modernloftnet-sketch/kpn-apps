@@ -621,6 +621,9 @@ textarea { resize: vertical; min-height: 72px; }
     <div class="nav-item active" onclick="goPage('dashboard', this)">
       <span class="icon">📊</span> Dashboard
     </div>
+    <div class="nav-item" onclick="goPage('branchtable', this)">
+      <span class="icon">🗂️</span> ตารางสรุปสาขา
+    </div>
     <div class="nav-section">เอกสาร</div>
     <div class="nav-item" onclick="goPage('quotations', this)">
       <span class="icon">📄</span> ใบเสนอราคา
@@ -1150,6 +1153,73 @@ textarea { resize: vertical; min-height: 72px; }
       <div id="branch-list-container"></div>
     </div>
 
+    <!-- BRANCH TABLE (ตารางสรุปสาขา) -->
+    <div class="page" id="page-branchtable">
+
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.3px;">ช่วงเวลา</label>
+            <div style="display:flex;gap:6px;">
+              <select id="bt-year" onchange="renderBranchTable()"
+                style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);"></select>
+              <select id="bt-month" onchange="renderBranchTable()"
+                style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);">
+                <option value="">ทั้งปี</option>
+                <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
+                <option value="03">มีนาคม</option><option value="04">เมษายน</option>
+                <option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
+                <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option>
+                <option value="09">กันยายน</option><option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.3px;">แบรนด์</label>
+            <select id="bt-brand" onchange="renderBranchTable()"
+              style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);">
+              <option value="">ทุกแบรนด์</option>
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.3px;">นับยอดจาก</label>
+            <select id="bt-basis" onchange="renderBranchTable()"
+              style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);">
+              <option value="paid">ใบกำกับที่ชำระแล้ว</option>
+              <option value="all">ใบกำกับทั้งหมด (รวมรอชำระ)</option>
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.3px;">แสดงสาขา</label>
+            <select id="bt-zero" onchange="renderBranchTable()"
+              style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);">
+              <option value="all">ทุกสาขา</option>
+              <option value="active">เฉพาะที่มียอด</option>
+            </select>
+          </div>
+
+          <div style="flex:1;"></div>
+          <button class="btn btn-outline btn-sm" onclick="exportBranchTableCsv()">⬇️ CSV</button>
+          <button class="btn btn-outline btn-sm no-print" onclick="window.print()">🖨️ พิมพ์</button>
+        </div>
+      </div>
+
+      <div id="bt-stats" class="stats-grid" style="margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="bt-title">สรุปยอดตามสาขา</div>
+          <div style="font-size:11px;color:var(--gray);">คลิกหัวคอลัมน์เพื่อเรียงลำดับ</div>
+        </div>
+        <div id="bt-table-container"></div>
+      </div>
+
+    </div>
+
   </div><!-- /content -->
 
 </div><!-- /main -->
@@ -1528,7 +1598,7 @@ function goPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const titles = { dashboard:'Dashboard',quotations:'ใบเสนอราคา',invoices:'ใบกำกับภาษี',receipts:'ใบเสร็จรับเงิน',customers:'ลูกค้า',products:'สินค้า/บริการ',reports:'รายงาน',billings:'ใบวางบิล',pos:'ใบ PO สินค้า',purchases:'บิลซื้อ',payables:'หนี้สิน',expenses:'ค่าใช้จ่าย',finance:'สรุปการเงิน',finchart:'กราฟสรุปการเงิน',branches:'จัดการสาขา',staff:'พนักงาน',commission:'ค่าคอมมิชชั่น' };
+  const titles = { dashboard:'Dashboard',branchtable:'ตารางสรุปสาขา',quotations:'ใบเสนอราคา',invoices:'ใบกำกับภาษี',receipts:'ใบเสร็จรับเงิน',customers:'ลูกค้า',products:'สินค้า/บริการ',reports:'รายงาน',billings:'ใบวางบิล',pos:'ใบ PO สินค้า',purchases:'บิลซื้อ',payables:'หนี้สิน',expenses:'ค่าใช้จ่าย',finance:'สรุปการเงิน',finchart:'กราฟสรุปการเงิน',branches:'จัดการสาขา',staff:'พนักงาน',commission:'ค่าคอมมิชชั่น' };
   document.getElementById('pageTitle').textContent = titles[name] || name;
   if (el) {
     el.classList.add('active');
@@ -1541,6 +1611,7 @@ function goPage(name, el) {
 
 function renderPage(name) {
   if (name === 'dashboard') renderDashboard();
+  else if (name === 'branchtable') renderBranchTable();
   else if (name === 'quotations') renderDocList('quotation');
   else if (name === 'invoices') renderDocList('invoice');
   else if (name === 'receipts') renderDocList('receipt');
@@ -5484,6 +5555,327 @@ async function deleteExpCat(i) {
     renderExpCatList(); populateExpCats();
     showToast('🗑️ ลบหมวดหมู่แล้ว');
   } catch(e) { showToast('❌ ลบไม่สำเร็จ: '+e.message); }
+}
+</script>
+
+<!-- ═══ ตารางสรุปสาขา (BRANCH TABLE) ═══ -->
+<script>
+let _btSort = { key:'total', dir:'desc' };
+let _btRows = [];
+let _btCols = [];
+
+const _btFallbackCats = ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ'];
+
+// หมวดที่เป็น "งวดชำระ" ไม่ใช่ประเภทงาน — ยุบรวมเป็นคอลัมน์เดียว
+const _btInstallmentCats = ['งวดแรก','งวดที่2','งวดที่3','งวดสุดท้าย'];
+
+function _btCatList() {
+  const raw = (state.productCats && state.productCats.length) ? state.productCats : _btFallbackCats;
+  return raw.filter(c => !_btInstallmentCats.includes(c));
+}
+
+const _btItemCat = i => i.cat || i.category || '';
+const _btLine = i => (+i.total) || ((+i.qty||0) * (+i.price||0)) || 0;
+const _btFmt0 = n => (Math.round(n||0)).toLocaleString('th-TH');
+
+// กระจายยอดรวมของบิลไปตามหมวดของแต่ละรายการ ตามสัดส่วนมูลค่า
+function _btSplitDoc(d, cats) {
+  const out = {}; cats.forEach(c => out[c] = 0); out.__etc = 0;
+  const total = +d.total || 0;
+  const items = Array.isArray(d.items) ? d.items.filter(i => i && !i.__plan) : [];
+  if (!items.length) { out.__etc = total; return out; }
+  const sub = items.reduce((s,i) => s + _btLine(i), 0);
+  if (sub <= 0) { out.__etc = total; return out; }
+  items.forEach(i => {
+    const c = _btItemCat(i);
+    const share = _btLine(i) / sub * total;
+    if (Object.prototype.hasOwnProperty.call(out, c)) out[c] += share; else out.__etc += share;
+  });
+  return out;
+}
+
+function _btFillFilters() {
+  const yearEl = document.getElementById('bt-year');
+  if (yearEl && !yearEl.options.length) {
+    const years = new Set();
+    (state.documents||[]).forEach(d => { const s=(d.date||'').slice(0,4); if(s) years.add(s); });
+    years.add(String(new Date().getFullYear()));
+    const sorted = [...years].sort().reverse();
+    yearEl.innerHTML = sorted.map(y => `<option value="${y}">${+y+543}</option>`).join('');
+    yearEl.value = sorted[0];
+  }
+  const brandEl = document.getElementById('bt-brand');
+  if (brandEl && brandEl.options.length <= 1) {
+    const brands = [...new Set((state.branches||[]).map(b => b.brand).filter(Boolean))];
+    brandEl.innerHTML = '<option value="">ทุกแบรนด์</option>' +
+      brands.map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+  const monthEl = document.getElementById('bt-month');
+  if (monthEl && !monthEl.dataset.init) {
+    monthEl.dataset.init = '1';
+    monthEl.value = String(new Date().getMonth()+1).padStart(2,'0');
+  }
+}
+
+function btSort(key) {
+  if (_btSort.key === key) _btSort.dir = (_btSort.dir === 'desc' ? 'asc' : 'desc');
+  else _btSort = { key, dir: (key === 'branch' ? 'asc' : 'desc') };
+  renderBranchTable();
+}
+
+function renderBranchTable() {
+  _btFillFilters();
+
+  const year   = (document.getElementById('bt-year')||{}).value || String(new Date().getFullYear());
+  const month  = (document.getElementById('bt-month')||{}).value || '';
+  const brand  = (document.getElementById('bt-brand')||{}).value || '';
+  const basis  = (document.getElementById('bt-basis')||{}).value || 'paid';
+  const zero   = (document.getElementById('bt-zero')||{}).value || 'all';
+
+  const prefix = month ? `${year}-${month}` : `${year}-`;
+  const cats   = _btCatList();
+
+  // เลือกบิลที่เข้าเงื่อนไข
+  const docsAll = (state.documents||[]).filter(d => {
+    if (d.type !== 'invoice') return false;
+    if (d.status === 'cancelled') return false;
+    const ds = (d.date||'').split('T')[0];
+    return ds.startsWith(prefix);
+  });
+  const docs = basis === 'paid' ? docsAll.filter(d => d.status === 'paid') : docsAll;
+
+  // ตั้งแถวจากรายชื่อสาขาจริง แล้วเก็บสาขาแปลกปลอมที่โผล่ในบิลไว้ด้วย
+  const rowMap = {};
+  const mkRow = (name, brandName, target) => ({
+    branch: name, brand: brandName || '-', target: +target || 0,
+    total: 0, count: 0, unpaid: 0, cats: cats.reduce((o,c)=>(o[c]=0,o), {}), etc: 0
+  });
+  (state.branches||[]).forEach(b => {
+    if (brand && b.brand !== brand) return;
+    rowMap[b.name] = mkRow(b.name, b.brand, b.target);
+  });
+
+  docs.forEach(d => {
+    const bn = d.branch || '(ไม่ระบุสาขา)';
+    if (!rowMap[bn]) {
+      const known = (state.branches||[]).find(b => b.name === bn);
+      if (brand && (!known || known.brand !== brand)) return;
+      rowMap[bn] = mkRow(bn, known ? known.brand : '-', known ? known.target : 0);
+    }
+    const r = rowMap[bn];
+    r.total += (+d.total||0);
+    r.count += 1;
+    const split = _btSplitDoc(d, cats);
+    cats.forEach(c => r.cats[c] += split[c]);
+    r.etc += split.__etc;
+  });
+
+  // ยอดค้างชำระนับจากบิลทั้งหมดในช่วง ไม่ขึ้นกับตัวเลือก "นับยอดจาก"
+  docsAll.forEach(d => {
+    if (d.status !== 'pending' && d.status !== 'overdue') return;
+    const bn = d.branch || '(ไม่ระบุสาขา)';
+    if (!rowMap[bn]) {
+      const known = (state.branches||[]).find(b => b.name === bn);
+      if (brand && (!known || known.brand !== brand)) return;
+      rowMap[bn] = mkRow(bn, known ? known.brand : '-', known ? known.target : 0);
+    }
+    rowMap[bn].unpaid += (+d.total||0);
+  });
+
+  let rows = Object.values(rowMap);
+  if (zero === 'active') rows = rows.filter(r => r.count > 0 || r.unpaid > 0);
+
+  // เรียงลำดับ
+  const dir = _btSort.dir === 'asc' ? 1 : -1;
+  rows.sort((a,b) => {
+    let av, bv;
+    if (_btSort.key === 'branch') return a.branch.localeCompare(b.branch,'th') * dir;
+    else if (_btSort.key === 'count') { av=a.count; bv=b.count; }
+    else if (_btSort.key === 'avg')   { av=a.count?a.total/a.count:0; bv=b.count?b.total/b.count:0; }
+    else if (_btSort.key === 'unpaid'){ av=a.unpaid; bv=b.unpaid; }
+    else if (_btSort.key === 'pct')   { av=a.target?a.total/a.target:-1; bv=b.target?b.total/b.target:-1; }
+    else if (_btSort.key === 'total') { av=a.total; bv=b.total; }
+    else { av=a.cats[_btSort.key]||0; bv=b.cats[_btSort.key]||0; }
+    return (av-bv)*dir;
+  });
+
+  const showTarget = !!month && rows.some(r => r.target > 0);
+  const hasEtc = rows.some(r => r.etc > 0.5);
+  const activeCats = cats.filter(c => rows.some(r => r.cats[c] > 0.5));
+
+  _btRows = rows;
+  _btCols = { cats: activeCats, hasEtc, showTarget };
+
+  // ── การ์ดสถิติด้านบน
+  const grand   = rows.reduce((s,r)=>s+r.total,0);
+  const gCount  = rows.reduce((s,r)=>s+r.count,0);
+  const gUnpaid = rows.reduce((s,r)=>s+r.unpaid,0);
+  const gMeasure= rows.reduce((s,r)=>s+(r.cats['วัดหน้างาน']||0),0);
+  const activeBranches = rows.filter(r=>r.count>0).length;
+
+  document.getElementById('bt-stats').innerHTML = `
+    <div class="stat-card green"><div class="stat-label">ยอดขายรวม</div>
+      <div class="stat-value">฿${_btFmt0(grand)}</div>
+      <div class="stat-sub">${activeBranches} สาขาที่มียอด</div></div>
+    <div class="stat-card blue"><div class="stat-label">จำนวนบิล</div>
+      <div class="stat-value">${gCount}</div>
+      <div class="stat-sub">เฉลี่ย ฿${_btFmt0(gCount?grand/gCount:0)}/บิล</div></div>
+    <div class="stat-card gold"><div class="stat-label">วัดหน้างาน</div>
+      <div class="stat-value">฿${_btFmt0(gMeasure)}</div>
+      <div class="stat-sub">${grand?((gMeasure/grand)*100).toFixed(1):'0.0'}% ของยอดรวม</div></div>
+    <div class="stat-card ${gUnpaid>0?'red':'blue'}"><div class="stat-label">ยังไม่ชำระ</div>
+      <div class="stat-value">฿${_btFmt0(gUnpaid)}</div>
+      <div class="stat-sub">${basis==='paid'?'ไม่รวมในยอดขายด้านบน':'รวมอยู่ในยอดขายแล้ว'}</div></div>`;
+
+  const monthName = month
+    ? ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][+month]
+    : 'ทั้งปี';
+  document.getElementById('bt-title').textContent =
+    `สรุปยอดตามสาขา — ${monthName} ${+year+543}${brand?' · '+brand:''}`;
+
+  if (!rows.length) {
+    document.getElementById('bt-table-container').innerHTML =
+      `<div class="empty-state"><div class="emoji">🗂️</div><h3>ไม่มีข้อมูลในช่วงที่เลือก</h3></div>`;
+    return;
+  }
+
+  const arrow = k => _btSort.key === k ? (_btSort.dir==='desc'?' ▾':' ▴') : '';
+  const stickyTh = 'position:sticky;left:0;z-index:2;background:var(--cream2);';
+  const stickyTd = 'position:sticky;left:0;z-index:1;background:var(--white);';
+  const num = 'text-align:right;white-space:nowrap;';
+
+  let head = `<tr>
+    <th style="${stickyTh}cursor:pointer;min-width:190px;" onclick="btSort('branch')">สาขา${arrow('branch')}</th>
+    <th style="${num}cursor:pointer;" onclick="btSort('total')">ยอดขาย${arrow('total')}</th>`;
+  activeCats.forEach(c => {
+    head += `<th style="${num}cursor:pointer;" onclick="btSort('${c.replace(/'/g,"\\'")}')">${c}${arrow(c)}</th>`;
+  });
+  if (hasEtc) head += `<th style="${num}">ไม่ระบุหมวด</th>`;
+  head += `<th style="${num}cursor:pointer;" onclick="btSort('count')">บิล${arrow('count')}</th>
+           <th style="${num}cursor:pointer;" onclick="btSort('avg')">เฉลี่ย/บิล${arrow('avg')}</th>`;
+  head += `<th style="${num}cursor:pointer;" onclick="btSort('unpaid')">รอชำระ${arrow('unpaid')}</th>`;
+  if (showTarget) head += `<th style="${num}cursor:pointer;" onclick="btSort('pct')">เป้า / %${arrow('pct')}</th>`;
+  head += `</tr>`;
+
+  const body = rows.map(r => {
+    const avg = r.count ? r.total/r.count : 0;
+    let tr = `<tr>
+      <td style="${stickyTd}">
+        <div style="font-weight:700;">${r.branch}</div>
+        <div style="font-size:10px;color:var(--gray);">${r.brand}</div>
+      </td>
+      <td style="${num}font-weight:800;${r.total?'':'color:var(--gray);'}">${r.total?'฿'+_btFmt0(r.total):'–'}</td>`;
+    activeCats.forEach(c => {
+      const v = r.cats[c];
+      tr += `<td style="${num}${v?'':'color:var(--lgray);'}">${v>0.5?_btFmt0(v):'–'}</td>`;
+    });
+    if (hasEtc) tr += `<td style="${num}${r.etc>0.5?'':'color:var(--lgray);'}">${r.etc>0.5?_btFmt0(r.etc):'–'}</td>`;
+    tr += `<td style="${num}">${r.count||'–'}</td>
+           <td style="${num}">${avg?_btFmt0(avg):'–'}</td>`;
+    tr += `<td style="${num}${r.unpaid>0.5?'color:var(--red);font-weight:700;':'color:var(--lgray);'}">${r.unpaid>0.5?_btFmt0(r.unpaid):'–'}</td>`;
+    if (showTarget) {
+      if (r.target > 0) {
+        const pct = r.total / r.target * 100;
+        const col = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--orange)' : 'var(--red)';
+        tr += `<td style="${num}">
+          <div style="font-size:11px;color:var(--gray);">฿${_btFmt0(r.target)}</div>
+          <div style="font-weight:800;color:${col};">${pct.toFixed(0)}%</div></td>`;
+      } else {
+        tr += `<td style="${num}color:var(--lgray);">–</td>`;
+      }
+    }
+    return tr + `</tr>`;
+  }).join('');
+
+  // แถวรวม
+  const tCats = activeCats.map(c => rows.reduce((s,r)=>s+r.cats[c],0));
+  const tEtc  = rows.reduce((s,r)=>s+r.etc,0);
+  const tTarget = rows.reduce((s,r)=>s+r.target,0);
+  let foot = `<tr style="background:var(--cream2);font-weight:800;border-top:2px solid var(--navy);">
+    <td style="${stickyTd}background:var(--cream2);font-weight:800;">รวมทั้งหมด</td>
+    <td style="${num}">฿${_btFmt0(grand)}</td>`;
+  tCats.forEach(v => { foot += `<td style="${num}">${v>0.5?_btFmt0(v):'–'}</td>`; });
+  if (hasEtc) foot += `<td style="${num}">${tEtc>0.5?_btFmt0(tEtc):'–'}</td>`;
+  foot += `<td style="${num}">${gCount}</td><td style="${num}">${_btFmt0(gCount?grand/gCount:0)}</td>`;
+  foot += `<td style="${num}color:var(--red);">${gUnpaid>0.5?_btFmt0(gUnpaid):'–'}</td>`;
+  if (showTarget) {
+    const pct = tTarget ? grand/tTarget*100 : 0;
+    foot += `<td style="${num}"><div style="font-size:11px;font-weight:600;color:var(--gray);">฿${_btFmt0(tTarget)}</div><div>${tTarget?pct.toFixed(0)+'%':'–'}</div></td>`;
+  }
+  foot += `</tr>`;
+
+  // สรุปตามแบรนด์
+  const byBrand = {};
+  rows.forEach(r => {
+    if (!byBrand[r.brand]) byBrand[r.brand] = { total:0, count:0, n:0, active:0 };
+    byBrand[r.brand].total += r.total;
+    byBrand[r.brand].count += r.count;
+    byBrand[r.brand].n += 1;
+    if (r.count) byBrand[r.brand].active += 1;
+  });
+  const brandRows = Object.entries(byBrand)
+    .sort((a,b)=>b[1].total-a[1].total)
+    .map(([b,v]) => `<tr>
+      <td style="font-weight:700;">${b}</td>
+      <td style="${num}font-weight:800;">฿${_btFmt0(v.total)}</td>
+      <td style="${num}">${grand?((v.total/grand)*100).toFixed(1):'0.0'}%</td>
+      <td style="${num}">${v.count}</td>
+      <td style="${num}">${v.active}/${v.n}</td></tr>`).join('');
+
+  document.getElementById('bt-table-container').innerHTML = `
+    <div class="table-wrap"><table style="font-size:13px;">
+      <thead>${head}</thead><tbody>${body}${foot}</tbody>
+    </table></div>
+    <div style="margin-top:22px;">
+      <div style="font-size:12px;font-weight:800;color:var(--gray);margin-bottom:8px;letter-spacing:.3px;">สรุปตามแบรนด์</div>
+      <div class="table-wrap"><table style="font-size:13px;">
+        <thead><tr>
+          <th style="min-width:130px;">แบรนด์</th>
+          <th style="${num}">ยอดขาย</th>
+          <th style="${num}">สัดส่วน</th>
+          <th style="${num}">บิล</th>
+          <th style="${num}">สาขาที่มียอด</th>
+        </tr></thead>
+        <tbody>${brandRows}</tbody>
+      </table></div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--gray);line-height:1.7;">
+      • ยอดในคอลัมน์หมวดหมู่คำนวณโดยกระจายยอดรวมของบิลตามสัดส่วนมูลค่าของแต่ละรายการ ผลรวมทุกหมวดจึงเท่ากับยอดขาย<br>
+      • นับเฉพาะใบกำกับภาษี ไม่รวมใบเสร็จรับเงิน เพื่อไม่ให้ยอดซ้ำ${basis==='paid'?' และนับเฉพาะบิลที่ชำระแล้ว':''}<br>
+      • หมวดงวดชำระ (งวดแรก/งวดที่2/…) ถูกรวมไว้ในคอลัมน์ "ไม่ระบุหมวด"
+    </div>`;
+}
+
+function exportBranchTableCsv() {
+  if (!_btRows.length) { showToast('❌ ไม่มีข้อมูลให้ส่งออก'); return; }
+  const { cats, hasEtc, showTarget } = _btCols;
+  const basis = (document.getElementById('bt-basis')||{}).value || 'paid';
+  const head = ['สาขา','แบรนด์','ยอดขาย', ...cats];
+  if (hasEtc) head.push('ไม่ระบุหมวด');
+  head.push('จำนวนบิล','เฉลี่ยต่อบิล');
+  head.push('รอชำระ');
+  if (showTarget) head.push('เป้า','เปอร์เซ็นต์เป้า');
+
+  const esc = v => `"${String(v).replace(/"/g,'""')}"`;
+  const lines = [head.map(esc).join(',')];
+  _btRows.forEach(r => {
+    const row = [r.branch, r.brand, Math.round(r.total), ...cats.map(c=>Math.round(r.cats[c]))];
+    if (hasEtc) row.push(Math.round(r.etc));
+    row.push(r.count, Math.round(r.count?r.total/r.count:0));
+    row.push(Math.round(r.unpaid));
+    if (showTarget) row.push(Math.round(r.target), r.target?((r.total/r.target)*100).toFixed(0):'');
+    lines.push(row.map(esc).join(','));
+  });
+
+  const year  = (document.getElementById('bt-year')||{}).value || '';
+  const month = (document.getElementById('bt-month')||{}).value || 'ทั้งปี';
+  const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `สรุปสาขา-${year}-${month}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('⬇️ ส่งออก CSV แล้ว');
 }
 </script>
 
