@@ -1202,6 +1202,15 @@ textarea { resize: vertical; min-height: 72px; }
             </select>
           </div>
 
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.3px;">หมวดงวดชำระ</label>
+            <select id="bt-group" onchange="renderBranchTable()"
+              style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sarabun',sans-serif;background:var(--white);">
+              <option value="split">แยกทุกงวด</option>
+              <option value="group">รวมเป็นคอลัมน์เดียว</option>
+            </select>
+          </div>
+
           <div style="flex:1;"></div>
           <button class="btn btn-outline btn-sm" onclick="exportBranchTableCsv()">⬇️ CSV</button>
           <button class="btn btn-outline btn-sm no-print" onclick="window.print()">🖨️ พิมพ์</button>
@@ -5564,14 +5573,30 @@ let _btSort = { key:'total', dir:'desc' };
 let _btRows = [];
 let _btCols = [];
 
-const _btFallbackCats = ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ'];
+const _btFallbackCats = ['งานบิวท์อิน','งานเพิ่มเติม','วัดหน้างาน','เครื่องใช้','บริการ','ค่าขนส่ง','อื่นๆ','งวดแรก','งวดที่2','งวดที่3','งวดสุดท้าย'];
 
-// หมวดที่เป็น "งวดชำระ" ไม่ใช่ประเภทงาน — ยุบรวมเป็นคอลัมน์เดียว
-const _btInstallmentCats = ['งวดแรก','งวดที่2','งวดที่3','งวดสุดท้าย'];
+// หมวดที่เป็น "งวดชำระ" — รวมเป็นคอลัมน์เดียวได้ถ้าผู้ใช้เลือก
+const _btInstallmentCats = ['งวดแรก','งวดที่2','งวดที่3','งวดที่4','งวดที่5','งวดสุดท้าย'];
+const _BT_INSTALL_LABEL = 'ชำระตามงวด';
 
-function _btCatList() {
-  const raw = (state.productCats && state.productCats.length) ? state.productCats : _btFallbackCats;
-  return raw.filter(c => !_btInstallmentCats.includes(c));
+function _btRawCats() {
+  return (state.productCats && state.productCats.length) ? state.productCats.slice() : _btFallbackCats.slice();
+}
+
+function _btCatList(group) {
+  const raw = _btRawCats();
+  if (!group) return raw;
+  const out = []; let added = false;
+  raw.forEach(c => {
+    if (_btInstallmentCats.includes(c)) { if (!added) { out.push(_BT_INSTALL_LABEL); added = true; } }
+    else out.push(c);
+  });
+  if (!added) out.push(_BT_INSTALL_LABEL);
+  return out;
+}
+
+function _btMapCat(c, group) {
+  return (group && _btInstallmentCats.includes(c)) ? _BT_INSTALL_LABEL : c;
 }
 
 const _btItemCat = i => i.cat || i.category || '';
@@ -5579,15 +5604,15 @@ const _btLine = i => (+i.total) || ((+i.qty||0) * (+i.price||0)) || 0;
 const _btFmt0 = n => (Math.round(n||0)).toLocaleString('th-TH');
 
 // กระจายยอดรวมของบิลไปตามหมวดของแต่ละรายการ ตามสัดส่วนมูลค่า
-function _btSplitDoc(d, cats) {
+function _btSplitDoc(d, cats, group) {
   const out = {}; cats.forEach(c => out[c] = 0); out.__etc = 0;
   const total = +d.total || 0;
   const items = Array.isArray(d.items) ? d.items.filter(i => i && !i.__plan) : [];
   if (!items.length) { out.__etc = total; return out; }
   const sub = items.reduce((s,i) => s + _btLine(i), 0);
-  if (sub <= 0) { out.__etc = total; return out; }
+  if (Math.abs(sub) < 0.005) { out.__etc = total; return out; }
   items.forEach(i => {
-    const c = _btItemCat(i);
+    const c = _btMapCat(_btItemCat(i), group);
     const share = _btLine(i) / sub * total;
     if (Object.prototype.hasOwnProperty.call(out, c)) out[c] += share; else out.__etc += share;
   });
