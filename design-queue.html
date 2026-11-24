@@ -212,6 +212,14 @@ tbody tr:hover{background:#FAFCFB}
         <div id="t-load"></div>
       </div>
     </div>
+
+    <div class="card" style="margin-top:17px">
+      <div class="card-h"><h2>✅ ประวัติงานที่ส่งแบบแล้ว</h2><div class="spacer"></div>
+        <span style="font-size:12px;color:var(--ink-3)" id="h-more"></span></div>
+      <div class="tbl-scroll"><table class="mini">
+        <thead><tr><th>ลูกค้า</th><th>งาน</th><th>ผู้ออกแบบ</th><th class="r">ใช้เวลา</th><th class="r">ส่งเมื่อ</th></tr></thead>
+        <tbody id="t-done"></tbody></table></div>
+    </div>
   </div>
 
   <div class="wrap page" id="p-queue">
@@ -224,7 +232,7 @@ tbody tr:hover{background:#FAFCFB}
           <select id="f-branch" onchange="draw()"><option value="">🏪 ทุกสาขา</option></select>
           <select id="f-dz" onchange="draw()"><option value="">✏️ ทุกคน</option></select>
           <select id="f-st" onchange="draw()">
-            <option value="open">⏳ ยังไม่เสร็จ</option><option value="">ทั้งหมด</option>
+            <option value="">📁 ทั้งหมด (รวมประวัติ)</option><option value="open">⏳ ยังไม่เสร็จ</option>
             <option value="wait">รอรับงาน</option><option value="busy">กำลังทำ</option>
             <option value="done">ส่งแบบแล้ว</option><option value="fix">ขอแก้ไข</option></select>
         </div>
@@ -420,6 +428,18 @@ function draw(){
       <td class="r age ${ageCls(h)}">${dur(h)}</td>
       <td><span class="pill ${ST[r.status][1]}">${ST[r.status][0]}</span></td></tr>`;
   }).join('')||'<tr><td colspan="5" class="empty">ไม่มีงานค้าง 🎉</td></tr>';
+
+  /* ประวัติงานที่ส่งแบบแล้ว — ล่าสุดอยู่บนสุด */
+  const hist=dn.slice().sort((a,b)=>D(b.delivered_at||b.requested_at)-D(a.delivered_at||a.requested_at));
+  set('h-more', hist.length>15 ? 'แสดง 15 จาก '+hist.length+' งาน · ดูทั้งหมดที่หน้าคิวงาน' : '');
+  document.getElementById('t-done').innerHTML=hist.slice(0,15).map(r=>
+    `<tr onclick="detail('${esc(r.id)}')">
+      <td class="cust">${esc(r.customer)}<small>${esc(r.branch||'')}</small></td>
+      <td><span class="tag">${esc(r.job_type||'—')}</span></td>
+      <td style="font-size:12.5px">${esc(r.designer||'—')}</td>
+      <td class="r num" style="font-size:12.5px">${dur(age(r))}</td>
+      <td class="r num" style="font-size:12.5px;color:var(--ink-3)">${fd(r.delivered_at||r.requested_at)}</td></tr>`
+  ).join('')||'<tr><td colspan="5" class="empty">ยังไม่มีงานที่ส่งแบบแล้ว</td></tr>';
 
   const load={};
   R.forEach(r=>{ if(!r.designer) return; load[r.designer]=load[r.designer]||{o:0,d:0};
