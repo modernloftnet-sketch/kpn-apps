@@ -259,6 +259,7 @@ tbody tr:hover{background:#FAFCFB}
     <div class="modal-h"><h3 id="d-t">—</h3><span class="rq" id="d-rq"></span><button class="x" onclick="close_()">✕</button></div>
     <div class="modal-b" id="d-b"></div>
     <div class="modal-f">
+      <button class="btn" id="d-del" style="display:none" onclick="askDel()">🗑️ ลบคำขอนี้</button>
       <a class="btn btn-g" id="d-tg" target="_blank" rel="noopener">💬 เปิดในกลุ่ม Telegram</a>
       <button class="btn btn-p" onclick="close_()">ปิด</button>
     </div>
@@ -273,9 +274,10 @@ const SB_KEY = 'sb_publishable_6j2J4OEC2Py4ujz7cpkyyA_jGZnyWt4';
 const FILE_FN = SB_URL + '/functions/v1/design-file?id=';
 
 const PEOPLE = {
-  'korakot@thebuilt.co.th': { name:'เฮีย', role:'owner' },
-  'joy@thebuilt.co.th':     { name:'จอย',  role:'owner' },
-  'ben@thebuilt.co.th':     { name:'เบน',  role:'staff' },
+  //                                               canDel:true = ลบคำขอได้
+  'korakot@thebuilt.co.th': { name:'เฮีย', role:'owner', canDel:true },
+  'joy@thebuilt.co.th':     { name:'จอย',  role:'owner', canDel:true },
+  'ben@thebuilt.co.th':     { name:'เบน',  role:'staff', canDel:true },
   'fang@thebuilt.co.th':    { name:'ฟาง',  role:'staff' },
   // ── บัญชีกลางของฝ่ายออกแบบ · ดูได้อย่างเดียว ──
   'design@thebuilt.co.th':  { name:'ฝ่ายออกแบบ', role:'view' },
@@ -477,6 +479,8 @@ function thumbs(list){
 }
 function detail(id){
   const r=R.find(x=>x.id===id); if(!r) return;
+  CUR=r.id; resetDelBtn();
+  document.getElementById('d-del').style.display = me?.canDel ? '' : 'none';
   document.getElementById('d-t').textContent=r.customer;
   document.getElementById('d-rq').textContent=r.id;
   const lnk=tgLink(r), a=document.getElementById('d-tg');
@@ -508,7 +512,49 @@ function detail(id){
       <div style="white-space:pre-wrap;font-size:12.5px;color:var(--ink-2);background:#F7FAF9;border:1px solid var(--line);border-radius:9px;padding:11px 13px">${esc(r.detail)}</div>`:''}`;
   document.getElementById('m-det').classList.add('on');
 }
-const close_=()=>document.getElementById('m-det').classList.remove('on');
+const close_=()=>{ document.getElementById('m-det').classList.remove('on'); resetDelBtn(); };
+
+/* ═══════ ลบคำขอ — ต้องกด 2 ครั้ง กันพลาด ═══════ */
+let CUR=null, delTimer=null;
+
+function resetDelBtn(){
+  clearTimeout(delTimer);
+  const b=document.getElementById('d-del'); if(!b) return;
+  b.dataset.armed=''; b.disabled=false;
+  b.textContent='🗑️ ลบคำขอนี้';
+  b.style.background=''; b.style.color='#B23A2B'; b.style.borderColor='#E8C7C0';
+}
+
+function askDel(){
+  const b=document.getElementById('d-del');
+  if(b.dataset.armed!=='1'){
+    b.dataset.armed='1';
+    b.textContent='⚠️ กดอีกครั้ง = ลบถาวร';
+    b.style.background='#B23A2B'; b.style.color='#fff'; b.style.borderColor='#B23A2B';
+    delTimer=setTimeout(resetDelBtn,6000);          // ไม่กดต่อใน 6 วิ = ยกเลิกเอง
+    return;
+  }
+  doDel();
+}
+
+async function doDel(){
+  const b=document.getElementById('d-del');
+  clearTimeout(delTimer);
+  b.disabled=true; b.textContent='กำลังลบ...';
+  try{
+    if(session?.expires_at && Date.now()/1000>session.expires_at-90){
+      if(!(await refresh())){ alert('หมดเวลาใช้งาน กรุณาเข้าสู่ระบบใหม่'); logout(); return; }
+    }
+    const r=await fetch(SB_URL+'/rest/v1/tb_design_requests?id=eq.'+encodeURIComponent(CUR),{
+      method:'DELETE',
+      headers:{ apikey:SB_KEY, Authorization:'Bearer '+session.access_token, Prefer:'return=minimal' }});
+    if(!r.ok) throw new Error(await r.text());
+    close_(); await reload();
+  }catch(e){
+    b.disabled=false; b.textContent='❌ ลบไม่สำเร็จ ลองใหม่';
+    delTimer=setTimeout(resetDelBtn,4000);
+  }
+}
 
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.nav-item').forEach(x=>x.setAttribute('aria-current','false'));
