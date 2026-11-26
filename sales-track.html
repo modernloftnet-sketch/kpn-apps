@@ -148,6 +148,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bott
     <select id="src" onchange="draw()">
       <option value="">🌐 ทุกช่องทาง</option><option>เว็บไซต์</option><option>เพจสาขา</option>
       <option>บอกต่อ</option><option>อื่นๆ</option></select>
+    <select id="sort" onchange="draw()">
+      <option value="due">⏰ เรียงตามกำหนดส่ง</option>
+      <option value="msg">💬 เรียงตามข้อความล่าสุด</option></select>
     <select id="age" onchange="draw()">
       <option value="30">⏱️ เคลื่อนไหวใน 30 วัน</option>
       <option value="7">⏱️ เคลื่อนไหวใน 7 วัน</option>
@@ -402,9 +405,11 @@ function match(r){
   return true;
 }
 function draw(){
+  const mode=$('sort').value;
   const rows=R.filter(match).sort((a,b)=>{
-    const x=daysTo(a.due), y=daysTo(b.due);
-    if(x===null&&y===null) return a.quiet-b.quiet;   // เคลื่อนไหวล่าสุดอยู่บน
+    if(mode==='msg') return D(b.mAt||0)-D(a.mAt||0);  // ใครทักล่าสุด อยู่บนสุด
+    const x=daysTo(a.due), y=daysTo(b.due);           // เรียงตามกำหนดส่ง
+    if(x===null&&y===null) return a.quiet-b.quiet;
     if(x===null) return 1; if(y===null) return -1; return x-y;
   });
   $('tb').innerHTML=rows.map(r=>{
