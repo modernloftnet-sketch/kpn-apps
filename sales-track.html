@@ -148,6 +148,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bott
     <select id="src" onchange="draw()">
       <option value="">🌐 ทุกช่องทาง</option><option>เว็บไซต์</option><option>เพจสาขา</option>
       <option>บอกต่อ</option><option>อื่นๆ</option></select>
+    <select id="age" onchange="draw()">
+      <option value="30">⏱️ เคลื่อนไหวใน 30 วัน</option>
+      <option value="7">⏱️ เคลื่อนไหวใน 7 วัน</option>
+      <option value="60">⏱️ เคลื่อนไหวใน 60 วัน</option>
+      <option value="0">⏱️ ทั้งหมด (รวมห้องเก่า)</option></select>
     <div class="seg">
       <button id="bT" aria-pressed="true" onclick="view('t')">📋 ตาราง</button>
       <button id="bB" aria-pressed="false" onclick="view('b')">🗂️ บอร์ด</button></div>
@@ -385,6 +390,9 @@ function match(r){
   if(o==='__none'){ if(r.owner) return false; } else if(o && r.owner!==o) return false;
   if(s && r.stage!==s) return false;
   if(sc && r.src!==sc) return false;
+  const ag=Number($('age').value||0);
+  // ห้องที่เงียบนานเกินกำหนด ซ่อนไว้ก่อน — ยกเว้นห้องที่มีคนดูแลหรือเป็นลูกค้าแล้ว
+  if(ag && r.quiet>ag && !r.saved) return false;
   if(F==='late'  && !(d!==null&&d<0)) return false;
   if(F==='today' && d!==0) return false;
   if(F==='reply' && !r.unread) return false;
@@ -395,7 +403,7 @@ function match(r){
 function draw(){
   const rows=R.filter(match).sort((a,b)=>{
     const x=daysTo(a.due), y=daysTo(b.due);
-    if(x===null&&y===null) return b.quiet-a.quiet;
+    if(x===null&&y===null) return a.quiet-b.quiet;   // เคลื่อนไหวล่าสุดอยู่บน
     if(x===null) return 1; if(y===null) return -1; return x-y;
   });
   $('tb').innerHTML=rows.map(r=>{
