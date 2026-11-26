@@ -30,6 +30,8 @@ header{background:#101729;color:#fff;padding:13px 22px;display:flex;align-items:
 .tr[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .tr.deal[aria-pressed=true]{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
 .tr.deal .n{color:var(--ok)}.tr.lead .n{color:var(--accent)}
+.tr.done .n{color:var(--ink3)}
+.tr.done[aria-pressed=true]{border-color:var(--ink3);box-shadow:0 0 0 1px var(--ink3)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(162px,1fr));gap:11px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:13px 15px;cursor:pointer}
 .kpi:hover{transform:translateY(-2px)}.kpi.on{outline:2px solid var(--accent);outline-offset:-1px}
@@ -136,6 +138,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bott
       <div class="n" id="nD">–</div><div><b>🛒 ลูกค้า</b><small>จ่ายมัดจำแล้ว · งานกำลังเดิน</small></div></div>
     <div class="tr lead" id="trL" aria-pressed="false" onclick="track('lead')">
       <div class="n" id="nL">–</div><div><b>👀 ผู้สนใจ</b><small>ยังไม่ซื้อ</small></div></div>
+    <div class="tr done" id="trX" aria-pressed="false" onclick="track('done')">
+      <div class="n" id="nX">–</div><div><b>✅ จบแล้ว</b><small>ปิดงาน · เก็บเงินครบ</small></div></div>
   </div>
 
   <div class="kpis" id="kp"></div>
@@ -202,6 +206,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bott
     <button class="btn btn-p" id="dSave" onclick="save()">💾 บันทึก</button>
     <button class="btn btn-w" id="dWin" style="display:none" onclick="convert()">✅ จ่ายมัดจำวัดหน้างานแล้ว → ย้ายเป็นลูกค้า</button>
     <button class="btn" id="dBack" style="display:none;font-size:12.5px;color:var(--ink3)" onclick="unconvert()">↩ กดผิด — ย้ายกลับเป็นผู้สนใจ</button>
+    <button class="btn" id="dEnd" style="display:none;border-color:#CBD5E1" onclick="closeJob()">🏁 จบงาน — เก็บเงินครบแล้ว</button>
+    <button class="btn" id="dOpen" style="display:none;border-color:#CBD5E1" onclick="reopen()">↩ เปิดงานนี้กลับมาใหม่</button>
 
     <div class="sect">ข้อความล่าสุดในไลน์</div>
     <div class="chat" id="dChat"></div>
@@ -339,6 +345,7 @@ function merge(){
       quiet:daysSince(c.last_message_at),
       ai:AI[c.conversation_id]||null,
       saved:!!DEALS[c.conversation_id],
+      closed:!!d.closed_at, closedAt:d.closed_at||null,
     };
   });
 }
@@ -351,14 +358,32 @@ function ownList(){
 function track(k){
   K=k; F='';
   $('trD').setAttribute('aria-pressed',k==='deal'); $('trL').setAttribute('aria-pressed',k==='lead');
-  $('ttl').textContent=k==='deal'?'รายชื่อลูกค้า':'รายชื่อผู้สนใจ';
+  $('trX').setAttribute('aria-pressed',k==='done');
+  $('ttl').textContent=k==='deal'?'รายชื่อลูกค้า':k==='lead'?'รายชื่อผู้สนใจ':'งานที่จบแล้ว';
   $('stg').innerHTML='<option value="">📊 ทุกขั้นงาน</option>'+
-    (k==='deal'?DEAL:LEAD).map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+    (k==='deal'?DEAL:k==='lead'?LEAD:[...DEAL,...LEAD]).map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
   kpis(); draw();
 }
 function kpis(){
-  const set=R.filter(r=>r.kind===K), c=f=>set.filter(f).length;
+  const set=R.filter(r=> K==='done' ? r.closed : (!r.closed&&r.kind===K)), c=f=>set.filter(f).length;
   const dd=r=>daysTo(r.due);
+  if(K==='done'){
+    const dealDone=set.filter(r=>r.kind==='deal');
+    const cards=[['','✅ งานที่จบแล้ว',dealDone.length,'เก็บเงินครบ ปิดงานเรียบร้อย'],
+      ['','💰 มูลค่ารวม',(dealDone.reduce((s,r)=>s+r.val,0)/1e6).toFixed(2)+' ล.','จากงานที่จบแล้ว'],
+      ['','🌐 มาจากเว็บไซต์',dealDone.filter(r=>r.src==='เว็บไซต์').length,'ปิดได้จากเว็บไซต์'],
+      ['','📄 มาจากเพจสาขา',dealDone.filter(r=>r.src==='เพจสาขา').length,'ปิดได้จากเพจ'],
+      ['','🙋 มาจากบอกต่อ',dealDone.filter(r=>r.src==='บอกต่อ').length,'ลูกค้าแนะนำกันเอง'],
+      ['','✕ เคสที่ไม่สนใจ',set.filter(r=>r.kind==='lead').length,'ผู้สนใจที่ปิดไป']];
+    $('nD').textContent=R.filter(r=>r.kind==='deal'&&!r.closed).length;
+    $('nL').textContent=R.filter(r=>r.kind==='lead'&&!r.closed).length;
+    $('nX').textContent=R.filter(r=>r.closed).length;
+    $('kp').innerHTML=cards.map(c=>`<div class="kpi" data-f=""><div class="k">${c[1]}</div>
+      <div class="v">${c[2]}</div><div class="m">${c[3]}</div></div>`).join('');
+    const o=$('own'); const cu=o.value;
+    o.innerHTML='<option value="">👤 ทุกคน</option>'+ownList().map(n=>`<option>${esc(n)}</option>`).join('');
+    o.value=cu; return;
+  }
   const cards = K==='deal' ? [
     ['late','🔴 เลยกำหนดแล้ว',c(r=>dd(r)!==null&&dd(r)<0),'งานค้าง ต้องจัดการวันนี้'],
     ['today','🟠 ครบกำหนดวันนี้',c(r=>dd(r)===0),'อย่าให้ข้ามวัน'],
@@ -374,8 +399,9 @@ function kpis(){
     ['','🌐 มาจากเว็บไซต์',c(r=>r.src==='เว็บไซต์'),'ช่องทางที่ไม่ต้องจ่ายค่าโฆษณา'],
     ['','✅ ใกล้ปิดการขาย',c(r=>r.stage==='n_dep'||r.stage==='n_appt'),'นัดวัด / รอมัดจำ'],
   ];
-  $('nD').textContent=R.filter(r=>r.kind==='deal').length;
-  $('nL').textContent=R.filter(r=>r.kind==='lead').length;
+  $('nD').textContent=R.filter(r=>r.kind==='deal'&&!r.closed).length;
+  $('nL').textContent=R.filter(r=>r.kind==='lead'&&!r.closed).length;
+  $('nX').textContent=R.filter(r=>r.closed).length;
   $('kp').innerHTML=cards.map(c=>`<div class="kpi ${c[0]}" data-f="${c[0]}">
     <div class="k">${c[1]}</div><div class="v">${c[2]}</div><div class="m">${c[3]}</div></div>`).join('');
   $('kp').querySelectorAll('.kpi').forEach(k=>k.onclick=()=>{
@@ -388,7 +414,8 @@ function kpis(){
   o.value=cur;
 }
 function match(r){
-  if(r.kind!==K) return false;
+  if(K==='done'){ if(!r.closed) return false; }
+  else { if(r.closed||r.kind!==K) return false; }
   const q=$('q').value.trim(), o=$('own').value, s=$('stg').value, sc=$('src').value, d=daysTo(r.due);
   if(q && !(r.name.includes(q)||r.msg.includes(q))) return false;
   if(o==='__none'){ if(r.owner) return false; } else if(o && r.owner!==o) return false;
@@ -428,7 +455,7 @@ function draw(){
       <td class="num" style="text-align:right">${baht(r.val)}</td></tr>`;
   }).join('')||'<tr><td colspan="7" class="empty">ไม่มีรายการในเงื่อนไขนี้ 🎉</td></tr>';
 
-  $('bd').innerHTML=(K==='deal'?DEAL:LEAD).map(s=>{
+  $('bd').innerHTML=(K==='deal'?DEAL:K==='lead'?LEAD:[...DEAL,...LEAD]).map(s=>{
     const c=R.filter(r=>r.stage===s[0]&&match(r));
     return `<div class="col"><h3><span style="width:9px;height:9px;border-radius:50%;background:${s[3]};display:inline-block"></span>
       ${s[1]}<span>${c.length}</span></h3>
@@ -463,8 +490,11 @@ async function open_(id){
   $('dTodo').value=r.todo; $('dDue').value=r.due||''; $('dVal').value=r.val||'';
   $('dName').value=r.name; $('dBr').value=r.branch; $('dSrc').value=r.src||'';
   $('dAuto').classList.remove('on');
-  $('dWin').style.display=r.kind==='lead'?'':'none';
-  $('dBack').style.display=r.kind==='deal'?'':'none';
+  $('dWin').style.display=(!r.closed&&r.kind==='lead')?'':'none';
+  $('dBack').style.display=(!r.closed&&r.kind==='deal')?'':'none';
+  $('dEnd').style.display=r.closed?'none':'';
+  $('dOpen').style.display=r.closed?'':'none';
+  $('dSave').style.display=r.closed?'none':'';
   $('dLink').href=INBOX_URL;
   if(r.ai){ $('dAi').style.display=''; $('dAiT').textContent='→ '+((SM[r.ai.stage]||['','?'])[1])+' · '+r.ai.todo;
             $('dAiW').textContent='เหตุผล: '+r.ai.reason; } else $('dAi').style.display='none';
@@ -558,6 +588,35 @@ async function unconvert(){
       body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'convert',detail:'ย้ายกลับเป็นผู้สนใจ'})});
     DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); track('lead'); close_();
   }catch(e){ alert('ย้ายกลับไม่สำเร็จ\n'+e.message); }
+}
+
+// จบงาน — ย้ายออกจากรายชื่อที่กำลังเดิน แต่ไม่ลบอะไรทั้งสิ้น
+async function closeJob(){
+  const r=cur(); if(!r) return;
+  const what = r.kind==='deal' ? 'จบงาน (เก็บเงินครบแล้ว)' : 'ปิดเคส (ไม่สนใจแล้ว)';
+  if(!confirm(`${what}\n\n"${r.name}"\n\nจะย้ายไปแท็บ "จบแล้ว"\nข้อมูลและประวัติยังอยู่ครบ เปิดกลับมาได้ตลอด`)) return;
+  const body={conversation_id:r.id,kind:r.kind,closed_at:new Date().toISOString(),
+              next_todo:'',due_date:null,updated_by:ME.name};
+  if(r.kind==='lead') body.stage='n_lost';
+  try{
+    await api('tb_sales_deals?on_conflict=conversation_id',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    await api('tb_sales_log',{method:'POST',headers:{Prefer:'return=minimal'},
+      body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'close',detail:what})});
+    DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); kpis(); draw(); close_();
+  }catch(e){ alert('ปิดงานไม่สำเร็จ\n'+e.message); }
+}
+async function reopen(){
+  const r=cur(); if(!r) return;
+  if(!confirm(`เปิดงานของ "${r.name}" กลับมาใหม่?`)) return;
+  const body={conversation_id:r.id,closed_at:null,updated_by:ME.name};
+  try{
+    await api('tb_sales_deals?on_conflict=conversation_id',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    await api('tb_sales_log',{method:'POST',headers:{Prefer:'return=minimal'},
+      body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'reopen',detail:'เปิดงานกลับมาใหม่'})});
+    DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); track(r.kind); close_();
+  }catch(e){ alert('เปิดไม่สำเร็จ\n'+e.message); }
 }
 
 /* ══════════ boot ══════════ */
