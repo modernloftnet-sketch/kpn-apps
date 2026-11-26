@@ -198,6 +198,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bott
 
     <button class="btn btn-p" id="dSave" onclick="save()">💾 บันทึก</button>
     <button class="btn btn-w" id="dWin" style="display:none" onclick="convert()">✅ จ่ายมัดจำวัดหน้างานแล้ว → ย้ายเป็นลูกค้า</button>
+    <button class="btn" id="dBack" style="display:none;font-size:12.5px;color:var(--ink3)" onclick="unconvert()">↩ กดผิด — ย้ายกลับเป็นผู้สนใจ</button>
 
     <div class="sect">ข้อความล่าสุดในไลน์</div>
     <div class="chat" id="dChat"></div>
@@ -216,7 +217,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const LINE_PAGE='line_thebuilt';
 const INBOX_URL='https://modernloftnet-sketch.github.io/kpn-apps/KPN_Inbox_Dashboard.html';
 // ✏️ แก้รายชื่อพนักงานขายตรงนี้
-const SALES=['ก้อย','นุ่น','แพรว'];
+const SALES=['จอย','เบน','ฟาง','อุ้ม','แก้ม'];
 
 /* ══════════ ขั้นงาน ══════════
    [รหัส, ชื่อ, สีพื้น, สีอักษร, +กี่วัน (0=กรอกเอง), ข้อความที่เติมให้] */
@@ -458,6 +459,7 @@ async function open_(id){
   $('dName').value=r.name; $('dBr').value=r.branch; $('dSrc').value=r.src||'';
   $('dAuto').classList.remove('on');
   $('dWin').style.display=r.kind==='lead'?'':'none';
+  $('dBack').style.display=r.kind==='deal'?'':'none';
   $('dLink').href=INBOX_URL;
   if(r.ai){ $('dAi').style.display=''; $('dAiT').textContent='→ '+((SM[r.ai.stage]||['','?'])[1])+' · '+r.ai.todo;
             $('dAiW').textContent='เหตุผล: '+r.ai.reason; } else $('dAi').style.display='none';
@@ -537,6 +539,20 @@ async function convert(){
       body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'convert',detail:'จ่ายมัดจำวัดหน้างาน → ย้ายเป็นลูกค้า'})});
     DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); track('deal'); close_();
   }catch(e){ alert('ย้ายไม่สำเร็จ\n'+e.message); }
+}
+
+// กดผิด — ย้ายกลับเป็นผู้สนใจ (เก็บประวัติไว้ ไม่ลบอะไร)
+async function unconvert(){
+  const r=cur(); if(!r) return;
+  if(!confirm(`ย้าย "${r.name}" กลับเป็นผู้สนใจ?\n\nขั้นงานจะกลับไปที่ "กำลังให้ข้อมูล"\nประวัติทั้งหมดยังอยู่ครบ`)) return;
+  const body={conversation_id:r.id,kind:'lead',stage:'n_info',converted_at:null,updated_by:ME.name};
+  try{
+    await api('tb_sales_deals?on_conflict=conversation_id',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    await api('tb_sales_log',{method:'POST',headers:{Prefer:'return=minimal'},
+      body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'convert',detail:'ย้ายกลับเป็นผู้สนใจ'})});
+    DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); track('lead'); close_();
+  }catch(e){ alert('ย้ายกลับไม่สำเร็จ\n'+e.message); }
 }
 
 /* ══════════ boot ══════════ */
