@@ -313,7 +313,7 @@ async function loadData(){
   $('live').textContent='กำลังโหลด…';
   try{
     const [cv,dl,ai]=await Promise.all([
-      api('fb_conversations?select=*&page_id=eq.'+LINE_PAGE+'&order=last_message_at.desc&limit=1200'),
+      api('fb_conversations?select=conversation_id,customer_name,last_message,last_message_at,last_is_read&page_id=eq.'+LINE_PAGE+'&order=last_message_at.desc&limit=1200'),
       api('tb_sales_deals?select=*'),
       api('tb_sales_ai?select=*&status=eq.open'),
     ]);
@@ -632,7 +632,7 @@ async function boot(){
   await loadData();
   // เปิดแท็บที่มีข้อมูลก่อน — วันแรกยังไม่มีใครถูกย้ายเป็นลูกค้า
   track(R.some(r=>r.kind==='deal')?'deal':'lead');
-  setInterval(async()=>{ await loadData(); kpis(); draw(); }, 90000);
+  setInterval(async()=>{ await loadData(); kpis(); draw(); }, 180000);
 }
 (async()=>{ if(S?.token){ if(S.exp && Date.now()/1000>S.exp-90){ if(!(await refresh())){ localStorage.removeItem(LSK); return; } } boot(); } })();
 $('lp').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
