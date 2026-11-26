@@ -541,7 +541,9 @@ async function boot(){
   $('me').textContent=ME.name;
   $('role').textContent=ME.role==='supervisor'?'ผู้ดูแลระบบ':ME.role==='manager'?'หัวหน้า':'พนักงานขาย';
   $('lk').style.display='none';
-  await loadData(); track('deal');
+  await loadData();
+  // เปิดแท็บที่มีข้อมูลก่อน — วันแรกยังไม่มีใครถูกย้ายเป็นลูกค้า
+  track(R.some(r=>r.kind==='deal')?'deal':'lead');
   setInterval(async()=>{ await loadData(); kpis(); draw(); }, 90000);
 }
 (async()=>{ if(S?.token){ if(S.exp && Date.now()/1000>S.exp-90){ if(!(await refresh())){ localStorage.removeItem(LSK); return; } } boot(); } })();
