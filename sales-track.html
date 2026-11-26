@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ติดตามลูกค้า — The Built</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --ink:#141B2D; --ink2:#4A566E; --ink3:#8793A8;
+  --bg:#F3F5F8; --card:#fff; --line:#E1E6EE; --field:#F8FAFC;
+  --accent:#3B4BC8; --accent-soft:#EBEDFB;
+  --late:#C23A2B; --today:#B4690E; --quiet:#6B5BC4; --ok:#157A52; --ai:#0E7C8C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans Thai',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
+.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+header{background:#101729;color:#fff;padding:13px 22px;display:flex;align-items:center;gap:14px}
+.logo{font-weight:800;font-size:16px}.logo small{display:block;font-size:11px;font-weight:400;color:#8A97B4}
+.sp{flex:1}
+.who{font-size:12.5px;color:#C3CDE2;display:flex;align-items:center;gap:9px}.who b{color:#fff}
+.pillw{background:#273354;border-radius:20px;padding:3px 11px;font-size:11.5px}
+.lo{border:0;background:#273354;color:#C3CDE2;border-radius:16px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.live{font-size:11.5px;background:#1C2A46;border-radius:16px;padding:4px 11px;color:#9FEFC8}
+.wrap{max-width:1560px;margin:0 auto;padding:18px 22px 60px}
+.tracks{display:flex;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+.tr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 18px;cursor:pointer;display:flex;align-items:center;gap:11px}
+.tr b{font-size:14.5px}.tr small{display:block;font-size:11.5px;color:var(--ink3);font-weight:400}
+.tr .n{font-size:22px;font-weight:800}
+.tr[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tr.deal[aria-pressed=true]{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.tr.deal .n{color:var(--ok)}.tr.lead .n{color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(162px,1fr));gap:11px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:13px 15px;cursor:pointer}
+.kpi:hover{transform:translateY(-2px)}.kpi.on{outline:2px solid var(--accent);outline-offset:-1px}
+.kpi .k{font-size:11.5px;color:var(--ink2);font-weight:600}
+.kpi .v{font-size:25px;font-weight:800;margin-top:2px}.kpi .m{font-size:11px;color:var(--ink3)}
+.kpi.late{border-left-color:var(--late)}.kpi.late .v{color:var(--late)}
+.kpi.today{border-left-color:var(--today)}.kpi.today .v{color:var(--today)}
+.kpi.reply{border-left-color:var(--accent)}.kpi.reply .v{color:var(--accent)}
+.kpi.quiet{border-left-color:var(--quiet)}.kpi.quiet .v{color:var(--quiet)}
+.kpi.ai{border-left-color:var(--ai)}.kpi.ai .v{color:var(--ai)}
+.bar{background:var(--card);border:1px solid var(--line);border-radius:12px 12px 0 0;border-bottom:0;padding:11px 15px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h2{font-size:15px;margin-right:4px}
+input[type=text],input[type=date],input[type=number],input[type=email],input[type=password],select{font-family:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--ink)}
+input[type=text]{min-width:190px}
+input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:auto}
+.seg button{font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 15px;border:0;background:#fff;color:var(--ink2);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:0 0 12px 12px;overflow:hidden}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1120px}
+th{font-size:11.5px;font-weight:700;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:#FAFBFD;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid #EFF2F7;vertical-align:top}
+tbody tr{cursor:pointer}tbody tr:hover{background:#F7F9FC}
+.cust{font-weight:700}.cust small{display:block;font-weight:400;font-size:11.5px;color:var(--ink3)}
+.stage{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:7px;white-space:nowrap}
+.src{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.s-web{background:#E0F0F3;color:#0E6A7C}.s-fb{background:#E7EEFC;color:#2E5CC9}
+.s-ref{background:#E3F3EB;color:#157A52}.s-na{background:#F2F4F7;color:#8793A8}
+.av{width:25px;height:25px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:inline-grid;place-items:center;font-size:11.5px;font-weight:800;margin-right:7px;vertical-align:middle}
+.todo{font-size:13px}.todo small{display:block;font-size:11.5px;margin-top:2px;font-weight:600}
+.due-late{color:var(--late)}.due-today{color:var(--today)}.due-ok{color:var(--ink3);font-weight:400}
+.msg{font-size:12.5px;color:var(--ink2);max-width:270px}
+.msg small{display:block;font-size:11px;color:var(--ink3);margin-top:2px}
+.flag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:5px}
+.f-reply{background:var(--accent-soft);color:var(--accent)}
+.f-quiet{background:#EFEBFA;color:var(--quiet)}
+.f-ai{background:#E0F0F3;color:var(--ai)}
+.empty{text-align:center;padding:44px;color:var(--ink3)}
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.col{flex:0 0 218px;background:#EDF0F6;border-radius:12px;padding:10px}
+.col h3{font-size:11.5px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.col h3 span{margin-left:auto;background:#fff;border-radius:20px;padding:1px 8px;font-size:11px}
+.cardi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;cursor:pointer}
+.cardi:hover{border-color:var(--accent)}.cardi b{font-size:12.5px;display:block}
+.cardi .ln{font-size:11px;color:var(--ink3);margin-top:3px}
+.ov{position:fixed;inset:0;background:rgba(16,23,41,.45);display:none;justify-content:flex-end;z-index:50}
+.ov.on{display:flex}
+.dw{background:var(--card);width:min(470px,100%);height:100%;overflow-y:auto;padding:22px}
+.dw h3{font-size:18px}.dwh{display:flex;align-items:flex-start;gap:10px}
+.x{margin-left:auto;border:0;background:#EEF1F6;border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--ink2)}
+.sect{font-size:11.5px;font-weight:700;color:var(--ink3);margin:17px 0 7px}
+.row{display:flex;gap:9px}.row>*{flex:1}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.tl{border-left:2px solid var(--line);padding-left:14px;margin-left:5px}
+.tl div{position:relative;padding-bottom:12px;font-size:12.5px}
+.tl div::before{content:'';position:absolute;left:-20px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.tl b{display:block;font-size:13px}.tl small{color:var(--ink3);font-size:11.5px}
+.btn{font-family:inherit;font-size:13.5px;font-weight:700;padding:11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink2);cursor:pointer;width:100%;margin-top:9px}
+.btn-p{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-w{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.note{background:#FFF8E8;border:1px solid #F2E2BC;border-radius:10px;padding:11px 13px;font-size:12.5px;color:#7A5410;margin-top:15px}
+.chat{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12.5px}
+.aibox{background:#F0F8FA;border:1px solid #C6E2E8;border-radius:11px;padding:13px 14px;margin-top:9px}
+.aibox .h{font-size:12px;font-weight:700;color:var(--ai);margin-bottom:6px}
+.aibox .w{font-size:12px;color:var(--ink2);margin-top:6px;padding-top:7px;border-top:1px solid #D7E9ED}
+.aibtn{display:flex;gap:8px;margin-top:10px}
+.aibtn button{flex:1;font-family:inherit;font-size:12.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer}
+.aibtn .y{background:var(--ai);color:#fff;border:0}
+.aibtn .n{background:#fff;color:var(--ink2);border:1px solid var(--line)}
+.auto{font-size:11.5px;color:var(--ok);font-weight:600;margin-top:5px;display:none}
+.auto.on{display:block}
+/* login */
+#lk{position:fixed;inset:0;background:#101729;display:grid;place-items:center;z-index:99}
+.lbox{background:#fff;border-radius:16px;padding:30px;width:330px}
+.lbox h1{font-size:20px;font-weight:800}
+.lbox p{font-size:12.5px;color:var(--ink3);margin:3px 0 16px}
+.lbox input{width:100%;margin-bottom:10px}
+.lerr{color:var(--late);font-size:12.5px;min-height:16px;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div id="lk"><div class="lbox">
+  <h1>ติดตามลูกค้า</h1><p>The Built In · ไลน์ OA</p>
+  <input id="le" type="email" placeholder="อีเมล" autocomplete="username">
+  <input id="lp" type="password" placeholder="รหัสผ่าน" autocomplete="current-password">
+  <button class="btn btn-p" id="lb" onclick="login()">เข้าสู่ระบบ</button>
+  <div class="lerr" id="lx"></div>
+</div></div>
+
+<header>
+  <div class="logo">ติดตามลูกค้า — ไลน์ OA<small>The Built In · พนักงานขายส่วนกลาง</small></div>
+  <div class="sp"></div>
+  <span class="live" id="live">กำลังโหลด…</span>
+  <div class="who"><span class="num" id="today"></span> · <b id="me">—</b><span class="pillw" id="role">—</span>
+    <button class="lo" onclick="logout()">ออก</button></div>
+</header>
+
+<div class="wrap">
+  <div class="tracks">
+    <div class="tr deal" id="trD" aria-pressed="true" onclick="track('deal')">
+      <div class="n" id="nD">–</div><div><b>🛒 ลูกค้า</b><small>จ่ายมัดจำแล้ว · งานกำลังเดิน</small></div></div>
+    <div class="tr lead" id="trL" aria-pressed="false" onclick="track('lead')">
+      <div class="n" id="nL">–</div><div><b>👀 ผู้สนใจ</b><small>ยังไม่ซื้อ</small></div></div>
+  </div>
+
+  <div class="kpis" id="kp"></div>
+
+  <div class="bar">
+    <h2 id="ttl">รายชื่อลูกค้า</h2>
+    <input type="text" id="q" placeholder="🔍 ค้นชื่อ / ข้อความ" oninput="draw()">
+    <select id="own" onchange="draw()"></select>
+    <select id="stg" onchange="draw()"></select>
+    <select id="src" onchange="draw()">
+      <option value="">🌐 ทุกช่องทาง</option><option>เว็บไซต์</option><option>เพจสาขา</option>
+      <option>บอกต่อ</option><option>อื่นๆ</option></select>
+    <div class="seg">
+      <button id="bT" aria-pressed="true" onclick="view('t')">📋 ตาราง</button>
+      <button id="bB" aria-pressed="false" onclick="view('b')">🗂️ บอร์ด</button></div>
+  </div>
+
+  <div class="panel" id="pT"><div class="scroll"><table>
+    <thead><tr><th>ชื่อ</th><th>ที่มา</th><th>ขั้นงาน</th><th>ผู้ดูแล</th>
+      <th>สิ่งที่ต้องทำต่อ</th><th>ข้อความล่าสุดในไลน์</th><th style="text-align:right">มูลค่า</th></tr></thead>
+    <tbody id="tb"></tbody></table></div></div>
+
+  <div class="panel" id="pB" style="display:none;background:transparent;border:0">
+    <div class="board" id="bd"></div></div>
+</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)close_()">
+  <div class="dw">
+    <div class="dwh"><h3 id="dN">—</h3><button class="x" onclick="close_()">✕</button></div>
+    <div id="dSub" style="font-size:12.5px;color:var(--ink3);margin-bottom:4px"></div>
+
+    <div class="aibox" id="dAi" style="display:none">
+      <div class="h">🤖 AI อ่านแชทแล้วเสนอว่า</div>
+      <div id="dAiT" style="font-weight:600"></div><div class="w" id="dAiW"></div>
+      <div class="aibtn"><button class="y" onclick="takeAi()">✓ รับข้อเสนอ</button>
+        <button class="n" onclick="dropAi()">✕ ไม่ใช่ ฉันกรอกเอง</button></div></div>
+
+    <div class="sect">ขั้นงาน · ผู้ดูแล</div>
+    <div class="row">
+      <div><label>ขั้นงาน</label><select id="dStg" style="width:100%"></select></div>
+      <div><label>ผู้ดูแล</label><select id="dOwn" style="width:100%"></select></div></div>
+
+    <div class="sect">สิ่งที่ต้องทำต่อ</div>
+    <input type="text" id="dTodo" style="width:100%" placeholder="เช่น ส่งใบเสนอราคาห้องนอน">
+    <div class="auto" id="dAuto"></div>
+    <div class="row" style="margin-top:9px">
+      <div><label>ครบกำหนด</label><input type="date" id="dDue" style="width:100%"></div>
+      <div><label>มูลค่างาน (บาท)</label><input type="number" id="dVal" style="width:100%" step="1"></div></div>
+    <div class="row" style="margin-top:9px">
+      <div><label>ชื่อที่ใช้เรียก</label><input type="text" id="dName" style="width:100%;min-width:0"></div>
+      <div><label>จังหวัด / สาขา</label><input type="text" id="dBr" style="width:100%;min-width:0"></div></div>
+    <div style="margin-top:9px"><label>ช่องทางที่มา</label>
+      <select id="dSrc" style="width:100%"><option value="">— ยังไม่ระบุ —</option>
+        <option>เว็บไซต์</option><option>เพจสาขา</option><option>บอกต่อ</option><option>อื่นๆ</option></select></div>
+
+    <button class="btn btn-p" id="dSave" onclick="save()">💾 บันทึก</button>
+    <button class="btn btn-w" id="dWin" style="display:none" onclick="convert()">✅ จ่ายมัดจำวัดหน้างานแล้ว → ย้ายเป็นลูกค้า</button>
+
+    <div class="sect">ข้อความล่าสุดในไลน์</div>
+    <div class="chat" id="dChat"></div>
+    <a class="btn" id="dLink" target="_blank" rel="noopener">💬 เปิดห้องแชทใน KPN Inbox</a>
+
+    <div class="sect">ประวัติการทำงาน</div>
+    <div class="tl" id="dTl"></div>
+    <div class="note" id="dNote"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════ CONFIG ══════════ */
+const SB_URL='https://kgjymqajwkhymqcofkhn.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnanltcWFqd2toeW1xY29ma2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDk5NzYsImV4cCI6MjA4OTc4NTk3Nn0._pJLKKt9lGzX7TGs8PxyO5CLdabTXBObk0OeDkxK0hE';
+const LINE_PAGE='line_thebuilt';
+const INBOX_URL='https://modernloftnet-sketch.github.io/kpn-apps/KPN_Inbox_Dashboard.html';
+// ✏️ แก้รายชื่อพนักงานขายตรงนี้
+const SALES=['ก้อย','นุ่น','แพรว'];
+
+/* ══════════ ขั้นงาน ══════════
+   [รหัส, ชื่อ, สีพื้น, สีอักษร, +กี่วัน (0=กรอกเอง), ข้อความที่เติมให้] */
+const LEAD=[
+ ['n_new','ทักมาใหม่','#FDECEC','#B5332B',1,'ตอบกลับลูกค้าให้เร็วที่สุด'],
+ ['n_info','กำลังให้ข้อมูล','#EEF2F7','#4A566E',2,'ตามคำถามที่ค้างอยู่'],
+ ['n_qt','ส่งราคาเบื้องต้น','#FDF1DD','#B4690E',2,'ตามคำตอบเรื่องราคาเบื้องต้น'],
+ ['n_appt','นัดวัดหน้างาน','#E7EEFC','#2E5CC9',2,'ยืนยันวันเวลาวัดหน้างาน'],
+ ['n_dep','รอจ่ายมัดจำวัดหน้างาน','#EFEBFA','#6B5BC4',3,'ตามมัดจำค่าวัดหน้างาน'],
+ ['n_lost','ไม่สนใจแล้ว','#F2F4F7','#8793A8',0,''],
+];
+const DEAL=[
+ ['d1','ส่งฝ่ายออกแบบ','#EFEBFA','#6B5BC4',2,'ตามแบบจากฝ่ายออกแบบ'],
+ ['d2','ส่งแบบให้ลูกค้า','#E7EEFC','#2E5CC9',2,'ตามคำตอบว่าลูกค้าโอเคกับแบบไหม'],
+ ['d3','เสนอราคา','#FDF1DD','#B4690E',2,'ตามคำตอบเรื่องราคา'],
+ ['d4','ต่อรอง','#FCEFE6','#B5551C',2,'สรุปราคาที่ต่อรองแล้วส่งกลับ'],
+ ['d5','ลูกค้าตกลง','#E3F3EB','#157A52',2,'ร่างสัญญาจ้างส่งให้ลูกค้าตรวจ'],
+ ['d6','ทำสัญญา+เก็บงวดแรก','#E3F3EB','#0F6B47',2,'ตามเงินงวดแรกตามสัญญา'],
+ ['d7','สั่งสินค้าเพิ่มเติม','#FEF3E2','#9A6512',1,'ยืนยันคำสั่งซื้อกับซัพพลายเออร์'],
+ ['d8','ลงงานผลิต','#EDF1F5','#3C4A63',1,'ยืนยันคิวผลิตกับโรงงาน'],
+ ['d9','ลงตารางติดตั้ง','#E3F0F3','#0E6A7C',1,'ยืนยันวันติดตั้งกับลูกค้า'],
+ ['d10','เก็บเงินงวดที่ 2','#E3F3EB','#157A52',0,'ตามเงินงวดที่ 2 ตามสัญญา'],
+ ['d11','เก็บเงินงวดสุดท้าย','#DCEFE6','#0F6B47',0,'ตามเงินงวดสุดท้าย'],
+];
+const SM=Object.fromEntries([...LEAD,...DEAL].map(s=>[s[0],s]));
+
+/* ══════════ auth ══════════ */
+const LSK='tb_sales_auth';
+let S=null, ME={name:'',role:'staff',email:''};
+try{ S=JSON.parse(localStorage.getItem(LSK)||'null'); }catch(e){}
+
+const $=i=>document.getElementById(i);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function login(){
+  const e=$('le').value.trim().toLowerCase(), p=$('lp').value, b=$('lb'), x=$('lx');
+  if(!e||!p){ x.textContent='กรอกอีเมลและรหัสผ่าน'; return; }
+  b.disabled=true; b.textContent='กำลังเข้า…'; x.textContent='';
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{method:'POST',
+      headers:{apikey:SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email:e,password:p})});
+    const d=await r.json();
+    if(!r.ok||!d.access_token){ x.textContent='อีเมลหรือรหัสผ่านไม่ถูกต้อง'; b.disabled=false; b.textContent='เข้าสู่ระบบ'; return; }
+    S={token:d.access_token,refresh:d.refresh_token,exp:Math.floor(Date.now()/1000)+(d.expires_in||3600),email:e,uid:d.user?.id};
+    localStorage.setItem(LSK,JSON.stringify(S));
+    await boot();
+  }catch(err){ x.textContent='เชื่อมต่อไม่ได้'; b.disabled=false; b.textContent='เข้าสู่ระบบ'; }
+}
+function logout(){ localStorage.removeItem(LSK); location.reload(); }
+
+async function refresh(){
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:S.refresh})});
+    const d=await r.json();
+    if(!r.ok||!d.access_token) return false;
+    S={...S,token:d.access_token,refresh:d.refresh_token,exp:Math.floor(Date.now()/1000)+(d.expires_in||3600)};
+    localStorage.setItem(LSK,JSON.stringify(S)); return true;
+  }catch(e){ return false; }
+}
+const H=()=>({apikey:SB_KEY,Authorization:'Bearer '+S.token,'Content-Type':'application/json'});
+
+async function api(path,opt){
+  if(S.exp && Date.now()/1000>S.exp-90){ if(!(await refresh())){ logout(); throw 0; } }
+  const r=await fetch(SB_URL+'/rest/v1/'+path,{...opt,headers:{...H(),...(opt?.headers||{})}});
+  if(!r.ok) throw new Error(await r.text());
+  const t=await r.text(); return t?JSON.parse(t):null;
+}
+
+/* ══════════ data ══════════ */
+let CONV=[], DEALS={}, AI={}, R=[], K='deal', F='', V='t', CUR=null;
+const D=s=>new Date(s);
+const today0=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const daysTo=s=>s?Math.round((D(s+'T00:00:00')-today0())/864e5):null;
+const daysSince=s=>s?Math.floor((Date.now()-D(s))/864e5):0;
+const baht=n=>n?Number(n).toLocaleString('th-TH'):'—';
+const srcCls=s=>s==='เว็บไซต์'?'s-web':s==='บอกต่อ'?'s-ref':s==='เพจสาขา'?'s-fb':'s-na';
+const dueTxt=d=>d===null?['— ยังไม่ตั้ง —','due-ok']
+  :d<0?['เลยมา '+(-d)+' วัน','due-late']:d===0?['ครบกำหนดวันนี้','due-today']:['อีก '+d+' วัน','due-ok'];
+
+async function loadData(){
+  $('live').textContent='กำลังโหลด…';
+  try{
+    const [cv,dl,ai]=await Promise.all([
+      api('fb_conversations?select=*&page_id=eq.'+LINE_PAGE+'&order=last_message_at.desc&limit=1200'),
+      api('tb_sales_deals?select=*'),
+      api('tb_sales_ai?select=*&status=eq.open'),
+    ]);
+    CONV=cv||[]; DEALS={}; AI={};
+    (dl||[]).forEach(d=>DEALS[d.conversation_id]=d);
+    (ai||[]).forEach(a=>AI[a.conversation_id]=a);
+    merge();
+    $('live').textContent='เชื่อมต่ออยู่ · '+R.length+' ราย';
+  }catch(e){ $('live').textContent='⚠️ โหลดข้อมูลไม่ได้'; }
+}
+
+function merge(){
+  R=CONV.map(c=>{
+    const d=DEALS[c.conversation_id]||{};
+    return {
+      id:c.conversation_id,
+      name:d.customer_name||c.customer_name||'(ไม่มีชื่อ)',
+      branch:d.branch||'',
+      src:d.source||'',
+      kind:d.kind||'lead',
+      stage:d.stage||'n_new',
+      owner:d.owner||'',
+      todo:d.next_todo||'',
+      due:d.due_date||null,
+      val:Number(d.deal_value||0),
+      msg:c.last_message||'',
+      mAt:c.last_message_at,
+      unread:c.last_is_read===false,
+      quiet:daysSince(c.last_message_at),
+      ai:AI[c.conversation_id]||null,
+      saved:!!DEALS[c.conversation_id],
+    };
+  });
+}
+
+/* ══════════ ui ══════════ */
+function ownList(){
+  const s=new Set(SALES); R.forEach(r=>r.owner&&s.add(r.owner)); if(ME.name) s.add(ME.name);
+  return [...s];
+}
+function track(k){
+  K=k; F='';
+  $('trD').setAttribute('aria-pressed',k==='deal'); $('trL').setAttribute('aria-pressed',k==='lead');
+  $('ttl').textContent=k==='deal'?'รายชื่อลูกค้า':'รายชื่อผู้สนใจ';
+  $('stg').innerHTML='<option value="">📊 ทุกขั้นงาน</option>'+
+    (k==='deal'?DEAL:LEAD).map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+  kpis(); draw();
+}
+function kpis(){
+  const set=R.filter(r=>r.kind===K), c=f=>set.filter(f).length;
+  const dd=r=>daysTo(r.due);
+  const cards = K==='deal' ? [
+    ['late','🔴 เลยกำหนดแล้ว',c(r=>dd(r)!==null&&dd(r)<0),'งานค้าง ต้องจัดการวันนี้'],
+    ['today','🟠 ครบกำหนดวันนี้',c(r=>dd(r)===0),'อย่าให้ข้ามวัน'],
+    ['reply','💬 ยังไม่ได้อ่าน',c(r=>r.unread),'มีคนรออยู่'],
+    ['quiet','💤 เงียบเกิน 3 วัน',c(r=>r.quiet>=3),'เสี่ยงงานค้าง'],
+    ['ai','🤖 AI สะกิด',c(r=>r.ai),'รอคนยืนยัน'],
+    ['','💰 มูลค่ารวม',(set.reduce((s,r)=>s+r.val,0)/1e6).toFixed(2)+' ล.','จากงานที่กำลังเดิน'],
+  ] : [
+    ['late','🔴 ตอบช้าเกินกำหนด',c(r=>dd(r)!==null&&dd(r)<0),'ผู้สนใจรอไม่ได้นาน'],
+    ['reply','💬 ยังไม่ได้อ่าน',c(r=>r.unread),'ตอบใน 1 ชม.ได้ผลดีสุด'],
+    ['quiet','💤 เงียบเกิน 3 วัน',c(r=>r.quiet>=3),'ใกล้หลุดแล้ว'],
+    ['ai','🤖 AI สะกิด',c(r=>r.ai),'รอคนยืนยัน'],
+    ['','🌐 มาจากเว็บไซต์',c(r=>r.src==='เว็บไซต์'),'ช่องทางที่ไม่ต้องจ่ายค่าโฆษณา'],
+    ['','✅ ใกล้ปิดการขาย',c(r=>r.stage==='n_dep'||r.stage==='n_appt'),'นัดวัด / รอมัดจำ'],
+  ];
+  $('nD').textContent=R.filter(r=>r.kind==='deal').length;
+  $('nL').textContent=R.filter(r=>r.kind==='lead').length;
+  $('kp').innerHTML=cards.map(c=>`<div class="kpi ${c[0]}" data-f="${c[0]}">
+    <div class="k">${c[1]}</div><div class="v">${c[2]}</div><div class="m">${c[3]}</div></div>`).join('');
+  $('kp').querySelectorAll('.kpi').forEach(k=>k.onclick=()=>{
+    $('kp').querySelectorAll('.kpi').forEach(x=>x.classList.remove('on'));
+    k.classList.add('on'); F=k.dataset.f; draw();
+  });
+  const o=$('own'); const cur=o.value;
+  o.innerHTML='<option value="">👤 ทุกคน</option><option value="__none">— ยังไม่มีผู้ดูแล —</option>'+
+    ownList().map(n=>`<option>${esc(n)}</option>`).join('');
+  o.value=cur;
+}
+function match(r){
+  if(r.kind!==K) return false;
+  const q=$('q').value.trim(), o=$('own').value, s=$('stg').value, sc=$('src').value, d=daysTo(r.due);
+  if(q && !(r.name.includes(q)||r.msg.includes(q))) return false;
+  if(o==='__none'){ if(r.owner) return false; } else if(o && r.owner!==o) return false;
+  if(s && r.stage!==s) return false;
+  if(sc && r.src!==sc) return false;
+  if(F==='late'  && !(d!==null&&d<0)) return false;
+  if(F==='today' && d!==0) return false;
+  if(F==='reply' && !r.unread) return false;
+  if(F==='quiet' && r.quiet<3) return false;
+  if(F==='ai'    && !r.ai) return false;
+  return true;
+}
+function draw(){
+  const rows=R.filter(match).sort((a,b)=>{
+    const x=daysTo(a.due), y=daysTo(b.due);
+    if(x===null&&y===null) return b.quiet-a.quiet;
+    if(x===null) return 1; if(y===null) return -1; return x-y;
+  });
+  $('tb').innerHTML=rows.map(r=>{
+    const [dt,dc]=dueTxt(daysTo(r.due)), s=SM[r.stage]||SM.n_new;
+    return `<tr onclick="open_('${esc(r.id)}')">
+      <td class="cust">${esc(r.name)}<small>${esc(r.branch||'—')}</small></td>
+      <td><span class="src ${srcCls(r.src)}">${esc(r.src||'ยังไม่ระบุ')}</span></td>
+      <td><span class="stage" style="background:${s[2]};color:${s[3]}">${s[1]}</span></td>
+      <td>${r.owner?`<span class="av">${esc(r.owner[0])}</span><span style="font-size:12.5px">${esc(r.owner)}</span>`
+        :'<span style="color:var(--late);font-size:12.5px;font-weight:600">ยังไม่มีผู้ดูแล</span>'}</td>
+      <td class="todo">${esc(r.todo||'—')}<small class="${dc}">${dt}</small></td>
+      <td class="msg">${esc((r.msg||'').slice(0,60))}<small>${r.quiet?('เงียบมา '+r.quiet+' วัน'):'วันนี้'}
+        ${r.unread?'<span class="flag f-reply">ยังไม่อ่าน</span>':''}
+        ${r.quiet>=3?'<span class="flag f-quiet">เงียบ</span>':''}
+        ${r.ai?'<span class="flag f-ai">🤖 AI</span>':''}</small></td>
+      <td class="num" style="text-align:right">${baht(r.val)}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="empty">ไม่มีรายการในเงื่อนไขนี้ 🎉</td></tr>';
+
+  $('bd').innerHTML=(K==='deal'?DEAL:LEAD).map(s=>{
+    const c=R.filter(r=>r.stage===s[0]&&match(r));
+    return `<div class="col"><h3><span style="width:9px;height:9px;border-radius:50%;background:${s[3]};display:inline-block"></span>
+      ${s[1]}<span>${c.length}</span></h3>
+      ${c.map(r=>{const [dt,dc]=dueTxt(daysTo(r.due));return `<div class="cardi" onclick="open_('${esc(r.id)}')">
+        <b>${esc(r.name)}</b><div class="ln">${esc(r.todo||'—')}</div>
+        <div class="ln ${dc}" style="font-weight:600">${dt} · ${esc(r.owner||'ยังไม่มีผู้ดูแล')}</div></div>`;}).join('')
+      ||'<div class="ln" style="color:#9AA5B8;padding:5px 2px">—</div>'}</div>`;
+  }).join('');
+}
+function view(v){ V=v; $('pT').style.display=v==='t'?'':'none'; $('pB').style.display=v==='b'?'':'none';
+  $('bT').setAttribute('aria-pressed',v==='t'); $('bB').setAttribute('aria-pressed',v==='b'); }
+
+/* ══════════ drawer ══════════ */
+const cur=()=>R.find(r=>r.id===CUR);
+const ymd=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
+
+$('dStg').onchange=()=>{
+  const s=SM[$('dStg').value]; if(!s||!s[5]) return;
+  $('dTodo').value=s[5];
+  if(s[4]) $('dDue').value=ymd(s[4]);
+  $('dAuto').textContent='✨ ระบบเติมให้จากขั้นงาน — แก้ได้ตามจริง'; $('dAuto').classList.add('on');
+};
+
+async function open_(id){
+  CUR=id; const r=cur(); if(!r) return;
+  $('dN').textContent=r.name;
+  $('dSub').textContent=(r.branch||'ยังไม่ระบุจังหวัด')+' · '+(r.kind==='deal'?'ลูกค้า':'ผู้สนใจ (ยังไม่ซื้อ)');
+  $('dStg').innerHTML=(r.kind==='deal'?DEAL:LEAD).map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+  $('dStg').value=r.stage;
+  $('dOwn').innerHTML='<option value="">— ยังไม่มีผู้ดูแล —</option>'+ownList().map(n=>`<option>${esc(n)}</option>`).join('');
+  $('dOwn').value=r.owner||'';
+  $('dTodo').value=r.todo; $('dDue').value=r.due||''; $('dVal').value=r.val||'';
+  $('dName').value=r.name; $('dBr').value=r.branch; $('dSrc').value=r.src||'';
+  $('dAuto').classList.remove('on');
+  $('dWin').style.display=r.kind==='lead'?'':'none';
+  $('dLink').href=INBOX_URL;
+  if(r.ai){ $('dAi').style.display=''; $('dAiT').textContent='→ '+((SM[r.ai.stage]||['','?'])[1])+' · '+r.ai.todo;
+            $('dAiW').textContent='เหตุผล: '+r.ai.reason; } else $('dAi').style.display='none';
+  $('dChat').innerHTML=`<p>${esc(r.msg||'(ไม่มีข้อความ)')}</p>
+    <p style="color:var(--ink3);font-size:11.5px;margin-top:6px">${r.quiet?('เงียบมา '+r.quiet+' วัน'):'มีข้อความวันนี้'}</p>`;
+  const d=daysTo(r.due);
+  $('dNote').innerHTML = r.quiet>=3
+    ? `💤 <b>เงียบมา ${r.quiet} วัน</b><br>`+(r.kind==='lead'
+        ?'ผู้สนใจที่เงียบเกิน 7 วันแทบไม่กลับมา ควรโทรครั้งสุดท้ายแล้วตัดสินใจ'
+        :'ลูกค้าจ่ายเงินแล้ว การเงียบนานผิดปกติ ควรโทรเช็กว่าติดอะไร')
+    : (d!==null&&d<0) ? `🔴 <b>เลยกำหนดมา ${-d} วัน</b><br>ถ้าทำไม่ได้วันนี้ เลื่อนกำหนดใหม่ดีกว่าปล่อยค้าง`
+    : `✅ ยังอยู่ในกำหนด`;
+  $('dTl').innerHTML='<div style="color:var(--ink3)">กำลังโหลด…</div>';
+  $('ov').classList.add('on');
+  try{
+    const lg=await api('tb_sales_log?select=*&conversation_id=eq.'+encodeURIComponent(id)+'&order=at.desc&limit=30');
+    $('dTl').innerHTML=(lg||[]).map(l=>`<div><b>${esc(l.detail)}</b><small>${new Date(l.at)
+      .toLocaleDateString('th-TH',{day:'numeric',month:'short'})} · ${esc(l.actor||'')}</small></div>`).join('')
+      || '<div style="color:var(--ink3)">ยังไม่มีประวัติ</div>';
+  }catch(e){ $('dTl').innerHTML='<div style="color:var(--late)">โหลดประวัติไม่ได้</div>'; }
+}
+const close_=()=>$('ov').classList.remove('on');
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') close_(); });
+
+function takeAi(){
+  const r=cur(); if(!r?.ai) return;
+  $('dStg').value=r.ai.stage; $('dTodo').value=r.ai.todo;
+  const s=SM[r.ai.stage]; if(s&&s[4]) $('dDue').value=ymd(s[4]);
+  $('dAi').style.display='none';
+  $('dAuto').textContent='✓ รับข้อเสนอของ AI แล้ว — ยังแก้ได้ก่อนกดบันทึก'; $('dAuto').classList.add('on');
+  decideAi('taken');
+}
+function dropAi(){ $('dAi').style.display='none'; decideAi('dropped'); }
+async function decideAi(st){
+  const r=cur(); if(!r?.ai) return;
+  try{ await api('tb_sales_ai?conversation_id=eq.'+encodeURIComponent(r.id),{method:'PATCH',
+    headers:{Prefer:'return=minimal'},
+    body:JSON.stringify({status:st,decided_at:new Date().toISOString(),decided_by:ME.name})});
+    delete AI[r.id]; r.ai=null; kpis(); draw();
+  }catch(e){}
+}
+
+async function save(){
+  const r=cur(); if(!r) return;
+  const b=$('dSave'); b.disabled=true; b.textContent='กำลังบันทึก…';
+  const was=SM[r.stage]?SM[r.stage][1]:'', now=SM[$('dStg').value]?SM[$('dStg').value][1]:'';
+  const body={
+    conversation_id:r.id, kind:r.kind, stage:$('dStg').value,
+    owner:$('dOwn').value, owner_email:ME.email,
+    customer_name:$('dName').value.trim(), branch:$('dBr').value.trim(), source:$('dSrc').value,
+    next_todo:$('dTodo').value.trim(), due_date:$('dDue').value||null,
+    deal_value:Number($('dVal').value||0), updated_by:ME.name
+  };
+  try{
+    await api('tb_sales_deals?on_conflict=conversation_id',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    const detail = was!==now ? `เปลี่ยนขั้นงาน: ${was||'—'} → ${now}` : `อัปเดต: ${body.next_todo||'—'}`;
+    await api('tb_sales_log',{method:'POST',headers:{Prefer:'return=minimal'},
+      body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:was!==now?'stage':'todo',detail})});
+    DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); kpis(); draw(); close_();
+  }catch(e){ alert('บันทึกไม่สำเร็จ\n'+e.message); }
+  b.disabled=false; b.textContent='💾 บันทึก';
+}
+
+async function convert(){
+  const r=cur(); if(!r) return;
+  if(!confirm(`ย้าย "${r.name}" เป็นลูกค้า?\n\nขั้นงานจะเริ่มที่ "ส่งฝ่ายออกแบบ"\nประวัติการคุยทั้งหมดยังอยู่ครบ`)) return;
+  const body={conversation_id:r.id,kind:'deal',stage:'d1',
+    owner:$('dOwn').value||ME.name, owner_email:ME.email,
+    customer_name:$('dName').value.trim(), branch:$('dBr').value.trim(), source:$('dSrc').value,
+    next_todo:'ตามแบบจากฝ่ายออกแบบ', due_date:ymd(2),
+    converted_at:new Date().toISOString(), updated_by:ME.name};
+  try{
+    await api('tb_sales_deals?on_conflict=conversation_id',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    await api('tb_sales_log',{method:'POST',headers:{Prefer:'return=minimal'},
+      body:JSON.stringify({conversation_id:r.id,actor:ME.name,action:'convert',detail:'จ่ายมัดจำวัดหน้างาน → ย้ายเป็นลูกค้า'})});
+    DEALS[r.id]={...(DEALS[r.id]||{}),...body}; merge(); track('deal'); close_();
+  }catch(e){ alert('ย้ายไม่สำเร็จ\n'+e.message); }
+}
+
+/* ══════════ boot ══════════ */
+async function boot(){
+  $('today').textContent=new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+  try{
+    const u=await api('app_users?select=display_name,role&user_id=eq.'+S.uid+'&limit=1');
+    ME={name:(u&&u[0]?.display_name)||S.email, role:(u&&u[0]?.role)||'staff', email:S.email};
+  }catch(e){ ME={name:S.email,role:'staff',email:S.email}; }
+  $('me').textContent=ME.name;
+  $('role').textContent=ME.role==='supervisor'?'ผู้ดูแลระบบ':ME.role==='manager'?'หัวหน้า':'พนักงานขาย';
+  $('lk').style.display='none';
+  await loadData(); track('deal');
+  setInterval(async()=>{ await loadData(); kpis(); draw(); }, 90000);
+}
+(async()=>{ if(S?.token){ if(S.exp && Date.now()/1000>S.exp-90){ if(!(await refresh())){ localStorage.removeItem(LSK); return; } } boot(); } })();
+$('lp').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>
